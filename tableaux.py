@@ -60,6 +60,16 @@ class Tableau:
         else:
             return mu
 
+    @classmethod
+    def generate_partitions(cls, n, max_part=None):
+        if n == 0:
+            yield ()
+        else:
+            max_part = n if (max_part is None or max_part > n) else max_part
+            for i in range(1, max_part + 1):
+                for mu in cls.generate_partitions(n - i, i):
+                    yield (i,) + mu
+
     def find(self, v):
         return [(i, j) for i, j, values in self if v in values]
 
@@ -146,6 +156,60 @@ class Tableau:
             corners = [(j, i) for (i, j) in corners]
             ans.append((nu, diff, corners))
         return ans
+
+    @classmethod
+    def count_semistandard(cls, mu, n, setvalued=False):
+        cache = COUNT_SEMISTANDARD_SETVALUED_CACHE if setvalued else COUNT_SEMISTANDARD_CACHE
+        if (mu, n) not in cache:
+            ans = defaultdict(int)
+            if mu == tuple():
+                ans[()] = 1
+            elif n > 0:
+                for nu, diff, corners in cls._horizontal_strips(mu):
+                    for partition, count in cls.count_semistandard(nu, n - 1, setvalued).items():
+                        for i in range(len(corners) + 1 if setvalued else 1):
+                            m = len(diff) + i
+                            if m == 0:
+                                ans[partition] += count
+                            elif len(partition) < n - 1 or (partition and m > partition[-1]):
+                                break
+                            else:
+                                updated_partition = partition + (m,)
+                                ans[updated_partition] += count * nchoosek(len(corners), i)
+            cache[(mu, n)] = ans
+        return cache[(mu, n)]
+
+    @classmethod
+    def count_semistandard_setvalued(cls, mu, n):
+        return cls.count_semistandard(mu, n, True)
+
+    @classmethod
+    def count_semistandard_marked(cls, mu, n, setvalued=False):
+        cache = COUNT_SEMISTANDARD_SETVALUED_CACHE if setvalued else COUNT_SEMISTANDARD_CACHE
+        if (mu, n) not in cache:
+            ans = defaultdict(int)
+            if mu == tuple():
+                ans[()] = 1
+            elif n > 0:
+                for nu1, diff1, corners1 in cls._horizontal_strips(mu):
+                    for nu2, diff2, corners2 in cls._vertical_strips(nu1):
+                        for partition, count in cls.count_semistandard_marked(nu2, n - 1, setvalued).items():
+                            for i in range(len(corners1) + 1 if setvalued else 1):
+                                for j in range(len(corners2) + 1 if setvalued else 1):
+                                    m = len(diff1) + len(diff2) + i + j
+                                    if m == 0:
+                                        ans[partition] += count
+                                    elif len(partition) < n - 1 or (partition and m > partition[-1]):
+                                        break
+                                    else:
+                                        updated_partition = partition + (m,)
+                                        ans[updated_partition] += count * nchoosek(len(corners1), i) * nchoosek(len(corners2), j)
+            cache[(mu, n)] = ans
+        return cache[(mu, n)]
+
+    @classmethod
+    def count_semistandard_marked_setvalued(cls, mu, n):
+        return cls.count_semistandard_marked(mu, n, True)
 
     @classmethod
     def semistandard(cls, mu, n, setvalued=False):

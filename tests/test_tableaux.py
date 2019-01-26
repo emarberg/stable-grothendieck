@@ -1,7 +1,7 @@
 from tableaux import Tableau
 
 
-def test_transpose():
+def test_transpose_partition():
     mu = ()
     assert Tableau.transpose_partition(mu) == mu
 
@@ -13,6 +13,14 @@ def test_transpose():
 
     mu = (5, 3, 3, 2, 2, 1, 1, 1, 1)
     assert Tableau.transpose_partition(mu) == (9, 5, 3, 1, 1)
+
+
+def test_generate_partitions():
+    assert set(Tableau.generate_partitions(0)) == {()}
+    assert set(Tableau.generate_partitions(1)) == {(1,)}
+    assert set(Tableau.generate_partitions(2)) == {(1, 1), (2,)}
+    assert set(Tableau.generate_partitions(3)) == {(1, 1, 1), (2, 1), (3,)}
+    assert set(Tableau.generate_partitions(4)) == {(1, 1, 1, 1), (2, 1, 1), (2, 2), (3, 1), (4,)}
 
 
 def test_horizontal_strips():

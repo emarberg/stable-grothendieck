@@ -54,9 +54,14 @@ def test_from_tableau():
     assert Monomial.from_tableau(t) == x1 * x2 ** 2
 
 
-def test_symmetric_functions():
+def test_symmetrize():
+    f = Polynomial.base(Monomial('x1'))
+    assert f.symmetrize(3) == Monomial('x1') + Monomial('x2') + Monomial('x3')
+
+
+def test_slow_symmetric_functions():
     for mu in [(), (1,), (1, 1), (2,), (2, 1)]:
-        for n in range(5):
+        for n in range(4):
             f = Polynomial.slow_schur(mu, n)
             g = Polynomial.slow_stable_grothendieck(mu, n)
             h = Polynomial.slow_schur_s(mu, n)
@@ -67,3 +72,24 @@ def test_symmetric_functions():
             assert g.is_symmetric(n)
             assert h.is_symmetric(n)
             assert k.is_symmetric(n)
+
+
+def test_symmetric_functions():
+    for mu in Tableau.generate_partitions(6):
+        for n in range(6):
+            f = Polynomial.schur(mu, n)
+            g = Polynomial.stable_grothendieck(mu, n)
+
+            fs = Polynomial.slow_schur(mu, n)
+            gs = Polynomial.slow_stable_grothendieck(mu, n)
+            print(mu, n)
+            print(f)
+            print(fs)
+            print('*', f.symmetrize(n))
+            print()
+            h = Polynomial.schur_s(mu, n)
+            k = Polynomial.stable_grothendieck_s(mu, n)
+            assert g.lowest_degree_terms() == f
+            assert k.lowest_degree_terms() == h
+            assert f.symmetrize(n) == fs
+            assert g.symmetrize(n) == gs

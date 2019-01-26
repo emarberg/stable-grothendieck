@@ -1,6 +1,7 @@
 from vectors import Vector
 from tableaux import Tableau
 from collections import defaultdict
+import itertools
 
 
 class Monomial:
@@ -23,6 +24,12 @@ class Monomial:
         for v in self.dictionary:
             ans += self.dictionary[v]
         return ans
+
+    @classmethod
+    def from_dictionary(cls, dictionary):
+        m = Monomial()
+        m.dictionary = dictionary
+        return m
 
     @classmethod
     def from_tableau(cls, tableau):
@@ -73,13 +80,11 @@ class Monomial:
             else:
                 return self.polynomial(other)
         elif type(other) == Monomial:
-            ans = Monomial()
-            ans.dictionary = {
+            return Monomial.from_dictionary({
                 v: self[v] + other[v]
                 for v in set(self.dictionary) | set(other.dictionary)
                 if self[v] + other[v] != 0
-            }
-            return ans
+            })
         elif type(other) == Polynomial:
             return self.polynomial() * other
 
@@ -126,13 +131,21 @@ class Polynomial(Vector):
         return sorted(ans)
 
     def is_symmetric(self, n):
-        variables = ['x%i' % i for i in range(1, n + 1)]
+        var = ['x%i' % i for i in range(1, n + 1)]
         for monomial in self:
-            for i in range(len(variables) - 1):
-                other = monomial.swap(variables[i], variables[i + 1])
+            for i in range(len(var) - 1):
+                other = monomial.swap(var[i], var[i + 1])
                 if self[other] != self[monomial]:
                     return False
         return True
+
+    def symmetrize(self, n):
+        var = ['x%i' % i for i in range(1, n + 1)]
+        ans = Polynomial()
+        for mon, coeff in self.items():
+            for permutation in set(itertools.permutations([mon[x] for x in var])):
+                ans += Monomial.from_dictionary({var[i]: a for i, a in enumerate(permutation) if a}) * coeff
+        return ans
 
     def lowest_degree_terms(self):
         degrees = {m.degree() for m in self}
@@ -141,6 +154,34 @@ class Polynomial(Vector):
             mon: val for mon, val in self.items()
             if mon.degree() == m
         })
+
+    @classmethod
+    def schur_s(cls, mu, n,):
+        dictionary = defaultdict(int)
+        for partition, count in Tableau.count_semistandard_marked(mu, n).items():
+            dictionary[Monomial.from_partition(partition)] += count
+        return Polynomial(dictionary)
+
+    @classmethod
+    def stable_grothendieck_s(cls, mu, n):
+        dictionary = defaultdict(int)
+        for partition, count in Tableau.count_semistandard_marked_setvalued(mu, n).items():
+            dictionary[Monomial.from_partition(partition)] += count
+        return Polynomial(dictionary)
+
+    @classmethod
+    def schur(cls, mu, n):
+        dictionary = defaultdict(int)
+        for partition, count in Tableau.count_semistandard(mu, n).items():
+            dictionary[Monomial.from_partition(partition)] += count
+        return Polynomial(dictionary)
+
+    @classmethod
+    def stable_grothendieck(cls, mu, n):
+        dictionary = defaultdict(int)
+        for partition, count in Tableau.count_semistandard_setvalued(mu, n).items():
+            dictionary[Monomial.from_partition(partition)] += count
+        return Polynomial(dictionary)
 
     @classmethod
     def slow_schur_s(cls, mu, n,):
