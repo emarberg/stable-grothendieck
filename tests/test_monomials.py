@@ -55,14 +55,15 @@ def test_from_tableau():
 
 
 def test_symmetric_functions():
-    for mu in [(), (1,), (2,), (2, 1), (3, 2, 2, 1), (3, 3, 2, 1, 1)]:
-        for n in range(7):
-            f = Polynomial.schur(mu, n)
-            g = Polynomial.stable_grothendieck(mu, n)
-            print(mu, n)
-            print(f)
-            print(g)
-            print()
+    for mu in [(), (1,), (1, 1), (2,), (2, 1)]:
+        for n in range(5):
+            f = Polynomial.slow_schur(mu, n)
+            g = Polynomial.slow_stable_grothendieck(mu, n)
+            h = Polynomial.slow_schur_s(mu, n)
+            k = Polynomial.slow_stable_grothendieck_s(mu, n)
             assert g.lowest_degree_terms() == f
-            # assert g.is_symmetric(n)
-            # assert f.is_symmetric(n)
+            assert k.lowest_degree_terms() == h
+            assert f.is_symmetric(n)
+            assert g.is_symmetric(n)
+            assert h.is_symmetric(n)
+            assert k.is_symmetric(n)

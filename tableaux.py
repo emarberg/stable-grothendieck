@@ -1,10 +1,25 @@
 from collections import defaultdict
 
+COUNT_SEMISTANDARD_CACHE = {}
+COUNT_SEMISTANDARD_SETVALUED_CACHE = {}
+COUNT_SEMISTANDARD_MARKED_CACHE = {}
+COUNT_SEMISTANDARD_MARKED_SETVALUED_CACHE = {}
 
 SEMISTANDARD_CACHE = {}
 SEMISTANDARD_SETVALUED_CACHE = {}
+SEMISTANDARD_MARKED_CACHE = {}
+SEMISTANDARD_MARKED_SETVALUED_CACHE = {}
 
 HORIZONTAL_STRIPS_CACHE = {}
+
+
+def nchoosek(m, k):
+    ans = 1
+    for i in range(k):
+        ans *= m - i
+    for i in range(k):
+        ans //= i + 1
+    return ans
 
 
 class Tableau:
@@ -14,7 +29,7 @@ class Tableau:
             v = mapping[(i, j)]
             if type(v) == tuple:
                 assert all(type(i) == int for i in v)
-                return v
+                return tuple(sorted(v))
             else:
                 assert type(v) == int
                 return (v,)
@@ -37,6 +52,13 @@ class Tableau:
     def __iter__(self):
         for i, j in sorted(self.boxes):
             yield i, j, self.boxes[(i, j)]
+
+    @classmethod
+    def transpose_partition(cls, mu):
+        if mu:
+            return tuple(len([i for i in range(len(mu)) if mu[i] > j]) for j in range(mu[0]))
+        else:
+            return mu
 
     def find(self, v):
         return [(i, j) for i, j, values in self if v in values]
@@ -114,39 +136,71 @@ class Tableau:
                     if nu[i] < mu[i]
                 }
         return HORIZONTAL_STRIPS_CACHE[mu]
-        # for nu, diff in HORIZONTAL_STRIPS_CACHE[mu]:
-        #     for v in range(2**len(corners)):
-        #         thisdiff = diff
-        #         for i in range(len(corners)):
-        #             thisdiff = thisdiff if v % 2 == 0 else thisdiff | {corners[i]}
-        #             v = v // 2
-        #         yield nu, thisdiff,
+
+    @classmethod
+    def _vertical_strips(cls, mu):
+        ans = []
+        for nu, diff, corners in cls._horizontal_strips(cls.transpose_partition(mu)):
+            nu = cls.transpose_partition(nu)
+            diff = {(j, i) for (i, j) in diff}
+            corners = [(j, i) for (i, j) in corners]
+            ans.append((nu, diff, corners))
+        return ans
 
     @classmethod
     def semistandard(cls, mu, n, setvalued=False):
-        def nchoosek(m, k):
-            ans = 1
-            for i in range(k):
-                ans *= m - i
-            for i in range(k):
-                ans //= i + 1
-            return ans
-
         cache = SEMISTANDARD_SETVALUED_CACHE if setvalued else SEMISTANDARD_CACHE
         if (mu, n) not in cache:
-            ans = defaultdict(int)
-            if n == 0 and mu == tuple():
-                ans[()] = 1
+            ans = set()
+            if mu == tuple():
+                ans = {Tableau()}
             elif n > 0:
                 for nu, diff, corners in cls._horizontal_strips(mu):
-                    for partition, count in cls.semistandard(nu, n - 1, setvalued).items():
-                        for i in range(len(corners) + 1 if setvalued else 1):
-                            if n > 1 and len(diff) + i > partition[-1]:
-                                break
-                            ans[partition + (len(diff) + i,)] += count * nchoosek(len(corners), i)
+                        for aug in cls._subsets(diff, corners, setvalued):
+                            for tab in cls.semistandard(nu, n - 1, setvalued):
+                                for (i, j) in aug:
+                                    tab = tab.add(i, j, n)
+                                ans.add(tab)
             cache[(mu, n)] = ans
         return cache[(mu, n)]
 
     @classmethod
     def semistandard_setvalued(cls, mu, n):
         return cls.semistandard(mu, n, True)
+
+    @classmethod
+    def semistandard_marked(cls, mu, n, setvalued=False):
+        cache = SEMISTANDARD_MARKED_SETVALUED_CACHE if setvalued else SEMISTANDARD_MARKED_CACHE
+        if (mu, n) not in cache:
+            ans = set()
+            if mu == tuple():
+                ans = {Tableau()}
+            elif n > 0:
+                for nu1, diff1, corners1 in cls._horizontal_strips(mu):
+                    for nu2, diff2, corners2 in cls._vertical_strips(nu1):
+                        for aug1 in cls._subsets(diff1, corners1, setvalued):
+                            for aug2 in cls._subsets(diff2, corners2, setvalued):
+                                for tab in cls.semistandard_marked(nu2, n - 1, setvalued):
+                                    for (i, j) in aug1:
+                                        tab = tab.add(i, j, n)
+                                    for (i, j) in aug2:
+                                        tab = tab.add(i, j, -n)
+                                    ans.add(tab)
+            cache[(mu, n)] = ans
+        return cache[(mu, n)]
+
+    @classmethod
+    def semistandard_marked_setvalued(cls, mu, n):
+        return cls.semistandard_marked(mu, n, True)
+
+    @classmethod
+    def _subsets(cls, diff, corners, setvalued):
+        if setvalued:
+            for v in range(2**len(corners)):
+                thisdiff = diff
+                for i in range(len(corners)):
+                    thisdiff = thisdiff if v % 2 == 0 else thisdiff | {corners[i]}
+                    v = v // 2
+                yield thisdiff
+        else:
+            yield diff

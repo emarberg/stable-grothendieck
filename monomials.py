@@ -1,5 +1,6 @@
 from vectors import Vector
 from tableaux import Tableau
+from collections import defaultdict
 
 
 class Monomial:
@@ -142,21 +143,29 @@ class Polynomial(Vector):
         })
 
     @classmethod
-    def schur(cls, mu, n):
-        dictionary = {}
-        for partition, count in Tableau.semistandard(mu, n).items():
-            m = Monomial.from_partition(partition)
-            if m not in dictionary:
-                dictionary[m] = 0
-            dictionary[m] += count
+    def slow_schur_s(cls, mu, n,):
+        dictionary = defaultdict(int)
+        for tab in Tableau.semistandard_marked(mu, n):
+            dictionary[Monomial.from_tableau(tab)] += 1
         return Polynomial(dictionary)
 
     @classmethod
-    def stable_grothendieck(cls, mu, n):
-        dictionary = {}
-        for partition, count in Tableau.semistandard_setvalued(mu, n).items():
-            m = Monomial.from_partition(partition)
-            if m not in dictionary:
-                dictionary[m] = 0
-            dictionary[m] += count
+    def slow_stable_grothendieck_s(cls, mu, n):
+        dictionary = defaultdict(int)
+        for tab in Tableau.semistandard_marked_setvalued(mu, n):
+            dictionary[Monomial.from_tableau(tab)] += 1
+        return Polynomial(dictionary)
+
+    @classmethod
+    def slow_schur(cls, mu, n):
+        dictionary = defaultdict(int)
+        for tab in Tableau.semistandard(mu, n):
+            dictionary[Monomial.from_tableau(tab)] += 1
+        return Polynomial(dictionary)
+
+    @classmethod
+    def slow_stable_grothendieck(cls, mu, n):
+        dictionary = defaultdict(int)
+        for tab in Tableau.semistandard_setvalued(mu, n):
+            dictionary[Monomial.from_tableau(tab)] += 1
         return Polynomial(dictionary)

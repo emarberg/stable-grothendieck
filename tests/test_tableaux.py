@@ -1,6 +1,20 @@
 from tableaux import Tableau
 
 
+def test_transpose():
+    mu = ()
+    assert Tableau.transpose_partition(mu) == mu
+
+    mu = (1,)
+    assert Tableau.transpose_partition(mu) == mu
+
+    mu = (2,)
+    assert Tableau.transpose_partition(mu) == (1, 1)
+
+    mu = (5, 3, 3, 2, 2, 1, 1, 1, 1)
+    assert Tableau.transpose_partition(mu) == (9, 5, 3, 1, 1)
+
+
 def test_horizontal_strips():
     mu = tuple()
     assert list(Tableau._horizontal_strips(mu)) == [
@@ -94,4 +108,63 @@ def test_semistandard_setvalued():
         Tableau({(1, 1): 2, (1, 2): 2}),
         Tableau({(1, 1): 1, (1, 2): (1, 2)}),
         Tableau({(1, 1): (1, 2), (1, 2): 2}),
+    }
+
+
+def test_semistandard_marked():
+    mu = ()
+    assert Tableau.semistandard_marked(mu, 0) == {Tableau()}
+    assert Tableau.semistandard_marked(mu, 1) == {Tableau()}
+    assert Tableau.semistandard_marked(mu, 2) == {Tableau()}
+
+    mu = (1,)
+    assert Tableau.semistandard_marked(mu, 1) == {
+        Tableau({(1, 1): 1}),
+        Tableau({(1, 1): -1}),
+    }
+    assert Tableau.semistandard_marked(mu, 2) == {
+        Tableau({(1, 1): 1}),
+        Tableau({(1, 1): -1}),
+        Tableau({(1, 1): 2}),
+        Tableau({(1, 1): -2}),
+    }
+
+    mu = (3, 1)
+    print(Tableau.semistandard_marked(mu, 1))
+    assert Tableau.semistandard_marked(mu, 1) == {
+        Tableau({(1, 1): -1, (2, 1): -1, (1, 2): 1, (1, 3): 1}),
+        Tableau({(1, 1): -1, (2, 1): 1, (1, 2): 1, (1, 3): 1}),
+    }
+    mu = (3, 2)
+    assert Tableau.semistandard_marked(mu, 1) == set()
+
+
+def test_semistandard_marked_setvalued():
+    mu = ()
+    assert Tableau.semistandard_marked_setvalued(mu, 0) == {Tableau()}
+    assert Tableau.semistandard_marked_setvalued(mu, 1) == {Tableau()}
+    assert Tableau.semistandard_marked_setvalued(mu, 2) == {Tableau()}
+
+    mu = (1,)
+    assert Tableau.semistandard_marked_setvalued(mu, 1) == {
+        Tableau({(1, 1): 1}),
+        Tableau({(1, 1): -1}),
+        Tableau({(1, 1): (-1, 1)})
+    }
+    assert Tableau.semistandard_marked_setvalued(mu, 2) == {
+        Tableau({(1, 1): 1}),
+        Tableau({(1, 1): -1}),
+        Tableau({(1, 1): (-1, 1)}),
+        Tableau({(1, 1): 2}),
+        Tableau({(1, 1): -2}),
+        Tableau({(1, 1): (-2, 2)}),
+        Tableau({(1, 1): (1, 2)}),
+        Tableau({(1, 1): (1, -2)}),
+        Tableau({(1, 1): (1, -2, 2)}),
+        Tableau({(1, 1): (-1, 2)}),
+        Tableau({(1, 1): (-1, -2)}),
+        Tableau({(1, 1): (-1, -2, 2)}),
+        Tableau({(1, 1): (-1, 1, 2)}),
+        Tableau({(1, 1): (-1, 1, -2)}),
+        Tableau({(1, 1): (-1, 1, -2, 2)})
     }
