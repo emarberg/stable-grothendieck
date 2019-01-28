@@ -1,19 +1,52 @@
 from monomials import Monomial, Polynomial
-from tableaux import Tableau
+from tableaux import Tableau, Partition
+
+
+def test_destandardize():
+    mu = (2, 1)
+    n = 3
+    assert set(Monomial._destandardize(mu, n)) == {
+        (1, 2, 0),
+        (1, 0, 2),
+        (0, 1, 2),
+        (2, 1, 0),
+        (2, 0, 1),
+        (0, 2, 1),
+    }
+    assert len(list(Monomial._destandardize(mu, n))) == 6
+
+    mu = (2, 2)
+    n = 3
+    assert set(Monomial._destandardize(mu, n)) == {
+        (2, 2, 0),
+        (2, 0, 2),
+        (0, 2, 2),
+    }
+    assert len(list(Monomial._destandardize(mu, n))) == 3
 
 
 def test_basic():
-    x = Monomial('x')
+    x = Monomial(1, (1,))
     assert type(x) in [Monomial, Polynomial]
 
     f = x * x
+    print(x)
+    print(f)
+    print(type(f), f, Monomial(1, (2,)), f - Monomial(1, (2,)))
     assert type(f) in [Monomial, Polynomial]
+    assert f == Monomial(1, (2,))
+
+    x = Monomial(2, (1,))
+    print(x)
+    print(x * x)
+    assert x * x == Monomial(2, (2,)) + 2 * Monomial(2, (1, 1))
 
     f = x + 1
     assert type(f) in [Monomial, Polynomial]
 
     f = x * 1
     assert type(f) in [Monomial, Polynomial]
+    assert f == x
 
     f = x * 0
     assert type(f) in [Monomial, Polynomial]
@@ -23,40 +56,15 @@ def test_basic():
 
     f = x * -1 + x
     assert type(f) in [Monomial, Polynomial]
+    assert f.is_zero()
 
-    y = Monomial('y')
+    x = Monomial(2, (1,))
+    y = Monomial(2, (1, 1))
     assert type(y) in [Monomial, Polynomial]
 
     f = x * y
     assert type(f) in [Monomial, Polynomial]
-
-    f = x / y
-    assert type(f) in [Monomial, Polynomial]
-
-    f = x / y + y / x
-    assert type(f) in [Monomial, Polynomial]
-
-    f = (x / y + y / x) * (x / y + y / x) * (x / y + y / x)
-    assert type(f) in [Monomial, Polynomial]
-
-    f = (x / y + y / x)**3
-    assert type(f) in [Monomial, Polynomial]
-
-
-def test_from_tableau():
-    x1 = Monomial('x1')
-    x2 = Monomial('x2')
-
-    t = Tableau({(1, 1): 1, (1, 2): (1, 2)})
-    assert Monomial.from_tableau(t) == x1 ** 2 * x2
-
-    t = Tableau({(1, 1): (1, 2), (1, 2): 2})
-    assert Monomial.from_tableau(t) == x1 * x2 ** 2
-
-
-def test_symmetrize():
-    f = Polynomial.base(Monomial('x1'))
-    assert f.symmetrize(3) == Monomial('x1') + Monomial('x2') + Monomial('x3')
+    assert f == Monomial(2, (2, 1))
 
 
 def test_slow_symmetric_functions():
@@ -68,28 +76,26 @@ def test_slow_symmetric_functions():
             k = Polynomial.slow_stable_grothendieck_s(mu, n)
             assert g.lowest_degree_terms() == f
             assert k.lowest_degree_terms() == h
-            assert f.is_symmetric(n)
-            assert g.is_symmetric(n)
-            assert h.is_symmetric(n)
-            assert k.is_symmetric(n)
 
 
 def test_symmetric_functions():
-    for mu in Tableau.generate_partitions(6):
+    for mu in Partition.generate(6):
         for n in range(6):
             f = Polynomial.schur(mu, n)
             g = Polynomial.stable_grothendieck(mu, n)
 
             fs = Polynomial.slow_schur(mu, n)
             gs = Polynomial.slow_stable_grothendieck(mu, n)
+
             print(mu, n)
             print(f)
             print(fs)
-            print('*', f.symmetrize(n))
             print()
+
+            assert f == fs
+            assert g == gs
+
             h = Polynomial.schur_s(mu, n)
             k = Polynomial.stable_grothendieck_s(mu, n)
             assert g.lowest_degree_terms() == f
             assert k.lowest_degree_terms() == h
-            assert f.symmetrize(n) == fs
-            assert g.symmetrize(n) == gs

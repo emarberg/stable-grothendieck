@@ -32,7 +32,6 @@ class Vector:
         return len(self.dictionary)
 
     def __eq__(self, other):
-        assert type(other) == type(self)
         return len((self - other).dictionary) == 0
 
     def __iter__(self):

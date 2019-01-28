@@ -1,26 +1,26 @@
-from tableaux import Tableau
+from tableaux import Tableau, Partition
 
 
-def test_transpose_partition():
+def test_transpose():
     mu = ()
-    assert Tableau.transpose_partition(mu) == mu
+    assert Partition.transpose(mu) == mu
 
     mu = (1,)
-    assert Tableau.transpose_partition(mu) == mu
+    assert Partition.transpose(mu) == mu
 
     mu = (2,)
-    assert Tableau.transpose_partition(mu) == (1, 1)
+    assert Partition.transpose(mu) == (1, 1)
 
     mu = (5, 3, 3, 2, 2, 1, 1, 1, 1)
-    assert Tableau.transpose_partition(mu) == (9, 5, 3, 1, 1)
+    assert Partition.transpose(mu) == (9, 5, 3, 1, 1)
 
 
 def test_generate_partitions():
-    assert set(Tableau.generate_partitions(0)) == {()}
-    assert set(Tableau.generate_partitions(1)) == {(1,)}
-    assert set(Tableau.generate_partitions(2)) == {(1, 1), (2,)}
-    assert set(Tableau.generate_partitions(3)) == {(1, 1, 1), (2, 1), (3,)}
-    assert set(Tableau.generate_partitions(4)) == {(1, 1, 1, 1), (2, 1, 1), (2, 2), (3, 1), (4,)}
+    assert set(Partition.generate(0)) == {()}
+    assert set(Partition.generate(1)) == {(1,)}
+    assert set(Partition.generate(2)) == {(1, 1), (2,)}
+    assert set(Partition.generate(3)) == {(1, 1, 1), (2, 1), (3,)}
+    assert set(Partition.generate(4)) == {(1, 1, 1, 1), (2, 1, 1), (2, 2), (3, 1), (4,)}
 
 
 def test_horizontal_strips():

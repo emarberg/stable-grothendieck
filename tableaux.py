@@ -22,6 +22,38 @@ def nchoosek(m, k):
     return ans
 
 
+class Partition:
+
+    @classmethod
+    def sort(cls, mu, trim=False):
+        return tuple(reversed(sorted(filter(bool, mu)))) if trim else tuple(reversed(sorted(mu)))
+
+    @classmethod
+    def is_partition(cls, mu):
+        return all(mu[i - 1] >= mu[i] for i in range(1, len(mu))) and (mu == () or mu[-1] >= 0)
+
+    @classmethod
+    def is_strict_partition(cls, mu):
+        return all(mu[i - 1] > mu[i] for i in range(1, len(mu)))
+
+    @classmethod
+    def transpose(cls, mu):
+        if mu:
+            return tuple(len([i for i in range(len(mu)) if mu[i] > j]) for j in range(mu[0]))
+        else:
+            return mu
+
+    @classmethod
+    def generate(cls, n, max_part=None):
+        if n == 0:
+            yield ()
+        else:
+            max_part = n if (max_part is None or max_part > n) else max_part
+            for i in range(1, max_part + 1):
+                for mu in cls.generate(n - i, i):
+                    yield (i,) + mu
+
+
 class Tableau:
 
     def __init__(self, mapping={}):
@@ -52,23 +84,6 @@ class Tableau:
     def __iter__(self):
         for i, j in sorted(self.boxes):
             yield i, j, self.boxes[(i, j)]
-
-    @classmethod
-    def transpose_partition(cls, mu):
-        if mu:
-            return tuple(len([i for i in range(len(mu)) if mu[i] > j]) for j in range(mu[0]))
-        else:
-            return mu
-
-    @classmethod
-    def generate_partitions(cls, n, max_part=None):
-        if n == 0:
-            yield ()
-        else:
-            max_part = n if (max_part is None or max_part > n) else max_part
-            for i in range(1, max_part + 1):
-                for mu in cls.generate_partitions(n - i, i):
-                    yield (i,) + mu
 
     def find(self, v):
         return [(i, j) for i, j, values in self if v in values]
@@ -127,6 +142,13 @@ class Tableau:
         array = self._string_array()
         return '\n' + '\n'.join([' '.join(line) for line in reversed(array)]) + '\n'
 
+    def weight(self, n):
+        ans = n * [0]
+        for i, j, v in self:
+            for x in v:
+                ans[abs(x) - 1] += 1
+        return tuple(ans)
+
     @classmethod
     def _horizontal_strips(cls, mu):
         core = tuple(mu[i + 1] if i + 1 < len(mu) else 0 for i in range(len(mu)))
@@ -150,8 +172,8 @@ class Tableau:
     @classmethod
     def _vertical_strips(cls, mu):
         ans = []
-        for nu, diff, corners in cls._horizontal_strips(cls.transpose_partition(mu)):
-            nu = cls.transpose_partition(nu)
+        for nu, diff, corners in cls._horizontal_strips(Partition.transpose(mu)):
+            nu = Partition.transpose(nu)
             diff = {(j, i) for (i, j) in diff}
             corners = [(j, i) for (i, j) in corners]
             ans.append((nu, diff, corners))
