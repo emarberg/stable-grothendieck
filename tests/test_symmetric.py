@@ -1,5 +1,7 @@
-from monomials import Monomial, Polynomial
+from symmetric import Monomial, Polynomial
 from tableaux import Tableau, Partition
+import itertools
+import pytest
 
 
 def test_destandardize():
@@ -78,18 +80,26 @@ def test_slow_symmetric_functions():
             assert k.lowest_degree_terms() == h
 
 
+@pytest.mark.slow
 def test_symmetric_functions():
-    for mu in Partition.generate(6):
-        for n in range(6):
+    for mu in itertools.chain(*[Partition.generate(n + 1) for n in range(7)]):
+        for n in range(7):
+            print(mu, n)
+            print()
+
             f = Polynomial.schur(mu, n)
             g = Polynomial.stable_grothendieck(mu, n)
 
             fs = Polynomial.slow_schur(mu, n)
             gs = Polynomial.slow_stable_grothendieck(mu, n)
 
-            print(mu, n)
             print(f)
             print(fs)
+            print()
+            print(g)
+            print(gs)
+            print()
+            print()
             print()
 
             assert f == fs

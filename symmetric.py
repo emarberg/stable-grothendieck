@@ -1,5 +1,6 @@
 from vectors import Vector
 from tableaux import Tableau, Partition
+from cached import cached_value
 from collections import defaultdict
 import itertools
 
@@ -168,43 +169,31 @@ class Polynomial(Vector):
         })
 
     @classmethod
-    def _function(cls, n, tableaux):
+    def _vectorize(cls, n, tableaux):
         dictionary = defaultdict(int)
         for partition, count in tableaux.items():
             dictionary[Monomial(n, partition)] += count
         return Polynomial(dictionary)
 
-    @classmethod
-    def schur_s(cls, mu, n,):
-        cache = SCHUR_S_CACHE
-        if (mu, n) not in cache:
-            tableaux = Tableau.count_semistandard_marked(mu, n)
-            cache[(mu, n)] = cls._function(n, tableaux)
-        return cache[(mu, n)]
+    @cached_value(SCHUR_S_CACHE)
+    def schur_s(cls, mu, n):  # noqa
+        tableaux = Tableau.count_semistandard_marked(mu, n)
+        return cls._vectorize(n, tableaux)
 
-    @classmethod
-    def stable_grothendieck_s(cls, mu, n):
-        cache = STABLE_GROTHENDIECK_S_CACHE
-        if (mu, n) not in cache:
-            tableaux = Tableau.count_semistandard_marked_setvalued(mu, n)
-            cache[(mu, n)] = cls._function(n, tableaux)
-        return cache[(mu, n)]
+    @cached_value(STABLE_GROTHENDIECK_S_CACHE)
+    def stable_grothendieck_s(cls, mu, n):  # noqa
+        tableaux = Tableau.count_semistandard_marked_setvalued(mu, n)
+        return cls._vectorize(n, tableaux)
 
-    @classmethod
-    def schur(cls, mu, n):
-        cache = SCHUR_CACHE
-        if (mu, n) not in cache:
-            tableaux = Tableau.count_semistandard(mu, n)
-            cache[(mu, n)] = cls._function(n, tableaux)
-        return cache[(mu, n)]
+    @cached_value(SCHUR_CACHE)
+    def schur(cls, mu, n):  # noqa
+        tableaux = Tableau.count_semistandard(mu, n)
+        return cls._vectorize(n, tableaux)
 
-    @classmethod
-    def stable_grothendieck(cls, mu, n):
-        cache = STABLE_GROTHENDIECK_CACHE
-        if (mu, n) not in cache:
-            tableaux = Tableau.count_semistandard_setvalued(mu, n)
-            cache[(mu, n)] = cls._function(n, tableaux)
-        return cache[(mu, n)]
+    @cached_value(STABLE_GROTHENDIECK_CACHE)
+    def stable_grothendieck(cls, mu, n):  # noqa
+        tableaux = Tableau.count_semistandard_setvalued(mu, n)
+        return cls._vectorize(n, tableaux)
 
     @classmethod
     def schur_expansion(cls, f, n):
@@ -218,11 +207,10 @@ class Polynomial(Vector):
             return Vector()
 
     @classmethod
-    def _slow_function(cls, n, tableaux):
+    def _slow_vectorize(cls, n, tableaux):
         dictionary = defaultdict(int)
         for tab in tableaux:
             dictionary[tab.weight(n)] += 1
-        print(dictionary)
         assert all(dictionary[Partition.sort(alpha)] == dictionary[alpha] for alpha in dictionary)
         return Polynomial({
             Monomial(n, alpha): coeff
@@ -232,16 +220,16 @@ class Polynomial(Vector):
 
     @classmethod
     def slow_schur_s(cls, mu, n):
-        return cls._slow_function(n, Tableau.semistandard_marked(mu, n))
+        return cls._slow_vectorize(n, Tableau.semistandard_marked(mu, n))
 
     @classmethod
     def slow_stable_grothendieck_s(cls, mu, n):
-        return cls._slow_function(n, Tableau.semistandard_marked_setvalued(mu, n))
+        return cls._slow_vectorize(n, Tableau.semistandard_marked_setvalued(mu, n))
 
     @classmethod
     def slow_schur(cls, mu, n):
-        return cls._slow_function(n, Tableau.semistandard(mu, n))
+        return cls._slow_vectorize(n, Tableau.semistandard(mu, n))
 
     @classmethod
     def slow_stable_grothendieck(cls, mu, n):
-        return cls._slow_function(n, Tableau.semistandard_setvalued(mu, n))
+        return cls._slow_vectorize(n, Tableau.semistandard_setvalued(mu, n))
