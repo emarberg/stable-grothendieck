@@ -82,8 +82,9 @@ def test_slow_symmetric_functions():
 
 @pytest.mark.slow
 def test_symmetric_functions():
-    for mu in itertools.chain(*[Partition.generate(n + 1) for n in range(7)]):
-        for n in range(7):
+    nn = 6
+    for mu in itertools.chain(*[Partition.generate(n + 1) for n in range(nn)]):
+        for n in range(nn):
             print(mu, n)
             print()
 
@@ -109,3 +110,52 @@ def test_symmetric_functions():
             k = Polynomial.stable_grothendieck_s(mu, n)
             assert g.lowest_degree_terms() == f
             assert k.lowest_degree_terms() == h
+
+
+@pytest.mark.slow
+def test_strict_symmetric_functions():
+    nn = 6
+    for mu in itertools.chain(*[Partition.generate(n + 1, strict=True) for n in range(nn)]):
+        for n in range(nn):
+            print(mu, n)
+            print()
+
+            # Schur-P and GP
+
+            f = Polynomial.schur_p(mu, n)
+            g = Polynomial.stable_grothendieck_p(mu, n)
+
+            fs = Polynomial.slow_schur_p(mu, n)
+            gs = Polynomial.slow_stable_grothendieck_p(mu, n)
+
+            print(f)
+            print(fs)
+            print()
+            print(g)
+            print(gs)
+            print()
+            print()
+            print()
+
+            assert f == fs
+            assert g == gs
+
+            # Schur-Q and GQ
+
+            f = Polynomial.schur_q(mu, n)
+            g = Polynomial.stable_grothendieck_q(mu, n)
+
+            fs = Polynomial.slow_schur_q(mu, n)
+            gs = Polynomial.slow_stable_grothendieck_q(mu, n)
+
+            print(f)
+            print(fs)
+            print()
+            print(g)
+            print(gs)
+            print()
+            print()
+            print()
+
+            assert f == fs
+            assert g == gs

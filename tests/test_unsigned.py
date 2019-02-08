@@ -4,11 +4,11 @@ import pytest
 
 
 def _test(r, upper):
-    w = SignedPermutation.longest_element(r)
-    mu = tuple(i for i in range(r, 0, -1))
+    w = SignedPermutation.longest_unsigned(r)
+    mu = tuple(i for i in range(r - 1, 0, -2))
     for n in range(upper):
-        f = Polynomial.stable_grothendieck_s(mu, n, n)
-        g = w.signed_involution_stable_grothendieck(degree_bound=n)
+        f = Polynomial.stable_grothendieck_q(mu, n, n)
+        g = w.marked_stable_grothendieck(degree_bound=n)
         print(f)
         print()
         print(g)
@@ -21,7 +21,7 @@ def _test(r, upper):
 
 
 def test_one():
-    _test(1, 12)
+    _test(1, 8)
 
 
 def test_two():
@@ -30,17 +30,17 @@ def test_two():
 
 @pytest.mark.slow
 def test_three():
-    _test(3, 10)
+    _test(3, 6)
 
 
 @pytest.mark.slow
 def test_four():
-    _test(4, 10)
+    _test(4, 6)
 
 
 @pytest.mark.slow
 def test_five():
-    _test(5, 8)
+    _test(5, 6)
 
 
 @pytest.mark.slow

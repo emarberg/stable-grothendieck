@@ -99,9 +99,7 @@ class Vector:
         else:
             return ' - %s*' % -coeff
 
-    def __repr__(self):
-        printer = self.printer or repr
-        sorted_items = sorted([(printer(key), value) for key, value in self.items()])
+    def _print_sorted(self, sorted_items):
         base = ''.join(self._repr_coeff(value, key) + key for key, value in sorted_items)
         if base.startswith(' + '):
             return base[3:]
@@ -109,3 +107,8 @@ class Vector:
             return '-' + base[3:]
         else:
             return '0'
+
+    def __repr__(self):
+        printer = self.printer or repr
+        sorted_items = sorted([(printer(key), value) for key, value in self.items()])
+        return self._print_sorted(sorted_items)

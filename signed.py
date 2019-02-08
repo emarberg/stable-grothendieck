@@ -110,21 +110,152 @@ class SignedPermutation:
                 if self == pi:
                     yield w
 
-    def signed_involution_stable_grothendieck(self, degree_bound):
-        n = degree_bound
-        ans = Vector()
-        for w in self.get_involution_hecke_words(n):
-            ans += Word.quasisymmetrize(w, Word.unimodal_zeta)
+    def filter_involution_hecke_words(self, length_bound):
+        for level in self.involution_hecke_levels(self.rank, length_bound):
+            for w in [w for pi, w in level if self == pi]:
+                print(w, ':', Word.quasisymmetrize(w, Word.decreasing_zeta))
+            print()
+
+    @classmethod
+    def marked_hecke_words(cls, n, length_bound=-1):
+        for level in cls.marked_hecke_levels(n, length_bound):
+            for pi, w in level:
+                yield w
+
+    @classmethod
+    def marked_hecke_levels(cls, n, length_bound=-1):
+        def valid(w):
+            # if len(w) > 2 and (w[0] + 1) // 2 == (w[1] + 1) // 2 and w[0] != w[1]:
+            #     return False
+            # if w[:4] in [
+            #     (6, 5, 1, 4), (6, 5, 2, 4),
+            #     (2, 1, 6, 4), (2, 1, 5, 4),
+            #     (1, 2, 5, 4), (1, 2, 6, 4),
+            #     (5, 6, 1, 4), (5, 6, 2, 4),
+            # ]:
+            #     return False
+            # if w[:5] in [
+            #     (6, 5, 2, 1, 4), (2, 1, 6, 5, 4),
+            #     (6, 2, 6, 5, 4), (2, 6, 2, 1, 4),
+            # ]:
+            #     return False
+            return True
+        start = (cls.identity(n), ())
+        level = {start}
+        while level:
+            next_level = set()
+            yield level
+            for pi, w in level:
+                for i in range(n):
+                    s = SignedPermutation.s_i(i, n)
+                    sigma = s % pi % s
+                    ww = w + (2 * i,)
+                    if valid(ww):
+                        next_level.add((sigma, ww))
+                    if s * sigma == sigma * s:
+                        ww = w + (2 * i - 1,)
+                        if valid(ww):
+                            next_level.add((sigma, ww))
+            level = next_level
+            if length_bound == 0:
+                break
+            length_bound -= 1
+
+    def get_marked_hecke_words(self, length_bound):
+        for level in self.marked_hecke_levels(self.rank, length_bound):
+            for pi, w in level:
+                if self == pi:
+                    yield w
+
+    def filter_marked_hecke_words(self, length_bound):
+        for level in self.marked_hecke_levels(self.rank, length_bound):
+            qq = []
+            for w in [w for pi, w in level if self == pi]:
+                qq += [(w, Word.quasisymmetrize(w, Word.decreasing_zeta))]
+            for w, q in sorted(qq, key=lambda m: tuple(reversed(sorted(max(m[1]))))):
+                # letters = tuple(sorted([i // 2 if i % 2 == 0 else -(i + 1) // 2 for i in w]))
+                ww = '(' + ', '.join([
+                    '+' + str(i // 2) if i % 2 == 0 else str(-(i + 1) // 2)
+                    for i in w
+                ]) + ')'
+                print(ww, ':', q)
+            print()
+        ans, rows = self.marked_stable_grothendieck(length_bound)
+
+        print(ans)
+        print()
 
         def sort(t):
             return tuple(reversed(sorted(t)))
 
-        assert all(ans.dictionary[sort(alpha)] == ans.dictionary[alpha] for alpha in ans.dictionary)
+        first = rows[0]
+        sorted_keys = sorted([key for key in first])
+        split = str(first).split(' + ')
+        for i in range(len(split) - 1):
+            split[i] += ' + '
+        print(first)
+        for row in rows[1:]:
+            line = ''
+            for i in range(len(sorted_keys)):
+                k = [k for k in row if sort(k) == sorted_keys[i]]
+                if k:
+                    s = str(Vector({k[0]: row[k[0]]}))
+                    line += s + (len(split[i]) - len(s)) * ' '
+                else:
+                    line += len(split[i]) * ' '
+            print(line)
+        print()
+
+    @classmethod
+    def _symmetrize(cls, vector, n, check=True):
+        def sort(t):
+            return tuple(reversed(sorted(t)))
+
         ans = Polynomial({
-            Monomial(n, alpha): ans.dictionary[alpha]
-            for alpha in ans.dictionary if sort(alpha) == alpha
+            Monomial(n, alpha): max(vector[a] for a in vector if sort(a) == sort(alpha))
+            for alpha in vector if sort(alpha) == alpha
         })
+
+        if check:
+            assert all(
+                vector.dictionary[sort(alpha)] == vector.dictionary[alpha]
+                for alpha in vector.dictionary
+            )
         return ans
+
+    def signed_involution_stable_grothendieck(self, degree_bound):
+        ans = Vector()
+        for w in self.get_involution_hecke_words(degree_bound):
+            ans += Word.quasisymmetrize(w, Word.unimodal_zeta)
+        return self._symmetrize(ans, degree_bound)
+
+    def involution_stable_grothendieck(self, degree_bound):
+        ans = Vector()
+        for w in self.get_involution_hecke_words(degree_bound):
+            ans += Word.quasisymmetrize(w, Word.decreasing_zeta)
+        return self._symmetrize(ans, degree_bound)
+
+    def marked_stable_grothendieck(self, degree_bound):
+        ans = Vector()
+        for w in self.get_marked_hecke_words(degree_bound):
+            ans += Word.quasisymmetrize(w, Word.decreasing_zeta)
+
+        def sort(t):
+            return tuple(reversed(sorted(t)))
+
+        base = Vector({alpha: ans[alpha] for alpha in ans if sort(alpha) == alpha})
+        left = ans - base
+        rows = [base]
+        while left:
+            r = {}
+            for alpha in left:
+                if sort(alpha) not in r:
+                    r[sort(alpha)] = (alpha, left[alpha])
+            base = Vector({alpha: c for (alpha, c) in r.values()})
+            left = left - base
+            rows.append(base)
+
+        return self._symmetrize(ans, degree_bound, check=False), rows
 
     def get_reduced_word(self):
         if self.left_descent_set:
@@ -180,6 +311,10 @@ class SignedPermutation:
     @classmethod
     def longest_element(cls, n):
         return SignedPermutation(*[-i for i in range(1, n + 1)])
+
+    @classmethod
+    def longest_unsigned(cls, n):
+        return SignedPermutation(*[i for i in range(n, 0, -1)])
 
     @classmethod
     def s_i(cls, i, n):

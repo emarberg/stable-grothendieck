@@ -3,11 +3,15 @@ from collections import defaultdict
 
 COUNT_SEMISTANDARD_CACHE = {}
 COUNT_SEMISTANDARD_MARKED_CACHE = {}
+COUNT_SEMISTANDARD_SHIFTED_MARKED_CACHE = {}
 
 SEMISTANDARD_CACHE = {}
 SEMISTANDARD_MARKED_CACHE = {}
+SEMISTANDARD_SHIFTED_MARKED_CACHE = {}
 
 HORIZONTAL_STRIPS_CACHE = {}
+SHIFTED_HORIZONTAL_STRIPS_CACHE = {}
+SHIFTED_VERTICAL_STRIPS_CACHE = {}
 
 
 def nchoosek(m, k):
@@ -41,14 +45,16 @@ class Partition:
             return mu
 
     @classmethod
-    def generate(cls, n, max_part=None):
+    def generate(cls, n, max_part=None, strict=False):
         if n == 0:
             yield ()
         else:
             max_part = n if (max_part is None or max_part > n) else max_part
             for i in range(1, max_part + 1):
                 for mu in cls.generate(n - i, i):
-                    yield (i,) + mu
+                    nu = (i,) + mu
+                    if not strict or Partition.is_strict_partition(nu):
+                        yield (i,) + mu
 
 
 class Tableau:
@@ -175,6 +181,49 @@ class Tableau:
             ans.append((nu, diff, corners))
         return ans
 
+    @cached_value(SHIFTED_HORIZONTAL_STRIPS_CACHE)
+    def _shifted_horizontal_strips(cls, mu):  # noqa
+        assert Partition.is_strict_partition(mu)
+        core = tuple(mu[i + 1] + 1 if i + 1 < len(mu) else 0 for i in range(len(mu)))
+        ans = []
+        level = {core}
+        while level:
+            for nu in level:
+                diff = {(i + 1, i + j + 1) for i in range(len(mu)) for j in range(nu[i], mu[i])}
+                nu = nu if nu and nu[-1] > 0 else nu[:-1]
+                corners = [(i + 1, i + nu[i]) for i in range(len(nu)) if core[i] < nu[i]]
+                ans.append((nu, diff, corners))
+            level = {
+                nu[:i] + (nu[i] + 1,) + nu[i + 1:]
+                for i in range(len(mu))
+                for nu in level
+                if nu[i] < mu[i]
+            }
+        return ans
+
+    @cached_value(SHIFTED_VERTICAL_STRIPS_CACHE)
+    def _shifted_vertical_strips(cls, mu):  # noqa
+        assert Partition.is_strict_partition(mu)
+        core = tuple(a - 1 for a in mu)
+        ans = []
+        level = {core}
+        while level:
+            for nu in level:
+                diff = {(i + 1, i + j + 1) for i in range(len(mu)) for j in range(nu[i], mu[i])}
+                nu = nu if nu and nu[-1] > 0 else nu[:-1]
+                corners = [
+                    (i + 1, i + nu[i]) for i in range(len(nu))
+                    if core[i] < nu[i] and (i == len(nu) - 1 or 1 + nu[i + 1] < nu[i])
+                ]
+                ans.append((nu, diff, corners))
+            level = {
+                nu[:i] + (nu[i] + 1,) + nu[i + 1:]
+                for i in range(len(mu))
+                for nu in level
+                if nu[i] < mu[i] and (i == 0 or 1 + nu[i] < nu[i - 1])
+            }
+        return ans
+
     @cached_value(COUNT_SEMISTANDARD_CACHE)
     def count_semistandard(cls, mu, n, setvalued=False):  # noqa
         ans = defaultdict(int)
@@ -223,6 +272,36 @@ class Tableau:
     def count_semistandard_marked_setvalued(cls, mu, n):
         return cls.count_semistandard_marked(mu, n, True)
 
+    @cached_value(COUNT_SEMISTANDARD_SHIFTED_MARKED_CACHE)
+    def count_semistandard_shifted_marked(cls, mu, n, diagonalprimes=True, setvalued=False):  # noqa
+        assert Partition.is_strict_partition(mu)
+        ans = defaultdict(int)
+        if mu == tuple():
+            ans[()] = 1
+        elif n > 0:
+            for nu1, diff1, corners1 in cls._shifted_horizontal_strips(mu):
+                for nu2, diff2, corners2 in cls._shifted_vertical_strips(nu1):
+                    if not diagonalprimes:
+                        if any(i == j for (i, j) in diff2):
+                            continue
+                        corners2 = [(i, j) for (i, j) in corners2 if i != j]
+                    for partition, count in cls.count_semistandard_shifted_marked(nu2, n - 1, diagonalprimes, setvalued).items():
+                        for i in range(len(corners1) + 1 if setvalued else 1):
+                            for j in range(len(corners2) + 1 if setvalued else 1):
+                                m = len(diff1) + len(diff2) + i + j
+                                if m == 0:
+                                    ans[partition] += count
+                                elif len(partition) < n - 1 or (partition and m > partition[-1]):
+                                    break
+                                else:
+                                    updated_partition = partition + (m,)
+                                    ans[updated_partition] += count * nchoosek(len(corners1), i) * nchoosek(len(corners2), j)
+        return ans
+
+    @classmethod
+    def count_semistandard_shifted_marked_setvalued(cls, mu, n, diagonalprimes=True):
+        return cls.count_semistandard_shifted_marked(mu, n, diagonalprimes, True)
+
     @cached_value(SEMISTANDARD_CACHE)
     def semistandard(cls, mu, n, setvalued=False):  # noqa
         ans = set()
@@ -262,6 +341,33 @@ class Tableau:
     @classmethod
     def semistandard_marked_setvalued(cls, mu, n):
         return cls.semistandard_marked(mu, n, True)
+
+    @cached_value(SEMISTANDARD_SHIFTED_MARKED_CACHE)
+    def semistandard_shifted_marked(cls, mu, n, diagonalprimes=True, setvalued=False):  # noqa
+        assert Partition.is_strict_partition(mu)
+        ans = set()
+        if mu == tuple():
+            ans = {Tableau()}
+        elif n > 0:
+            for nu1, diff1, corners1 in cls._shifted_horizontal_strips(mu):
+                for nu2, diff2, corners2 in cls._shifted_vertical_strips(nu1):
+                    if not diagonalprimes:
+                        if any(i == j for (i, j) in diff2):
+                            continue
+                        corners2 = [(i, j) for (i, j) in corners2 if i != j]
+                    for aug1 in cls._subsets(diff1, corners1, setvalued):
+                        for aug2 in cls._subsets(diff2, corners2, setvalued):
+                            for tab in cls.semistandard_shifted_marked(nu2, n - 1, diagonalprimes, setvalued):
+                                for (i, j) in aug1:
+                                    tab = tab.add(i, j, n)
+                                for (i, j) in aug2:
+                                    tab = tab.add(i, j, -n)
+                                ans.add(tab)
+        return ans
+
+    @classmethod
+    def semistandard_shifted_marked_setvalued(cls, mu, n, diagonalprimes=True):
+        return cls.semistandard_shifted_marked(mu, n, diagonalprimes, True)
 
     @classmethod
     def _subsets(cls, diff, corners, setvalued):
