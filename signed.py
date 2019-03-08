@@ -65,6 +65,41 @@ class SignedPermutation:
         for args in itertools.permutations(range(1, n + 1)):
             yield SignedPermutation(*args)
 
+    @classmethod
+    def fpf_involutions(cls, n):
+        s = {i: cls.s_i(i, n) for i in range(1, n)}
+        if n % 2 == 0:
+            start = cls.identity(n)
+            for i in range(1, n, 2):
+                start *= s[i]
+            level = {start}
+            while level:
+                next_level = set()
+                for w in level:
+                    yield w
+                    for i in range(1, n):
+                        if w(i) < w(i + 1):
+                            next_level.add(s[i] * w * s[i])
+                level = next_level
+
+    def fpf_involution_shape(self):
+        cycles = [(a, self(a)) for a in range(1, self.rank + 1) if a < self(a)]
+        filtered = sorted([(a, b) for a, b in cycles if any(i < b and a < j < b for i, j in cycles)])
+        r = len(filtered)
+        if r == 0:
+            return ()
+        phi = [a for a, b in filtered]
+        top = [b for a, b in filtered]
+        n = top[0] - 1
+        if phi[-1] >= n + 1 or top != [n + i + 1 for i in range(r)]:
+            return None
+        return tuple(n - a for a in phi)
+
+    def is_fpf_grassmannian(self):
+        if any(self(i) < 0 or self(i) == i or self(self(i)) != i for i in range(1, 1 + self.rank)):
+            return False
+        return self._fpf_involution_shape() is not None
+
     # @classmethod
     # def involutions(cls, n):
     #     for w in Permutation.involutions(n):
@@ -80,6 +115,41 @@ class SignedPermutation:
     #                         newline[j] *= -1
     #                 v = v // 2
     #             yield SignedPermutation(*newline)
+
+    @classmethod
+    def symplectic_hecke_words(cls, n, length_bound=-1):
+        assert n % 2 == 0
+        for level in cls.symplectic_hecke_levels(n, length_bound):
+            for pi, w in level:
+                yield w
+
+    @classmethod
+    def symplectic_hecke_levels(cls, n, length_bound=-1):
+        assert n % 2 == 0
+        a = cls.identity(n)
+        for i in range(1, n, 2):
+            a *= cls.s_i(i, n)
+        start = (a, ())
+        level = {start}
+        while level:
+            next_level = set()
+            yield level
+            for pi, w in level:
+                for i in range(n):
+                    s = SignedPermutation.s_i(i, n)
+                    if pi(i) != i + 1:
+                        sigma = s % pi % s
+                        next_level.add((sigma, w + (i,)))
+            level = next_level
+            if length_bound == 0:
+                break
+            length_bound -= 1
+
+    def get_symplectic_hecke_words(self, length_bound):
+        for level in self.symplectic_hecke_levels(self.rank, length_bound):
+            for pi, w in level:
+                if self == pi:
+                    yield w
 
     @classmethod
     def involution_hecke_words(cls, n, length_bound=-1):
@@ -227,6 +297,12 @@ class SignedPermutation:
         ans = Vector()
         for w in self.get_involution_hecke_words(degree_bound):
             ans += Word.quasisymmetrize(w, Word.unimodal_zeta)
+        return self._symmetrize(ans, degree_bound)
+
+    def symplectic_stable_grothendieck(self, degree_bound):
+        ans = Vector()
+        for w in self.get_symplectic_hecke_words(degree_bound):
+            ans += Word.quasisymmetrize(w, Word.decreasing_zeta)
         return self._symmetrize(ans, degree_bound)
 
     def involution_stable_grothendieck(self, degree_bound):
