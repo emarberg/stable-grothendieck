@@ -6,12 +6,17 @@ COUNT_SEMISTANDARD_MARKED_CACHE = {}
 COUNT_SEMISTANDARD_SHIFTED_MARKED_CACHE = {}
 
 SEMISTANDARD_CACHE = {}
+SEMISTANDARD_RPP_CACHE = {}
 SEMISTANDARD_MARKED_CACHE = {}
 SEMISTANDARD_SHIFTED_MARKED_CACHE = {}
 
 HORIZONTAL_STRIPS_CACHE = {}
 SHIFTED_HORIZONTAL_STRIPS_CACHE = {}
 SHIFTED_VERTICAL_STRIPS_CACHE = {}
+
+RPP_HORIZONTAL_STRIPS_CACHE = {}
+SHIFTED_RPP_HORIZONTAL_STRIPS_CACHE = {}
+SHIFTED_RPP_VERTICAL_STRIPS_CACHE = {}
 
 
 def nchoosek(m, k):
@@ -72,7 +77,7 @@ class Tableau:
         self.boxes = {(i, j): tuplize(i, j) for i, j in mapping}
 
     def __eq__(self, other):
-        assert type(other) == Tableau
+        assert type(other) == type(self)
         return self.boxes == other.boxes
 
     def __hash__(self):
@@ -98,9 +103,9 @@ class Tableau:
         mapping = self.boxes.copy()
         if (i, j) not in self:
             mapping[(i, j)] = v
-            return Tableau(mapping)
+            return self.__class__(mapping)
         mapping[(i, j)] = tuple(sorted(mapping[(i, j)] + (v,)))
-        return Tableau(mapping)
+        return self.__class__(mapping)
 
     def remove(self, i, j, v):
         assert (i, j) in self
@@ -112,13 +117,13 @@ class Tableau:
         mapping[(i, j)] = self.get(i, j)[:k] + self.get(i, j)[k + 1:]
         if len(mapping[(i, j)]) == 0:
             del mapping[(i, j)]
-        return Tableau(mapping)
+        return self.__class__(mapping)
 
     def clear(self, i, j):
         assert (i, j) in self
         mapping = self.boxes.copy()
         del mapping[(i, j)]
-        return Tableau(mapping)
+        return self.__class__(mapping)
 
     def max_row(self):
         return max([i for i, j in self.boxes]) if self.boxes else 0
@@ -224,6 +229,90 @@ class Tableau:
             }
         return ans
 
+    @classmethod
+    def _rpp_vertical_strips(cls, mu):  # noqa
+        return [
+            (Partition.transpose(nu), {(j, i) for i, j in diff})
+            for nu, diff in cls._rpp_horizontal_strips(Partition.transpose(mu))
+        ]
+
+    @cached_value(RPP_HORIZONTAL_STRIPS_CACHE)
+    def _rpp_horizontal_strips(cls, mu):  # noqa
+        def remove_box(nu, i):
+            if i < len(nu) and nu[i] > 0:
+                nu = nu[:i] + (nu[i] - 1,) + nu[i + 1:]
+                while nu and nu[-1] == 0:
+                    nu = nu[:-1]
+                if all(nu[j] >= nu[j + 1] for j in range(len(nu) - 1)):
+                    yield nu
+
+        def remove_all_boxes(nu, i):
+            queue = [nu]
+            while queue:
+                nu, queue = queue[0], queue[1:]
+                yield nu
+                for x in remove_box(nu, i):
+                    queue.append(x)
+
+        def diff(nu):
+            ans = set()
+            for i, part in enumerate(mu):
+                subpart = nu[i] if i < len(nu) else 0
+                for j in range(subpart, part):
+                    ans.add((i + 1, j + 1))
+            return ans
+
+        ans = set()
+        queue = [(mu, len(mu) - 1)]
+        while queue:
+            nu, i = queue[0]
+            queue = queue[1:]
+            if i >= 0:
+                for nu in remove_all_boxes(nu, i):
+                    ans.add(nu)
+                    queue.append((nu, i - 1))
+ 
+        return [(nu, diff(nu)) for nu in ans]
+
+    @cached_value(SHIFTED_RPP_HORIZONTAL_STRIPS_CACHE)
+    def _shifted_rpp_horizontal_strips(cls, mu):  # noqa
+        assert Partition.is_strict_partition(mu)
+        def remove_box(nu, i):
+            if i < len(nu) and nu[i] > 0:
+                nu = nu[:i] + (nu[i] - 1,) + nu[i + 1:]
+                while nu and nu[-1] == 0:
+                    nu = nu[:-1]
+                if all(nu[j] > nu[j + 1] for j in range(len(nu) - 1)):
+                    yield nu
+
+        def remove_all_boxes(nu, i):
+            queue = [nu]
+            while queue:
+                nu, queue = queue[0], queue[1:]
+                yield nu
+                for x in remove_box(nu, i):
+                    queue.append(x)
+
+        def diff(nu):
+            ans = set()
+            for i, part in enumerate(mu):
+                subpart = nu[i] if i < len(nu) else 0
+                for j in range(subpart, part):
+                    ans.add((i + 1, i + j + 1))
+            return ans
+
+        ans = set()
+        queue = [(mu, len(mu) - 1)]
+        while queue:
+            nu, i = queue[0]
+            queue = queue[1:]
+            if i >= 0:
+                for nu in remove_all_boxes(nu, i):
+                    ans.add(nu)
+                    queue.append((nu, i - 1))
+ 
+        return [(nu, diff(nu)) for nu in ans]
+
     @cached_value(COUNT_SEMISTANDARD_CACHE)
     def count_semistandard(cls, mu, n, setvalued=False):  # noqa
         ans = defaultdict(int)
@@ -296,6 +385,19 @@ class Tableau:
                                 else:
                                     updated_partition = partition + (m,)
                                     ans[updated_partition] += count * nchoosek(len(corners1), i) * nchoosek(len(corners2), j)
+        return ans
+
+    @cached_value(SEMISTANDARD_RPP_CACHE)
+    def semistandard_rpp(cls, mu, n):  # noqa
+        ans = []
+        if mu == tuple():
+            ans = [ReversePlanePartition()]
+        elif n > 0:
+            for nu, diff in cls._rpp_vertical_strips(mu):
+                for tab in cls.semistandard_rpp(nu, n - 1):
+                    for (i, j) in diff:
+                        tab = tab.add(i, j, n)
+                    ans.append(tab)
         return ans
 
     @classmethod
@@ -380,3 +482,13 @@ class Tableau:
                 yield thisdiff
         else:
             yield diff
+
+
+class ReversePlanePartition(Tableau):
+
+    def weight(self, n):
+        ans = [set() for i in range(n)]
+        for i, j, v in self:
+            for x in v:
+                ans[abs(x) - 1].add(j)
+        return tuple(len(s) for s in ans)

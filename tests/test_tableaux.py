@@ -126,6 +126,108 @@ def test_shifted_vertical_strips():
     ]
 
 
+
+def test_shifted_rpp_horizontal_strips():
+    mu = ()
+    assert Tableau._shifted_rpp_horizontal_strips(mu) == []
+
+    mu = (1,)
+    assert Tableau._shifted_rpp_horizontal_strips(mu) == [
+        ((), {(1, 1)})
+    ]
+
+    mu = (2, 1)
+    assert {nu for nu, _ in Tableau._shifted_rpp_horizontal_strips(mu)} == {
+        (2,),
+        (1,), 
+        (),
+    }
+
+    mu = (3, 1)
+    assert {nu for nu, _ in Tableau._shifted_rpp_horizontal_strips(mu)} == {
+        (3,), 
+        (2,), 
+        (1,), 
+        (), 
+        (2, 1), 
+    }
+
+
+def test_rpp_horizontal_strips():
+    mu = ()
+    assert Tableau._rpp_horizontal_strips(mu) == []
+
+    mu = (1,)
+    assert Tableau._rpp_horizontal_strips(mu) == [
+        ((), {(1, 1)}),
+        ((1,), set()),
+    ]
+
+    mu = (1, 1)
+    assert {nu for nu, _ in Tableau._rpp_horizontal_strips(mu)} == {
+        (),
+        (1, 1),
+        (1,),
+    }
+
+    mu = (2, 1)
+    assert {nu for nu, _ in Tableau._rpp_horizontal_strips(mu)} == {
+        (2,),
+        (1, 1),
+        (1,), 
+        (),
+        (2, 1),
+    }
+
+    mu = (3, 1)
+    assert {nu for nu, _ in Tableau._rpp_horizontal_strips(mu)} == {
+        (3,), 
+        (2,), 
+        (1,), 
+        (), 
+        (2, 1), 
+        (1, 1),
+        (3, 1),
+    }
+
+    mu = (2, 1)
+    assert {nu for nu, _ in Tableau._rpp_vertical_strips(mu)} == {
+        (2,),
+        (1, 1),
+        (1,), 
+        (),
+        (2, 1),
+    }
+
+
+def test_shifted_rpp_horizontal_strips():
+    mu = ()
+    assert Tableau._shifted_rpp_horizontal_strips(mu) == []
+
+    mu = (1,)
+    assert Tableau._shifted_rpp_horizontal_strips(mu) == [
+        ((), {(1, 1)}),
+        ((1,), set())
+    ]
+
+    mu = (2, 1)
+    assert {nu for nu, _ in Tableau._shifted_rpp_horizontal_strips(mu)} == {
+        (2, 1),
+        (2,),
+        (1,), 
+        (),
+    }
+
+    mu = (3, 1)
+    assert {nu for nu, _ in Tableau._shifted_rpp_horizontal_strips(mu)} == {
+        (3, 1),
+        (3,), 
+        (2,), 
+        (1,), 
+        (), 
+        (2, 1), 
+    }
+
 def test_semistandard():
     mu = ()
     assert Tableau.semistandard(mu, 0) == {Tableau()}

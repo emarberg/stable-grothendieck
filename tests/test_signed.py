@@ -1,5 +1,5 @@
 from signed import SignedPermutation
-from symmetric import Polynomial
+from symmetric import SymmetricPolynomial
 import pytest
 
 
@@ -7,7 +7,7 @@ def _test(r, upper):
     w = SignedPermutation.longest_element(r)
     mu = tuple(i for i in range(r, 0, -1))
     for n in range(upper):
-        f = Polynomial.stable_grothendieck_s(mu, n, n)
+        f = SymmetricPolynomial.stable_grothendieck_s(mu, n, n)
         g = w.signed_involution_stable_grothendieck(degree_bound=n)
         print(f)
         print()

@@ -1,5 +1,5 @@
 import itertools
-from symmetric import Polynomial, Monomial
+from symmetric import SymmetricPolynomial, SymmetricMonomial
 from words import Word
 from vectors import Vector
 
@@ -281,8 +281,8 @@ class SignedPermutation:
         def sort(t):
             return tuple(reversed(sorted(t)))
 
-        ans = Polynomial({
-            Monomial(n, alpha): max(vector[a] for a in vector if sort(a) == sort(alpha))
+        ans = SymmetricPolynomial({
+            SymmetricMonomial(n, alpha): max(vector[a] for a in vector if sort(a) == sort(alpha))
             for alpha in vector if sort(alpha) == alpha
         })
 
@@ -295,8 +295,9 @@ class SignedPermutation:
 
     def signed_involution_stable_grothendieck(self, degree_bound):
         ans = Vector()
+        ell = self.involution_length()
         for w in self.get_involution_hecke_words(degree_bound):
-            ans += Word.quasisymmetrize(w, Word.unimodal_zeta)
+            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.unimodal_zeta)
         return self._symmetrize(ans, degree_bound)
 
     def symplectic_stable_grothendieck(self, degree_bound):
@@ -313,8 +314,9 @@ class SignedPermutation:
 
     def marked_stable_grothendieck(self, degree_bound):
         ans = Vector()
+        ell = self.involution_length()
         for w in self.get_marked_hecke_words(degree_bound):
-            ans += Word.quasisymmetrize(w, Word.decreasing_zeta)
+            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
 
         def sort(t):
             return tuple(reversed(sorted(t)))
@@ -379,6 +381,25 @@ class SignedPermutation:
 
     def involution_length(self):
         return (len(self.neg()) + len(self.pair()) + len(self)) // 2
+
+    def pair(self):
+        n = self.rank
+        return [
+            (a, self(a))
+            for a in range(-n, n + 1)
+            if 0 < abs(a) < self(a)
+        ]
+
+    def neg(self):
+        n = self.rank
+        return [(-a, -a) for a in range(1, n + 1) if self(a) == -a]
+
+    def fix(self):
+        n = self.rank
+        return [(a, a) for a in range(1, n + 1) if self(a) == a]
+
+    def cyc(self):
+        return sorted(self.pair() + self.neg() + self.fix())
 
     @classmethod
     def identity(cls, n):

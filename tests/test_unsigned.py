@@ -1,5 +1,5 @@
 from signed import SignedPermutation
-from symmetric import Polynomial
+from symmetric import SymmetricPolynomial
 import pytest
 
 
@@ -7,8 +7,8 @@ def _test(r, upper):
     w = SignedPermutation.longest_unsigned(r)
     mu = tuple(i for i in range(r - 1, 0, -2))
     for n in range(upper):
-        f = Polynomial.stable_grothendieck_q(mu, n, n)
-        g = w.marked_stable_grothendieck(degree_bound=n)
+        f = SymmetricPolynomial.stable_grothendieck_q(mu, n, n)
+        g, rows = w.marked_stable_grothendieck(degree_bound=n)
         print(f)
         print()
         print(g)

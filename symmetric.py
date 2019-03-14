@@ -18,7 +18,7 @@ STABLE_GROTHENDIECK_P_CACHE = {}
 MONOMIAL_PRODUCT_CACHE = {}
 
 
-class Monomial:
+class SymmetricMonomial:
 
     def __init__(self, n, mu=()):
         assert len(mu) <= n
@@ -43,22 +43,22 @@ class Monomial:
         return bool(self.mu)
 
     def __eq__(self, other):
-        assert type(other) in [Monomial, int, Polynomial]
-        if type(other) == Monomial:
+        assert type(other) in [SymmetricMonomial, int, SymmetricPolynomial]
+        if type(other) == SymmetricMonomial:
             return self.order() == other.order() and self.index() == other.index()
-        elif type(other) in [int, Polynomial]:
+        elif type(other) in [int, SymmetricPolynomial]:
             return (self - other).is_zero()
 
     def __hash__(self):
         return hash((self.n, self.mu))
 
-    def polynomial(self, coefficient=1):
-        return Polynomial({self: coefficient}, printer=lambda x: str(x) if x else '')
+    def SymmetricPolynomial(self, coefficient=1):
+        return SymmetricPolynomial({self: coefficient}, printer=lambda x: str(x) if x else '')
 
     def __pow__(self, other):
         assert type(other) == int and other >= 0
         if other == 0:
-            return Monomial(self.order())
+            return SymmetricMonomial(self.order())
         elif other == 1:
             return self
         else:
@@ -69,39 +69,39 @@ class Monomial:
         return self + other
 
     def __add__(self, other):
-        assert type(other) in [int, Monomial, Polynomial]
+        assert type(other) in [int, SymmetricMonomial, SymmetricPolynomial]
         if type(other) == int:
-            return self.polynomial() + Monomial(self.order()).polynomial(other)
-        elif type(other) == Monomial:
-            return self.polynomial() + other.polynomial()
-        elif type(other) == Polynomial:
-            return self.polynomial() + other
+            return self.SymmetricPolynomial() + SymmetricMonomial(self.order()).SymmetricPolynomial(other)
+        elif type(other) == SymmetricMonomial:
+            return self.SymmetricPolynomial() + other.SymmetricPolynomial()
+        elif type(other) == SymmetricPolynomial:
+            return self.SymmetricPolynomial() + other
 
     def __rsub__(self, other):
-        return self.polynomial() * -1 + other
+        return self.SymmetricPolynomial() * -1 + other
 
     def __sub__(self, other):
-        return self.polynomial() + (-1 * other)
+        return self.SymmetricPolynomial() + (-1 * other)
 
     def __rmul__(self, other):
         return self * other
 
     def __mul__(self, other):
-        assert type(other) in [int, Monomial, Polynomial]
+        assert type(other) in [int, SymmetricMonomial, SymmetricPolynomial]
         if type(other) == int:
             if other == 1:
                 return self
             elif other == 0:
-                return Polynomial()
+                return SymmetricPolynomial()
             else:
-                return self.polynomial(other)
-        elif type(other) == Monomial:
-            return Polynomial({
-                Monomial(self.order(), mu): coeff
+                return self.SymmetricPolynomial(other)
+        elif type(other) == SymmetricMonomial:
+            return SymmetricPolynomial({
+                SymmetricMonomial(self.order(), mu): coeff
                 for mu, coeff in self._multiply(self, other).items()
             })
-        elif type(other) == Polynomial:
-            return self.polynomial() * other
+        elif type(other) == SymmetricPolynomial:
+            return self.SymmetricPolynomial() * other
 
     @classmethod
     def _destandardize(cls, mu, n):
@@ -123,7 +123,7 @@ class Monomial:
 
     @classmethod
     def _multiply(cls, f, g):
-        assert type(f) == type(g) == Monomial
+        assert type(f) == type(g) == SymmetricMonomial
         assert f.order() == g.order()
         mu = f.mu
         nu = g.mu
@@ -147,7 +147,7 @@ class Monomial:
             return '1'
 
 
-class Polynomial(Vector):
+class SymmetricPolynomial(Vector):
 
     def __repr__(self):
         printer = self.printer or repr
@@ -157,6 +157,13 @@ class Polynomial(Vector):
         )
         sorted_items = [(printer(key), value) for key, value in sorted_items]
         return self._print_sorted(sorted_items)
+
+    def truncate(self, degree_bound):
+        return SymmetricPolynomial({
+            mon: coeff
+            for mon, coeff in self.items()
+            if mon.degree() <= degree_bound
+        })
 
     def variables(self):
         ans = set()
@@ -176,19 +183,20 @@ class Polynomial(Vector):
     def lowest_degree_terms(self):
         degrees = {m.degree() for m in self}
         m = min(degrees) if degrees else 0
-        return Polynomial({
+        return SymmetricPolynomial({
             mon: val for mon, val in self.items()
             if mon.degree() == m
         })
 
     @classmethod
-    def _vectorize(cls, n, tableaux, degree_bound=None):
+    def _vectorize(cls, n, tableaux, signs=False, degree_bound=None):
         dictionary = defaultdict(int)
         for partition, count in tableaux.items():
-            dictionary[Monomial(n, partition)] += count
+            count *= (-1)**sum(partition) if signs else 1
+            dictionary[SymmetricMonomial(n, partition)] += count
         if degree_bound is not None:
             dictionary = {m: dictionary[m] for m in dictionary if sum(m.mu) <= degree_bound}
-        return Polynomial(dictionary)
+        return SymmetricPolynomial(dictionary)
 
     @cached_value(SCHUR_CACHE)
     def schur(cls, mu, n):  # noqa
@@ -213,22 +221,22 @@ class Polynomial(Vector):
     @cached_value(STABLE_GROTHENDIECK_S_CACHE)
     def stable_grothendieck_s(cls, mu, n, degree_bound=None):  # noqa
         tableaux = Tableau.count_semistandard_marked_setvalued(mu, n)
-        return cls._vectorize(n, tableaux, degree_bound)
+        return (-1)**sum(mu) * cls._vectorize(n, tableaux, True, degree_bound)
 
     @cached_value(STABLE_GROTHENDIECK_Q_CACHE)
     def stable_grothendieck_q(cls, mu, n, degree_bound=None):  # noqa
         tableaux = Tableau.count_semistandard_shifted_marked_setvalued(mu, n)
-        return cls._vectorize(n, tableaux, degree_bound)
+        return (-1)**sum(mu) * cls._vectorize(n, tableaux, True, degree_bound)
 
     @cached_value(STABLE_GROTHENDIECK_P_CACHE)
     def stable_grothendieck_p(cls, mu, n, degree_bound=None):  # noqa
         tableaux = Tableau.count_semistandard_shifted_marked_setvalued(mu, n, False)
-        return cls._vectorize(n, tableaux, degree_bound)
+        return (-1)**sum(mu) * cls._vectorize(n, tableaux, True, degree_bound)
 
     @cached_value(STABLE_GROTHENDIECK_CACHE)
     def stable_grothendieck(cls, mu, n, degree_bound=None):  # noqa
         tableaux = Tableau.count_semistandard_setvalued(mu, n)
-        return cls._vectorize(n, tableaux, degree_bound)
+        return (-1)**sum(mu) * cls._vectorize(n, tableaux, True, degree_bound)
 
     @classmethod
     def schur_expansion(cls, f, n):
@@ -242,13 +250,13 @@ class Polynomial(Vector):
             return Vector()
 
     @classmethod
-    def _slow_vectorize(cls, n, tableaux):
+    def _slow_vectorize(cls, n, tableaux, signs=False):
         dictionary = defaultdict(int)
         for tab in tableaux:
             dictionary[tab.weight(n)] += 1
         assert all(dictionary[Partition.sort(alpha)] == dictionary[alpha] for alpha in dictionary)
-        return Polynomial({
-            Monomial(n, alpha): coeff
+        return SymmetricPolynomial({
+            SymmetricMonomial(n, alpha): coeff * (-1 if signs else 1)**sum(alpha)
             for alpha, coeff in dictionary.items()
             if Partition.is_partition(alpha)
         })
@@ -266,16 +274,20 @@ class Polynomial(Vector):
         return cls._slow_vectorize(n, Tableau.semistandard_shifted_marked(mu, n, False))
 
     @classmethod
+    def slow_dual_stable_grothendieck(cls, mu, n):
+        return cls._slow_vectorize(n, Tableau.semistandard_rpp(mu, n))
+
+    @classmethod
     def slow_stable_grothendieck_s(cls, mu, n):
-        return cls._slow_vectorize(n, Tableau.semistandard_marked_setvalued(mu, n))
+        return (-1)**sum(mu) * cls._slow_vectorize(n, Tableau.semistandard_marked_setvalued(mu, n), True)
 
     @classmethod
     def slow_stable_grothendieck_q(cls, mu, n):
-        return cls._slow_vectorize(n, Tableau.semistandard_shifted_marked_setvalued(mu, n))
+        return (-1)**sum(mu) * cls._slow_vectorize(n, Tableau.semistandard_shifted_marked_setvalued(mu, n), True)
 
     @classmethod
     def slow_stable_grothendieck_p(cls, mu, n):
-        return cls._slow_vectorize(n, Tableau.semistandard_shifted_marked_setvalued(mu, n, False))
+        return (-1)**sum(mu) * cls._slow_vectorize(n, Tableau.semistandard_shifted_marked_setvalued(mu, n, False), True)
 
     @classmethod
     def slow_schur(cls, mu, n):
@@ -283,4 +295,4 @@ class Polynomial(Vector):
 
     @classmethod
     def slow_stable_grothendieck(cls, mu, n):
-        return cls._slow_vectorize(n, Tableau.semistandard_setvalued(mu, n))
+        return (-1)**sum(mu) * cls._slow_vectorize(n, Tableau.semistandard_setvalued(mu, n), True)
