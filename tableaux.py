@@ -4,9 +4,12 @@ from collections import defaultdict
 COUNT_SEMISTANDARD_CACHE = {}
 COUNT_SEMISTANDARD_MARKED_CACHE = {}
 COUNT_SEMISTANDARD_SHIFTED_MARKED_CACHE = {}
+COUNT_SEMISTANDARD_RPP_CACHE = {}
+COUNT_SEMISTANDARD_MARKED_RPP_CACHE = {}
 
 SEMISTANDARD_CACHE = {}
 SEMISTANDARD_RPP_CACHE = {}
+SEMISTANDARD_MARKED_RPP_CACHE = {}
 SEMISTANDARD_MARKED_CACHE = {}
 SEMISTANDARD_SHIFTED_MARKED_CACHE = {}
 
@@ -48,6 +51,15 @@ class Partition:
             return tuple(len([i for i in range(len(mu)) if mu[i] > j]) for j in range(mu[0]))
         else:
             return mu
+
+    @classmethod
+    def skew(cls, mu, nu, shifted=False):
+        ans = set()
+        for i, part in enumerate(mu):
+            subpart = nu[i] if i < len(nu) else 0
+            for j in range(subpart, part):
+                ans.add((i + 1, j + 1 + (i if shifted else 0)))
+        return ans
 
     @classmethod
     def generate(cls, n, max_part=None, strict=False):
@@ -238,6 +250,9 @@ class Tableau:
 
     @cached_value(RPP_HORIZONTAL_STRIPS_CACHE)
     def _rpp_horizontal_strips(cls, mu):  # noqa
+        if mu == ():
+            return [(mu, set())]
+
         def remove_box(nu, i):
             if i < len(nu) and nu[i] > 0:
                 nu = nu[:i] + (nu[i] - 1,) + nu[i + 1:]
@@ -254,14 +269,6 @@ class Tableau:
                 for x in remove_box(nu, i):
                     queue.append(x)
 
-        def diff(nu):
-            ans = set()
-            for i, part in enumerate(mu):
-                subpart = nu[i] if i < len(nu) else 0
-                for j in range(subpart, part):
-                    ans.add((i + 1, j + 1))
-            return ans
-
         ans = set()
         queue = [(mu, len(mu) - 1)]
         while queue:
@@ -271,12 +278,15 @@ class Tableau:
                 for nu in remove_all_boxes(nu, i):
                     ans.add(nu)
                     queue.append((nu, i - 1))
- 
-        return [(nu, diff(nu)) for nu in ans]
+
+        return [(nu, Partition.skew(mu, nu)) for nu in ans]
 
     @cached_value(SHIFTED_RPP_HORIZONTAL_STRIPS_CACHE)
     def _shifted_rpp_horizontal_strips(cls, mu):  # noqa
         assert Partition.is_strict_partition(mu)
+        if mu == ():
+            return [(mu, set())]
+
         def remove_box(nu, i):
             if i < len(nu) and nu[i] > 0:
                 nu = nu[:i] + (nu[i] - 1,) + nu[i + 1:]
@@ -293,14 +303,6 @@ class Tableau:
                 for x in remove_box(nu, i):
                     queue.append(x)
 
-        def diff(nu):
-            ans = set()
-            for i, part in enumerate(mu):
-                subpart = nu[i] if i < len(nu) else 0
-                for j in range(subpart, part):
-                    ans.add((i + 1, i + j + 1))
-            return ans
-
         ans = set()
         queue = [(mu, len(mu) - 1)]
         while queue:
@@ -310,8 +312,43 @@ class Tableau:
                 for nu in remove_all_boxes(nu, i):
                     ans.add(nu)
                     queue.append((nu, i - 1))
- 
-        return [(nu, diff(nu)) for nu in ans]
+
+        return [(nu, Partition.skew(mu, nu, shifted=True)) for nu in ans]
+
+    @cached_value(SHIFTED_RPP_VERTICAL_STRIPS_CACHE)
+    def _shifted_rpp_vertical_strips(cls, mu):  # noqa
+        assert Partition.is_strict_partition(mu)
+        if mu == ():
+            return [(mu, set())]
+
+        def remove_box(nu, i):
+            for j in range(len(nu) - 1, -1, -1):
+                if j + nu[j] == i + 1:
+                    nu = nu[:j] + (nu[j] - 1,) + nu[j + 1:]
+                    while nu and nu[-1] == 0:
+                        nu = nu[:-1]
+                    yield nu
+                    return
+
+        def remove_all_boxes(nu, i):
+            queue = [nu]
+            while queue:
+                nu, queue = queue[0], queue[1:]
+                yield nu
+                for x in remove_box(nu, i):
+                    queue.append(x)
+
+        ans = set()
+        queue = [(mu, (mu[0] if mu else 0) - 1)]
+        while queue:
+            nu, i = queue[0]
+            queue = queue[1:]
+            if i >= 0:
+                for nu in remove_all_boxes(nu, i):
+                    ans.add(nu)
+                    queue.append((nu, i - 1))
+
+        return [(nu, Partition.skew(mu, nu, shifted=True)) for nu in ans]
 
     @cached_value(COUNT_SEMISTANDARD_CACHE)
     def count_semistandard(cls, mu, n, setvalued=False):  # noqa
@@ -387,17 +424,69 @@ class Tableau:
                                     ans[updated_partition] += count * nchoosek(len(corners1), i) * nchoosek(len(corners2), j)
         return ans
 
+    @cached_value(COUNT_SEMISTANDARD_RPP_CACHE)
+    def count_semistandard_rpp(cls, mu, n):  # noqa
+        ans = defaultdict(int)
+        if mu == tuple():
+            ans[()] = 1
+        elif n > 0:
+            for nu, diff in cls._rpp_vertical_strips(mu):
+                if mu == nu:
+                    continue
+                m = len({j for _, j in diff})
+                for partition, count in cls.count_semistandard_rpp(nu, n - 1).items():
+                    if not (partition and m > partition[-1]):
+                        ans[partition + (m,)] += count
+        return ans
+
+    @cached_value(COUNT_SEMISTANDARD_MARKED_RPP_CACHE)
+    def count_semistandard_marked_rpp(cls, mu, n, diagonal_nonprimes=True):  # noqa
+        assert Partition.is_strict_partition(mu)
+        ans = defaultdict(int)
+        if mu == tuple():
+            ans[()] = 1
+        elif n > 0:
+            for nu1, diff1 in cls._shifted_rpp_horizontal_strips(mu):
+                if not diagonal_nonprimes and any(i == j for i, j in diff1):
+                    continue
+                for nu2, diff2 in cls._shifted_rpp_vertical_strips(nu1):
+                    if mu == nu2:
+                        continue
+                    m = len({j for _, j in diff1}) + len({i for i, _ in diff2})
+                    for partition, count in cls.count_semistandard_marked_rpp(nu2, n - 1, diagonal_nonprimes).items():
+                        if not (partition and m > partition[-1]):
+                            ans[partition + (m,)] += count
+        return ans
+
     @cached_value(SEMISTANDARD_RPP_CACHE)
     def semistandard_rpp(cls, mu, n):  # noqa
-        ans = []
+        ans = set()
         if mu == tuple():
-            ans = [ReversePlanePartition()]
+            ans = {ReversePlanePartition()}
         elif n > 0:
             for nu, diff in cls._rpp_vertical_strips(mu):
                 for tab in cls.semistandard_rpp(nu, n - 1):
                     for (i, j) in diff:
                         tab = tab.add(i, j, n)
-                    ans.append(tab)
+                    ans.add(tab)
+        return ans
+
+    @cached_value(SEMISTANDARD_MARKED_RPP_CACHE)
+    def semistandard_marked_rpp(cls, mu, n, diagonal_nonprimes=True):  # noqa
+        assert Partition.is_strict_partition(mu)
+        ans = set()
+        if mu == tuple():
+            ans = {MarkedReversePlanePartition()}
+        elif n > 0:
+            for nu1, diff1 in cls._shifted_rpp_horizontal_strips(mu):
+                for nu2, diff2 in cls._shifted_rpp_vertical_strips(nu1):
+                    if diagonal_nonprimes or not any(i == j for i, j in diff1):
+                        for tab in cls.semistandard_marked_rpp(nu2, n - 1, diagonal_nonprimes):
+                            for (i, j) in diff1:
+                                tab = tab.add(i, j, n)
+                            for (i, j) in diff2:
+                                tab = tab.add(i, j, -n)
+                            ans.add(tab)
         return ans
 
     @classmethod
@@ -492,3 +581,19 @@ class ReversePlanePartition(Tableau):
             for x in v:
                 ans[abs(x) - 1].add(j)
         return tuple(len(s) for s in ans)
+
+
+class MarkedReversePlanePartition(Tableau):
+
+    def weight(self, n):
+        ans = [set() for i in range(n)]
+        bns = [set() for i in range(n)]
+        for i, j, v in self:
+            for x in v:
+                assert x != 0
+                if x > 0:
+                    ans[x - 1].add(j)
+                if x < 0:
+                    bns[-x - 1].add(i)
+
+        return tuple(len(ans[i]) + len(bns[i]) for i in range(n))

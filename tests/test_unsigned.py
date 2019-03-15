@@ -25,7 +25,7 @@ def test_one():
 
 
 def test_two():
-    _test(2, 8)
+    _test(2, 7)
 
 
 @pytest.mark.slow
