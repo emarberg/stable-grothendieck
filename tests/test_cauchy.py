@@ -65,6 +65,7 @@ def kernel(n, v):
             t = (t * base).truncate(n)
     return t
 
+
 def _test_shifted_q(n_max, v_max):
     for n in range(n_max + 1):
         for v in range(1, v_max + 1):
@@ -129,7 +130,7 @@ def _test_shifted_p(n_max, v_max):
 
 
 def test_grothendieck_cauchy_p():
-    _test_shifted_q(7, 3)
+    _test_shifted_q(6, 3)
 
 
 @pytest.mark.slow

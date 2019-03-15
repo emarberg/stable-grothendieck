@@ -1,4 +1,4 @@
-from signed import SignedPermutation
+from permutations import SignedPermutation
 from symmetric import SymmetricPolynomial
 import pytest
 
