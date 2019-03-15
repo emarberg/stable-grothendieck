@@ -1,5 +1,6 @@
 from vectors import Vector
 from tableaux import Tableau, Partition
+from polynomials import Polynomial
 from cached import cached_value
 from collections import defaultdict
 import itertools
@@ -52,7 +53,19 @@ class SymmetricMonomial:
     def __hash__(self):
         return hash((self.n, self.mu))
 
-    def SymmetricPolynomial(self, coefficient=1):
+    def polynomial(self, variable='x'):
+        x = Polynomial.x if variable == 'x' else Polynomial.y
+        ans = Polynomial()
+        for alpha in set(itertools.permutations(self.mu)):
+            k = len(alpha)
+            for index in itertools.combinations([i + 1 for i in range(self.n)], k):
+                term = Polynomial.one()
+                for i in range(k):
+                    term *= x(index[i])**alpha[i]
+                ans += term
+        return ans
+
+    def symmetric_polynomial(self, coefficient=1):
         return SymmetricPolynomial({self: coefficient}, printer=lambda x: str(x) if x else '')
 
     def __pow__(self, other):
@@ -71,17 +84,17 @@ class SymmetricMonomial:
     def __add__(self, other):
         assert type(other) in [int, SymmetricMonomial, SymmetricPolynomial]
         if type(other) == int:
-            return self.SymmetricPolynomial() + SymmetricMonomial(self.order()).SymmetricPolynomial(other)
+            return self.symmetric_polynomial() + SymmetricMonomial(self.order()).symmetric_polynomial(other)
         elif type(other) == SymmetricMonomial:
-            return self.SymmetricPolynomial() + other.SymmetricPolynomial()
+            return self.symmetric_polynomial() + other.symmetric_polynomial()
         elif type(other) == SymmetricPolynomial:
-            return self.SymmetricPolynomial() + other
+            return self.symmetric_polynomial() + other
 
     def __rsub__(self, other):
-        return self.SymmetricPolynomial() * -1 + other
+        return self.symmetric_polynomial() * -1 + other
 
     def __sub__(self, other):
-        return self.SymmetricPolynomial() + (-1 * other)
+        return self.symmetric_polynomial() + (-1 * other)
 
     def __rmul__(self, other):
         return self * other
@@ -94,14 +107,14 @@ class SymmetricMonomial:
             elif other == 0:
                 return SymmetricPolynomial()
             else:
-                return self.SymmetricPolynomial(other)
+                return self.symmetric_polynomial(other)
         elif type(other) == SymmetricMonomial:
             return SymmetricPolynomial({
                 SymmetricMonomial(self.order(), mu): coeff
                 for mu, coeff in self._multiply(self, other).items()
             })
         elif type(other) == SymmetricPolynomial:
-            return self.SymmetricPolynomial() * other
+            return self.symmetric_polynomial() * other
 
     @classmethod
     def _destandardize(cls, mu, n):
@@ -157,6 +170,12 @@ class SymmetricPolynomial(Vector):
         )
         sorted_items = [(printer(key), value) for key, value in sorted_items]
         return self._print_sorted(sorted_items)
+
+    def polynomial(self, variable='x'):
+        ans = Polynomial()
+        for mon, coeff in self.items():
+            ans += mon.polynomial(variable) * coeff
+        return ans
 
     def truncate(self, degree_bound):
         return SymmetricPolynomial({
@@ -262,37 +281,37 @@ class SymmetricPolynomial(Vector):
         })
 
     @classmethod
-    def slow_schur_s(cls, mu, n):
+    def _slow_schur_s(cls, mu, n):
         return cls._slow_vectorize(n, Tableau.semistandard_marked(mu, n))
 
     @classmethod
-    def slow_schur_q(cls, mu, n):
+    def _slow_schur_q(cls, mu, n):
         return cls._slow_vectorize(n, Tableau.semistandard_shifted_marked(mu, n))
 
     @classmethod
-    def slow_schur_p(cls, mu, n):
+    def _slow_schur_p(cls, mu, n):
         return cls._slow_vectorize(n, Tableau.semistandard_shifted_marked(mu, n, False))
 
     @classmethod
-    def slow_dual_stable_grothendieck(cls, mu, n):
+    def _slow_dual_stable_grothendieck(cls, mu, n):
         return cls._slow_vectorize(n, Tableau.semistandard_rpp(mu, n))
 
     @classmethod
-    def slow_stable_grothendieck_s(cls, mu, n):
+    def _slow_stable_grothendieck_s(cls, mu, n):
         return (-1)**sum(mu) * cls._slow_vectorize(n, Tableau.semistandard_marked_setvalued(mu, n), True)
 
     @classmethod
-    def slow_stable_grothendieck_q(cls, mu, n):
+    def _slow_stable_grothendieck_q(cls, mu, n):
         return (-1)**sum(mu) * cls._slow_vectorize(n, Tableau.semistandard_shifted_marked_setvalued(mu, n), True)
 
     @classmethod
-    def slow_stable_grothendieck_p(cls, mu, n):
+    def _slow_stable_grothendieck_p(cls, mu, n):
         return (-1)**sum(mu) * cls._slow_vectorize(n, Tableau.semistandard_shifted_marked_setvalued(mu, n, False), True)
 
     @classmethod
-    def slow_schur(cls, mu, n):
+    def _slow_schur(cls, mu, n):
         return cls._slow_vectorize(n, Tableau.semistandard(mu, n))
 
     @classmethod
-    def slow_stable_grothendieck(cls, mu, n):
+    def _slow_stable_grothendieck(cls, mu, n):
         return (-1)**sum(mu) * cls._slow_vectorize(n, Tableau.semistandard_setvalued(mu, n), True)

@@ -4,6 +4,12 @@ class HashableDict(dict):
     def __hash__(self):
         return hash(tuple(sorted(self.items())))
 
+    def degree(self):
+        d = 0
+        for i in self:
+            d = d + self[i]
+        return d
+
 
 class Polynomial:
 
@@ -35,13 +41,20 @@ class Polynomial:
     def __init__(self, coeffs={}):
         self.coeffs = coeffs
 
-    @staticmethod
-    def monomial(index, power=1):
+    def truncate(self, degree_bound):
+        return self.__class__({
+            mon: coeff
+            for mon, coeff in self.coeffs.items()
+            if mon.degree() <= degree_bound
+        })
+
+    @classmethod
+    def monomial(cls, index, power=1):
         if power == 0:
-            return Polynomial({HashableDict({}): 1})
+            return cls({HashableDict({}): 1})
 
         ind = HashableDict({index: power})
-        return Polynomial({ind: 1})
+        return cls({ind: 1})
 
     def coefficient(self, index, power):
         x = Polynomial()
@@ -56,10 +69,7 @@ class Polynomial:
     def total_degree(self):
         ans = None
         for ind in self.coeffs:
-            d = 0
-            for i in ind:
-                d = d + ind[i]
-
+            d = ind.degree()
             if ans is None:
                 ans = d
             else:
