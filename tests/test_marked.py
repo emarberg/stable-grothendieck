@@ -1,10 +1,10 @@
-from permutations import SignedPermutation
+from permutations import Permutation
 from symmetric import SymmetricPolynomial
 import pytest
 
 
 def _test(r, upper):
-    w = SignedPermutation.longest_unsigned(r)
+    w = Permutation.longest_unsigned(r)
     mu = tuple(i for i in range(r - 1, 0, -2))
     for n in range(upper):
         f = SymmetricPolynomial.stable_grothendieck_q(mu, n, n)

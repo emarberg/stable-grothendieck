@@ -13,7 +13,7 @@ atoms_b_cache = {}
 atoms_d_cache = {}
 
 
-class SignedPermutation:
+class Permutation:
 
     def tex(self):
         s = '$'
@@ -36,7 +36,7 @@ class SignedPermutation:
         self._len = None
 
     def __repr__(self):
-        # return 'SignedPermutation(' + ', '.join([repr(i) for i in self.oneline]) + ')'
+        # return 'Permutation(' + ', '.join([repr(i) for i in self.oneline]) + ')'
         return str(self)
 
     def __str__(self):
@@ -58,12 +58,12 @@ class SignedPermutation:
                 for i in range(n):
                     oneline.append(args[i] * (-1) ** (v % 2))
                     v = v // 2
-                yield SignedPermutation(*oneline)
+                yield Permutation(*oneline)
 
     @classmethod
     def permutations(cls, n):
         for args in itertools.permutations(range(1, n + 1)):
-            yield SignedPermutation(*args)
+            yield Permutation(*args)
 
     @classmethod
     def fpf_involutions(cls, n):
@@ -114,7 +114,7 @@ class SignedPermutation:
     #                     for j in cycles[i]:
     #                         newline[j] *= -1
     #                 v = v // 2
-    #             yield SignedPermutation(*newline)
+    #             yield Permutation(*newline)
 
     @classmethod
     def symplectic_hecke_words(cls, n, length_bound=-1):
@@ -136,7 +136,7 @@ class SignedPermutation:
             yield level
             for pi, w in level:
                 for i in range(n):
-                    s = SignedPermutation.s_i(i, n)
+                    s = Permutation.s_i(i, n)
                     if pi(i) != i + 1:
                         sigma = s % pi % s
                         next_level.add((sigma, w + (i,)))
@@ -166,7 +166,7 @@ class SignedPermutation:
             yield level
             for pi, w in level:
                 for i in range(n):
-                    s = SignedPermutation.s_i(i, n)
+                    s = Permutation.s_i(i, n)
                     sigma = s % pi % s
                     next_level.add((sigma, w + (i,)))
             level = next_level
@@ -217,7 +217,7 @@ class SignedPermutation:
             yield level
             for pi, w in level:
                 for i in range(n):
-                    s = SignedPermutation.s_i(i, n)
+                    s = Permutation.s_i(i, n)
                     sigma = s % pi % s
                     ww = w + (2 * i,)
                     if valid(ww):
@@ -338,7 +338,7 @@ class SignedPermutation:
     def get_reduced_word(self):
         if self.left_descent_set:
             i = min(self.left_descent_set)
-            s = SignedPermutation.s_i(i, self.rank)
+            s = Permutation.s_i(i, self.rank)
             return (i,) + (s * self).get_reduced_word()
         else:
             return ()
@@ -349,7 +349,7 @@ class SignedPermutation:
         if oneline not in SIGNED_REDUCED_WORDS:
             words = set()
             for i in w.right_descent_set:
-                s = SignedPermutation.s_i(i, w.rank)
+                s = Permutation.s_i(i, w.rank)
                 words |= {e + (i,) for e in (w * s).get_reduced_words()}
             SIGNED_REDUCED_WORDS[oneline] = words
         return SIGNED_REDUCED_WORDS[oneline]
@@ -377,7 +377,7 @@ class SignedPermutation:
         newline = self.oneline
         while newline and newline[-1] == len(newline):
             newline = newline[:-1]
-        return SignedPermutation(*newline)
+        return Permutation(*newline)
 
     def involution_length(self):
         return (len(self.neg()) + len(self.pair()) + len(self)) // 2
@@ -403,15 +403,15 @@ class SignedPermutation:
 
     @classmethod
     def identity(cls, n):
-        return SignedPermutation(*list(range(1, n + 1)))
+        return Permutation(*list(range(1, n + 1)))
 
     @classmethod
     def longest_element(cls, n):
-        return SignedPermutation(*[-i for i in range(1, n + 1)])
+        return Permutation(*[-i for i in range(1, n + 1)])
 
     @classmethod
     def longest_unsigned(cls, n):
-        return SignedPermutation(*[i for i in range(n, 0, -1)])
+        return Permutation(*[i for i in range(n, 0, -1)])
 
     @classmethod
     def s_i(cls, i, n):
@@ -420,7 +420,7 @@ class SignedPermutation:
             oneline = [-1] + list(range(2, n + 1))
         else:
             oneline = list(range(1, i)) + [i + 1, i] + list(range(i + 2, n + 1))
-        return SignedPermutation(*oneline)
+        return Permutation(*oneline)
 
     @property
     def right_descent_set(self):
@@ -450,11 +450,11 @@ class SignedPermutation:
         return self._len
 
     def __mod__(self, other):
-        assert type(other) == SignedPermutation
+        assert type(other) == Permutation
         assert self.rank == other.rank
         if other.left_descent_set:
             i = next(iter(other.left_descent_set))
-            s = SignedPermutation.s_i(i, self.rank)
+            s = Permutation.s_i(i, self.rank)
             if i in self.right_descent_set:
                 return self * (s * other)
             else:
@@ -463,10 +463,10 @@ class SignedPermutation:
             return self
 
     def __mul__(self, other):
-        assert type(other) == SignedPermutation
+        assert type(other) == Permutation
         assert self.rank == other.rank
         newline = [self(other(i)) for i in range(1, self.rank + 1)]
-        return SignedPermutation(*newline)
+        return Permutation(*newline)
 
     def inverse(self):
         newline = self.rank * [0]
@@ -476,23 +476,23 @@ class SignedPermutation:
                 newline[j - 1] = i
             else:
                 newline[-j - 1] = -i
-        return SignedPermutation(*newline)
+        return Permutation(*newline)
 
     def __lt__(self, other):
-        assert type(other) == SignedPermutation
+        assert type(other) == Permutation
         return self.oneline < other.oneline
 
     def __eq__(self, other):
-        assert type(other) == SignedPermutation
+        assert type(other) == Permutation
         return self.oneline == other.oneline
 
     def __pow__(self, n):
         if n < 0:
             return self.inverse().__pow__(-n)
         elif n == 0:
-            return SignedPermutation.identity(self.rank)
+            return Permutation.identity(self.rank)
         elif n == 1:
-            return SignedPermutation(*self.oneline)
+            return Permutation(*self.oneline)
         else:
             p = n // 2
             q = n - p
@@ -524,7 +524,7 @@ class SignedPermutation:
 
     def inflate(self, rank):
         newline = self.oneline + tuple(range(self.rank + 1, rank + 1))
-        return SignedPermutation(*newline)
+        return Permutation(*newline)
 
     def _min_inv_atom_oneline(self):
         tup = tuple(i for p in self.cyc() for i in reversed(p))
@@ -537,7 +537,7 @@ class SignedPermutation:
 
     def get_min_atom(self):
         assert self == self.inverse()
-        return SignedPermutation(*self._min_inv_atom_oneline())
+        return Permutation(*self._min_inv_atom_oneline())
 
     def get_atoms(self):
         assert self == self.inverse()
@@ -549,11 +549,11 @@ class SignedPermutation:
 
     def _get_atoms(self):
         def involution(oneline):
-            word = SignedPermutation(*oneline).get_reduced_word()
+            word = Permutation(*oneline).get_reduced_word()
             n = len(oneline)
             w = self.identity(n)
             for i in word:
-                s = SignedPermutation.s_i(i, n)
+                s = Permutation.s_i(i, n)
                 if i in w.right_descent_set:
                     return None
                 elif s * w == w * s:
@@ -583,7 +583,7 @@ class SignedPermutation:
         add = {minimum}
         while add:
             for w in add:
-                yield SignedPermutation(*w).inverse()
+                yield Permutation(*w).inverse()
             add = {new for w in add for new in next(w)}
 
     def get_atoms_d(self):

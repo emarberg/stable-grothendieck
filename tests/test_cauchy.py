@@ -94,7 +94,7 @@ def _test_shifted_q(n_max, v_max):
 
 
 def test_grothendieck_cauchy_q():
-    _test_shifted_q(6, 3)
+    _test_shifted_q(5, 3)
 
 
 @pytest.mark.slow
@@ -130,7 +130,7 @@ def _test_shifted_p(n_max, v_max):
 
 
 def test_grothendieck_cauchy_p():
-    _test_shifted_q(6, 3)
+    _test_shifted_q(5, 3)
 
 
 @pytest.mark.slow
