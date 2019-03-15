@@ -4,6 +4,7 @@ from words import Word
 from vectors import Vector
 
 
+INVOLUTION_WORDS = {(): {()}}
 SIGNED_REDUCED_WORDS = {(): {()}}
 EVEN_SIGNED_REDUCED_WORDS = {(): [()]}
 EVEN_SIGNED_REDUCED_COUNTS = {(): 1}
@@ -15,25 +16,31 @@ atoms_d_cache = {}
 
 class Permutation:
 
-    def tex(self):
-        s = '$'
-        for i in self.oneline:
-            if i > 0:
-                s += str(i) + '\\hs '
-            else:
-                s += '\\bar' + str(-i) + '\\hs '
-        s = s[:-len('\\hs ')]
-        s += '$'
-        return s
+    """
+    Simple class for (signed) permutatations
+    """
 
     def __init__(self, *oneline):
-        self.oneline = tuple(oneline)
-        self.rank = len(oneline)
-        assert set(range(1, self.rank + 1)) == set(abs(i) for i in self.oneline)
+        if len(oneline) == 1 and type(oneline[0]) != int:
+            oneline = tuple(oneline[0])
+        while oneline and oneline[-1] == len(oneline):
+            oneline = oneline[:-1]
+        assert set(range(1, len(oneline) + 1)) == set(abs(i) for i in oneline)
+
+        self._oneline = tuple(oneline)
+        self._rank = len(oneline)
         # cached fields
         self._rdes = None
         self._ldes = None
         self._len = None
+
+    @property
+    def oneline(self):
+        return self._oneline
+
+    @property
+    def rank(self):
+        return self._rank
 
     def __repr__(self):
         # return 'Permutation(' + ', '.join([repr(i) for i in self.oneline]) + ')'
@@ -51,25 +58,23 @@ class Permutation:
             return '1'
 
     @classmethod
-    def all(cls, n):
+    def all(cls, n, signed=False):
         for args in itertools.permutations(range(1, n + 1)):
-            for v in range(2**n):
-                oneline = []
-                for i in range(n):
-                    oneline.append(args[i] * (-1) ** (v % 2))
-                    v = v // 2
-                yield Permutation(*oneline)
-
-    @classmethod
-    def permutations(cls, n):
-        for args in itertools.permutations(range(1, n + 1)):
-            yield Permutation(*args)
+            if not signed:
+                yield Permutation(*args)
+            else:
+                for v in range(2**n):
+                    oneline = []
+                    for i in range(n):
+                        oneline.append(args[i] * (-1) ** (v % 2))
+                        v = v // 2
+                    yield Permutation(*oneline)
 
     @classmethod
     def fpf_involutions(cls, n):
-        s = {i: cls.s_i(i, n) for i in range(1, n)}
+        s = {i: cls.s_i(i) for i in range(1, n)}
         if n % 2 == 0:
-            start = cls.identity(n)
+            start = cls.identity()
             for i in range(1, n, 2):
                 start *= s[i]
             level = {start}
@@ -98,7 +103,13 @@ class Permutation:
     def is_fpf_grassmannian(self):
         if any(self(i) < 0 or self(i) == i or self(self(i)) != i for i in range(1, 1 + self.rank)):
             return False
-        return self._fpf_involution_shape() is not None
+        return self.fpf_involution_shape() is not None
+
+    def is_involution(self):
+        return self == self.inverse()
+
+    def is_identity(self):
+        return self == self.identity()
 
     # @classmethod
     # def involutions(cls, n):
@@ -126,9 +137,9 @@ class Permutation:
     @classmethod
     def symplectic_hecke_levels(cls, n, length_bound=-1):
         assert n % 2 == 0
-        a = cls.identity(n)
+        a = cls.identity()
         for i in range(1, n, 2):
-            a *= cls.s_i(i, n)
+            a *= cls.s_i(i)
         start = (a, ())
         level = {start}
         while level:
@@ -136,7 +147,7 @@ class Permutation:
             yield level
             for pi, w in level:
                 for i in range(n):
-                    s = Permutation.s_i(i, n)
+                    s = Permutation.s_i(i)
                     if pi(i) != i + 1:
                         sigma = s % pi % s
                         next_level.add((sigma, w + (i,)))
@@ -159,14 +170,14 @@ class Permutation:
 
     @classmethod
     def involution_hecke_levels(cls, n, length_bound=-1):
-        start = (cls.identity(n), ())
+        start = (cls.identity(), ())
         level = {start}
         while level:
             next_level = set()
             yield level
             for pi, w in level:
                 for i in range(n):
-                    s = Permutation.s_i(i, n)
+                    s = Permutation.s_i(i)
                     sigma = s % pi % s
                     next_level.add((sigma, w + (i,)))
             level = next_level
@@ -185,6 +196,378 @@ class Permutation:
             for w in [w for pi, w in level if self == pi]:
                 print(w, ':', Word.quasisymmetrize(w, Word.decreasing_zeta))
             print()
+
+    @classmethod
+    def _symmetrize(cls, vector, n, check=True):
+        def sort(t):
+            return tuple(reversed(sorted(t)))
+
+        ans = SymmetricPolynomial({
+            SymmetricMonomial(n, alpha): max(vector[a] for a in vector if sort(a) == sort(alpha))
+            for alpha in vector if sort(alpha) == alpha
+        })
+
+        if check:
+            assert all(
+                vector.dictionary[sort(alpha)] == vector.dictionary[alpha]
+                for alpha in vector.dictionary
+            )
+        return ans
+
+    def signed_involution_stable_grothendieck(self, degree_bound):
+        ans = Vector()
+        ell = self.involution_length
+        for w in self.get_involution_hecke_words(degree_bound):
+            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.unimodal_zeta)
+        return self._symmetrize(ans, degree_bound)
+
+    def symplectic_stable_grothendieck(self, degree_bound):
+        ans = Vector()
+        for w in self.get_symplectic_hecke_words(degree_bound):
+            ans += Word.quasisymmetrize(w, Word.decreasing_zeta)
+        return self._symmetrize(ans, degree_bound)
+
+    def involution_stable_grothendieck(self, degree_bound):
+        ans = Vector()
+        for w in self.get_involution_hecke_words(degree_bound):
+            ans += Word.quasisymmetrize(w, Word.decreasing_zeta)
+        return self._symmetrize(ans, degree_bound)
+
+    def marked_stable_grothendieck(self, degree_bound):
+        ans = Vector()
+        ell = self.involution_length
+        for w in self.get_marked_hecke_words(degree_bound):
+            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
+
+        def sort(t):
+            return tuple(reversed(sorted(t)))
+
+        base = Vector({alpha: ans[alpha] for alpha in ans if sort(alpha) == alpha})
+        left = ans - base
+        rows = [base]
+        while left:
+            r = {}
+            for alpha in left:
+                if sort(alpha) not in r:
+                    r[sort(alpha)] = (alpha, left[alpha])
+            base = Vector({alpha: c for (alpha, c) in r.values()})
+            left = left - base
+            rows.append(base)
+
+        return self._symmetrize(ans, degree_bound, check=False), rows
+
+    @property
+    def reduced_word(self):
+        return self.get_reduced_word()
+
+    def get_reduced_word(self):
+        if self.left_descent_set:
+            i = min(self.left_descent_set)
+            s = Permutation.s_i(i)
+            return (i,) + (s * self).get_reduced_word()
+        else:
+            return ()
+
+    @property
+    def reduced_words(self):
+        return self.get_reduced_words()
+
+    def get_reduced_words(self):
+        w = self
+        oneline = w.oneline
+        if oneline not in SIGNED_REDUCED_WORDS:
+            words = set()
+            for i in w.right_descent_set:
+                s = Permutation.s_i(i)
+                words |= {e + (i,) for e in (w * s).get_reduced_words()}
+            SIGNED_REDUCED_WORDS[oneline] = words
+        return SIGNED_REDUCED_WORDS[oneline]
+
+    @property
+    def involution_words(self):
+        return self.get_involution_words()
+
+    def get_involution_words(self):
+        w = self
+        assert w.inverse() == w
+        oneline = w.oneline
+        if oneline not in INVOLUTION_WORDS:
+            INVOLUTION_WORDS[oneline] = {word for a in w.get_atoms() for word in a.get_reduced_words()}
+        return INVOLUTION_WORDS[oneline]
+
+    def __call__(self, i):
+        if 0 < i <= self.rank:
+            return self.oneline[i - 1]
+        elif -self.rank <= i < 0:
+            return -self.oneline[-i - 1]
+        else:
+            return i
+
+    def __hash__(self):
+        return hash(self.oneline)
+
+    def reduce(self):
+        newline = self.oneline
+        while newline and newline[-1] == len(newline):
+            newline = newline[:-1]
+        return Permutation(*newline)
+
+    def pair(self):
+        n = self.rank
+        return [
+            (a, self(a))
+            for a in range(-n, n + 1)
+            if 0 < abs(a) < self(a)
+        ]
+
+    def neg(self):
+        n = self.rank
+        return [(-a, -a) for a in range(1, n + 1) if self(a) == -a]
+
+    def fix(self):
+        n = self.rank
+        return [(a, a) for a in range(1, n + 1) if self(a) == a]
+
+    def cyc(self):
+        return sorted(self.pair() + self.neg() + self.fix())
+
+    @classmethod
+    def identity(cls):
+        return Permutation()
+
+    @classmethod
+    def longest_element(cls, n):
+        return Permutation(*[-i for i in range(1, n + 1)])
+
+    @classmethod
+    def longest_unsigned(cls, n):
+        return Permutation(*[i for i in range(n, 0, -1)])
+
+    @classmethod
+    def s_i(cls, i):
+        assert 0 <= i
+        if i == 0:
+            oneline = [-1]
+        else:
+            oneline = list(range(1, i)) + [i + 1, i]
+        return Permutation(*oneline)
+
+    @property
+    def right_descent_set(self):
+        if self._rdes is None:
+            self._rdes = set()
+            if self.rank >= 1 and self(1) < 0:
+                self._rdes.add(0)
+            for i in range(1, self.rank):
+                if self(i) > self(i + 1):
+                    self._rdes.add(i)
+        return self._rdes
+
+    @property
+    def left_descent_set(self):
+        if self._ldes is None:
+            self._ldes = self.inverse().right_descent_set
+        return self._ldes
+
+    def __len__(self):
+        if self._len is None:
+            biline = [-i for i in reversed(self.oneline)] + list(self.oneline)
+            n = self.rank * 2
+            inv = len([(i, j) for i in range(n) for j in range(i + 1, n) if biline[i] > biline[j]])
+            inv_zero = len([i for i in self.oneline if i < 0])
+            assert inv % 2 == inv_zero % 2
+            self._len = (inv + inv_zero) // 2
+        return self._len
+
+    @property
+    def length(self):
+        return self._len
+
+    @property
+    def involution_length(self):
+        return (len(self.neg()) + len(self.pair()) + len(self)) // 2
+
+    def __mod__(self, other):
+        assert type(other) == Permutation
+        if other.left_descent_set:
+            i = next(iter(other.left_descent_set))
+            s = Permutation.s_i(i)
+            if i in self.right_descent_set:
+                return self * (s * other)
+            else:
+                return (self * s) % (s * other)
+        else:
+            return self
+
+    def __mul__(self, other):
+        assert type(other) == Permutation
+        newline = [self(other(i)) for i in range(1, max(self.rank, other.rank) + 1)]
+        return Permutation(*newline)
+
+    def inverse(self):
+        newline = self.rank * [0]
+        for i in range(1, self.rank + 1):
+            j = self(i)
+            if j > 0:
+                newline[j - 1] = i
+            else:
+                newline[-j - 1] = -i
+        return Permutation(*newline)
+
+    def __lt__(self, other):
+        assert type(other) == Permutation
+        return self.oneline < other.oneline
+
+    def __eq__(self, other):
+        assert type(other) == Permutation
+        return self.oneline == other.oneline
+
+    def __pow__(self, n):
+        if n < 0:
+            return self.inverse().__pow__(-n)
+        elif n == 0:
+            return Permutation.identity(self.rank)
+        elif n == 1:
+            return Permutation(*self.oneline)
+        else:
+            p = n // 2
+            q = n - p
+            return self.__pow__(p) * self.__pow__(q)
+
+    def is_even_signed(self):
+        return len([i for i in self.oneline if i < 0]) % 2 == 0
+
+    def last_descent(self):
+        n = self.rank
+        descents = [i for i in range(1, n) if self(i) > self(i + 1)]
+        if descents:
+            return max(descents)
+
+    @classmethod
+    def reflection_s(cls, i, j):
+        caller = list(range(1, j + 1))
+        caller[i - 1] = -j
+        caller[j - 1] = -i
+        return cls(*caller)
+
+    @classmethod
+    def transposition(cls, i, j):
+        return cls.reflection_t(i, j)
+
+    @classmethod
+    def reflection_t(cls, i, j):
+        assert i != j
+        caller = list(range(1, j + 1))
+        caller[i - 1] = j
+        caller[j - 1] = i
+        return cls(*caller)
+
+    def tex(self):
+        s = '$'
+        for i in self.oneline:
+            if i > 0:
+                s += str(i) + '\\hs '
+            else:
+                s += '\\bar' + str(-i) + '\\hs '
+        s = s[:-len('\\hs ')]
+        s += '$'
+        return s
+
+    def _min_inv_atom_oneline(self):
+        tup = tuple(i for p in self.cyc() for i in reversed(p))
+        minimum = []
+        for i in tup:
+            if minimum and minimum[-1] == i:
+                continue
+            minimum += [i]
+        return tuple(minimum)
+
+    def get_min_atom(self):
+        assert self == self.inverse()
+        return Permutation(*self._min_inv_atom_oneline())
+
+    def get_atoms(self):
+        assert self == self.inverse()
+        w = self.reduce()
+        if w not in atoms_b_cache:
+            atoms_b_cache[w] = list(w._get_atoms())
+        return atoms_b_cache[w]
+
+    def _get_atoms(self):
+        def involution(oneline):
+            word = Permutation(*oneline).get_reduced_word()
+            n = len(oneline)
+            w = self.identity()
+            for i in word:
+                s = Permutation.s_i(i)
+                if i in w.right_descent_set:
+                    return None
+                elif s * w == w * s:
+                    w = w * s
+                else:
+                    w = s * w * s
+            return w
+
+        def next(oneline):
+            y = involution(oneline)
+            assert y is not None
+            for i in range(len(oneline) - 2):
+                c, a, b = oneline[i:i + 3]
+                if a < b < c:
+                    newline = oneline[:i] + (b, c, a) + oneline[i + 3:]
+                    yield newline
+            for i in range(len(oneline) - 1):
+                b_, a_ = oneline[i:i + 2]
+                a, b = -a_, -b_
+                if 0 < a < b == min(map(abs, oneline[:i + 1])):
+                    newline = oneline[:i] + (a, -b) + oneline[i + 2:]
+                    z = involution(newline)
+                    if z and y == z:
+                        yield newline
+
+        minimum = self._min_inv_atom_oneline()
+        add = {minimum}
+        while add:
+            for w in add:
+                yield Permutation(*w).inverse()
+            add = {new for w in add for new in next(w)}
+
+    def get_atoms_d(self):
+        assert self.is_even_signed()
+        assert self == self.inverse()
+        w = self.reduce()
+        if w not in atoms_d_cache:
+            atoms_d_cache[w] = list(w._get_atoms_d())
+        return atoms_d_cache[w]
+
+    def _get_atoms_d(self):
+        def length(w):
+            ans = 0
+            for i in range(1, w.rank + 1):
+                for j in range(i + 1, w.rank + 1):
+                    if w(i) > w(j):
+                        ans += 1
+                    if -w(i) > w(j):
+                        ans += 1
+            return ans
+
+        if length(self) == 0:
+            yield self
+            return
+
+        def s_i(i):
+            return self.s_i(i) if i != 0 else self.s_i(0) * self.s_i(1) * self.s_i(0)
+
+        for i in range(self.rank):
+            s = s_i(i)
+            w = self * s
+            if length(w) < length(self):
+                if w == s * self:
+                    for a in w.get_atoms_d():
+                        yield a * s
+                else:
+                    for a in (s * w).get_atoms_d():
+                        yield a * s
 
     @classmethod
     def marked_hecke_words(cls, n, length_bound=-1):
@@ -210,14 +593,14 @@ class Permutation:
             # ]:
             #     return False
             return True
-        start = (cls.identity(n), ())
+        start = (cls.identity(), ())
         level = {start}
         while level:
             next_level = set()
             yield level
             for pi, w in level:
                 for i in range(n):
-                    s = Permutation.s_i(i, n)
+                    s = Permutation.s_i(i)
                     sigma = s % pi % s
                     ww = w + (2 * i,)
                     if valid(ww):
@@ -275,351 +658,3 @@ class Permutation:
                     line += len(split[i]) * ' '
             print(line)
         print()
-
-    @classmethod
-    def _symmetrize(cls, vector, n, check=True):
-        def sort(t):
-            return tuple(reversed(sorted(t)))
-
-        ans = SymmetricPolynomial({
-            SymmetricMonomial(n, alpha): max(vector[a] for a in vector if sort(a) == sort(alpha))
-            for alpha in vector if sort(alpha) == alpha
-        })
-
-        if check:
-            assert all(
-                vector.dictionary[sort(alpha)] == vector.dictionary[alpha]
-                for alpha in vector.dictionary
-            )
-        return ans
-
-    def signed_involution_stable_grothendieck(self, degree_bound):
-        ans = Vector()
-        ell = self.involution_length()
-        for w in self.get_involution_hecke_words(degree_bound):
-            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.unimodal_zeta)
-        return self._symmetrize(ans, degree_bound)
-
-    def symplectic_stable_grothendieck(self, degree_bound):
-        ans = Vector()
-        for w in self.get_symplectic_hecke_words(degree_bound):
-            ans += Word.quasisymmetrize(w, Word.decreasing_zeta)
-        return self._symmetrize(ans, degree_bound)
-
-    def involution_stable_grothendieck(self, degree_bound):
-        ans = Vector()
-        for w in self.get_involution_hecke_words(degree_bound):
-            ans += Word.quasisymmetrize(w, Word.decreasing_zeta)
-        return self._symmetrize(ans, degree_bound)
-
-    def marked_stable_grothendieck(self, degree_bound):
-        ans = Vector()
-        ell = self.involution_length()
-        for w in self.get_marked_hecke_words(degree_bound):
-            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
-
-        def sort(t):
-            return tuple(reversed(sorted(t)))
-
-        base = Vector({alpha: ans[alpha] for alpha in ans if sort(alpha) == alpha})
-        left = ans - base
-        rows = [base]
-        while left:
-            r = {}
-            for alpha in left:
-                if sort(alpha) not in r:
-                    r[sort(alpha)] = (alpha, left[alpha])
-            base = Vector({alpha: c for (alpha, c) in r.values()})
-            left = left - base
-            rows.append(base)
-
-        return self._symmetrize(ans, degree_bound, check=False), rows
-
-    def get_reduced_word(self):
-        if self.left_descent_set:
-            i = min(self.left_descent_set)
-            s = Permutation.s_i(i, self.rank)
-            return (i,) + (s * self).get_reduced_word()
-        else:
-            return ()
-
-    def get_reduced_words(self):
-        w = self.reduce()
-        oneline = w.oneline
-        if oneline not in SIGNED_REDUCED_WORDS:
-            words = set()
-            for i in w.right_descent_set:
-                s = Permutation.s_i(i, w.rank)
-                words |= {e + (i,) for e in (w * s).get_reduced_words()}
-            SIGNED_REDUCED_WORDS[oneline] = words
-        return SIGNED_REDUCED_WORDS[oneline]
-
-    def get_involution_words(self):
-        w = self.reduce()
-        assert w.inverse() == w
-        for a in w.get_atoms():
-            for word in a.get_reduced_words():
-                yield word
-
-    def __call__(self, i):
-        if i == 0:
-            return 0
-        assert 1 <= abs(i) <= self.rank
-        if i > 0:
-            return self.oneline[i - 1]
-        else:
-            return -self.oneline[abs(i) - 1]
-
-    def __hash__(self):
-        return hash(self.oneline)
-
-    def reduce(self):
-        newline = self.oneline
-        while newline and newline[-1] == len(newline):
-            newline = newline[:-1]
-        return Permutation(*newline)
-
-    def involution_length(self):
-        return (len(self.neg()) + len(self.pair()) + len(self)) // 2
-
-    def pair(self):
-        n = self.rank
-        return [
-            (a, self(a))
-            for a in range(-n, n + 1)
-            if 0 < abs(a) < self(a)
-        ]
-
-    def neg(self):
-        n = self.rank
-        return [(-a, -a) for a in range(1, n + 1) if self(a) == -a]
-
-    def fix(self):
-        n = self.rank
-        return [(a, a) for a in range(1, n + 1) if self(a) == a]
-
-    def cyc(self):
-        return sorted(self.pair() + self.neg() + self.fix())
-
-    @classmethod
-    def identity(cls, n):
-        return Permutation(*list(range(1, n + 1)))
-
-    @classmethod
-    def longest_element(cls, n):
-        return Permutation(*[-i for i in range(1, n + 1)])
-
-    @classmethod
-    def longest_unsigned(cls, n):
-        return Permutation(*[i for i in range(n, 0, -1)])
-
-    @classmethod
-    def s_i(cls, i, n):
-        assert 0 <= i < n
-        if i == 0:
-            oneline = [-1] + list(range(2, n + 1))
-        else:
-            oneline = list(range(1, i)) + [i + 1, i] + list(range(i + 2, n + 1))
-        return Permutation(*oneline)
-
-    @property
-    def right_descent_set(self):
-        if self._rdes is None:
-            self._rdes = set()
-            if self.rank >= 1 and self(1) < 0:
-                self._rdes.add(0)
-            for i in range(1, self.rank):
-                if self(i) > self(i + 1):
-                    self._rdes.add(i)
-        return self._rdes
-
-    @property
-    def left_descent_set(self):
-        if self._ldes is None:
-            self._ldes = self.inverse().right_descent_set
-        return self._ldes
-
-    def __len__(self):
-        if self._len is None:
-            biline = [-i for i in reversed(self.oneline)] + list(self.oneline)
-            n = self.rank * 2
-            inv = len([(i, j) for i in range(n) for j in range(i + 1, n) if biline[i] > biline[j]])
-            inv_zero = len([i for i in self.oneline if i < 0])
-            assert inv % 2 == inv_zero % 2
-            self._len = (inv + inv_zero) // 2
-        return self._len
-
-    def __mod__(self, other):
-        assert type(other) == Permutation
-        assert self.rank == other.rank
-        if other.left_descent_set:
-            i = next(iter(other.left_descent_set))
-            s = Permutation.s_i(i, self.rank)
-            if i in self.right_descent_set:
-                return self * (s * other)
-            else:
-                return (self * s) % (s * other)
-        else:
-            return self
-
-    def __mul__(self, other):
-        assert type(other) == Permutation
-        assert self.rank == other.rank
-        newline = [self(other(i)) for i in range(1, self.rank + 1)]
-        return Permutation(*newline)
-
-    def inverse(self):
-        newline = self.rank * [0]
-        for i in range(1, self.rank + 1):
-            j = self(i)
-            if j > 0:
-                newline[j - 1] = i
-            else:
-                newline[-j - 1] = -i
-        return Permutation(*newline)
-
-    def __lt__(self, other):
-        assert type(other) == Permutation
-        return self.oneline < other.oneline
-
-    def __eq__(self, other):
-        assert type(other) == Permutation
-        return self.oneline == other.oneline
-
-    def __pow__(self, n):
-        if n < 0:
-            return self.inverse().__pow__(-n)
-        elif n == 0:
-            return Permutation.identity(self.rank)
-        elif n == 1:
-            return Permutation(*self.oneline)
-        else:
-            p = n // 2
-            q = n - p
-            return self.__pow__(p) * self.__pow__(q)
-
-    def is_even_signed(self):
-        return len([i for i in self.oneline if i < 0]) % 2 == 0
-
-    def last_descent(self):
-        n = self.rank
-        descents = [i for i in range(1, n) if self(i) > self(i + 1)]
-        if descents:
-            return max(descents)
-
-    @classmethod
-    def reflection_s(cls, i, j, n):
-        caller = list(range(1, n + 1))
-        caller[i - 1] = -j
-        caller[j - 1] = -i
-        return cls(*caller)
-
-    @classmethod
-    def reflection_t(cls, i, j, n):
-        assert i != j
-        caller = list(range(1, n + 1))
-        caller[i - 1] = j
-        caller[j - 1] = i
-        return cls(*caller)
-
-    def inflate(self, rank):
-        newline = self.oneline + tuple(range(self.rank + 1, rank + 1))
-        return Permutation(*newline)
-
-    def _min_inv_atom_oneline(self):
-        tup = tuple(i for p in self.cyc() for i in reversed(p))
-        minimum = []
-        for i in tup:
-            if minimum and minimum[-1] == i:
-                continue
-            minimum += [i]
-        return tuple(minimum)
-
-    def get_min_atom(self):
-        assert self == self.inverse()
-        return Permutation(*self._min_inv_atom_oneline())
-
-    def get_atoms(self):
-        assert self == self.inverse()
-        w = self.reduce()
-        if w not in atoms_b_cache:
-            atoms_b_cache[w] = list(w._get_atoms())
-        ans = atoms_b_cache[w]
-        return [x.inflate(self.rank) for x in ans]
-
-    def _get_atoms(self):
-        def involution(oneline):
-            word = Permutation(*oneline).get_reduced_word()
-            n = len(oneline)
-            w = self.identity(n)
-            for i in word:
-                s = Permutation.s_i(i, n)
-                if i in w.right_descent_set:
-                    return None
-                elif s * w == w * s:
-                    w = w * s
-                else:
-                    w = s * w * s
-            return w
-
-        def next(oneline):
-            y = involution(oneline)
-            assert y is not None
-            for i in range(len(oneline) - 2):
-                c, a, b = oneline[i:i + 3]
-                if a < b < c:
-                    newline = oneline[:i] + (b, c, a) + oneline[i + 3:]
-                    yield newline
-            for i in range(len(oneline) - 1):
-                b_, a_ = oneline[i:i + 2]
-                a, b = -a_, -b_
-                if 0 < a < b == min(map(abs, oneline[:i + 1])):
-                    newline = oneline[:i] + (a, -b) + oneline[i + 2:]
-                    z = involution(newline)
-                    if z and y == z:
-                        yield newline
-
-        minimum = self._min_inv_atom_oneline()
-        add = {minimum}
-        while add:
-            for w in add:
-                yield Permutation(*w).inverse()
-            add = {new for w in add for new in next(w)}
-
-    def get_atoms_d(self):
-        assert self.is_even_signed()
-        assert self == self.inverse()
-        w = self.reduce()
-        if w not in atoms_d_cache:
-            atoms_d_cache[w] = list(w._get_atoms_d())
-        ans = atoms_d_cache[w]
-        return [x.inflate(self.rank) for x in ans]
-
-    def _get_atoms_d(self):
-        def length(w):
-            ans = 0
-            for i in range(1, w.rank + 1):
-                for j in range(i + 1, w.rank + 1):
-                    if w(i) > w(j):
-                        ans += 1
-                    if -w(i) > w(j):
-                        ans += 1
-            return ans
-
-        if length(self) == 0:
-            yield self
-            return
-
-        def s_i(i, n):
-            return self.s_i(i, n) if i != 0 else self.s_i(0, n) * self.s_i(1, n) * self.s_i(0, n)
-
-        for i in range(self.rank):
-            s = s_i(i, self.rank)
-            w = self * s
-            if length(w) < length(self):
-                if w == s * self:
-                    for a in w.get_atoms_d():
-                        yield a * s
-                else:
-                    for a in (s * w).get_atoms_d():
-                        yield a * s
