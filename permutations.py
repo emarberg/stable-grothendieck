@@ -314,12 +314,6 @@ class Permutation:
     def __hash__(self):
         return hash(self.oneline)
 
-    def reduce(self):
-        newline = self.oneline
-        while newline and newline[-1] == len(newline):
-            newline = newline[:-1]
-        return Permutation(*newline)
-
     def pair(self):
         n = self.rank
         return [
@@ -344,8 +338,11 @@ class Permutation:
         return Permutation()
 
     @classmethod
-    def longest_element(cls, n):
-        return Permutation(*[-i for i in range(1, n + 1)])
+    def longest_element(cls, n, signed=False):
+        if signed:
+            return Permutation(*[-i for i in range(1, n + 1)])
+        else:
+            return cls.longest_unsigned(n)
 
     @classmethod
     def longest_unsigned(cls, n):
@@ -496,7 +493,7 @@ class Permutation:
 
     def get_atoms(self):
         assert self == self.inverse()
-        w = self.reduce()
+        w = self
         if w not in atoms_b_cache:
             atoms_b_cache[w] = list(w._get_atoms())
         return atoms_b_cache[w]
@@ -547,7 +544,7 @@ class Permutation:
     def get_atoms_d(self):
         assert self.is_even_signed()
         assert self == self.inverse()
-        w = self.reduce()
+        w = self
         if w not in atoms_d_cache:
             atoms_d_cache[w] = list(w._get_atoms_d())
         return atoms_d_cache[w]
