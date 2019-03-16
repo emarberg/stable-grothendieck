@@ -173,8 +173,35 @@ def test_involution_words():
     words = w.get_involution_words()
     assert len(words) == 80
     for e in words:
-        v = Permutation.identity(n)
+        v = Permutation.identity()
         for i in e:
-            s = Permutation.s_i(i, n)
+            s = Permutation.s_i(i)
             v = s % v % s
         assert v == w
+
+
+def test_involutions():
+    assert set(Permutation.involutions(1)) == {Permutation()}
+    assert set(Permutation.involutions(1, True)) == {Permutation(), Permutation(-1)}
+    assert set(Permutation.involutions(2)) == {Permutation(), Permutation(2, 1)}
+    assert set(Permutation.involutions(2, True)) == {
+        Permutation(),
+        Permutation(-1),
+        Permutation(2, 1),
+        Permutation(-2, -1),
+        Permutation(-1, -2),
+        Permutation(1, -2)
+    }
+
+    assert set(Permutation.involutions(5)) == {
+        w for w in Permutation.all(5) if w.inverse() == w
+    }
+    assert set(Permutation.involutions(5, True)) == {
+        w for w in Permutation.all(5, True) if w.inverse() == w
+    }
+
+    assert set(Permutation.fpf_involutions(4)) == {
+        Permutation(2, 1, 4, 3),
+        Permutation(3, 4, 1, 2),
+        Permutation(4, 3, 2, 1),
+    }

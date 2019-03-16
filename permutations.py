@@ -71,21 +71,45 @@ class Permutation:
                     yield Permutation(*oneline)
 
     @classmethod
+    def involutions(cls, n, signed=False, fpf=False):
+        if n % 2 != 0 and fpf:
+            return
+
+        def create(delta, fixed):
+            w = Permutation()
+            numbers = [i for i in range(1, n + 1) if i not in fixed]
+            for i in range(len(delta)):
+                w *= cls.transposition(numbers[0], numbers[delta[i]])
+                numbers = numbers[1:delta[i]] + numbers[delta[i] + 1:]
+                print(numbers)
+            return w
+
+        if not signed:
+            for k in [0] if fpf else range(n, -1, -2):
+                for fixed in itertools.combinations(range(1, n + 1), k):
+                    queue = [tuple(range(n - k - 1, 0, -2))]
+                    while queue:
+                        delta, queue = queue[0], queue[1:]
+                        yield create(delta, fixed)
+                        queue += [
+                            delta[:i] + (delta[i] - 1,) + delta[i + 1:]
+                            for i in range(len(delta))
+                            if delta[i] > 1
+                        ]
+        else:
+            for w in cls.involutions(n, False):
+                a = [i for i in range(1, n + 1) if i <= w(i)]
+                for k in range(len(a) + 1):
+                    for conjugators in itertools.combinations(a, k):
+                        v = w
+                        for i in conjugators:
+                            s = cls.reflection_s(i, i)
+                            v = v * s if v(i) == i else s * v * s
+                        yield v
+
+    @classmethod
     def fpf_involutions(cls, n):
-        s = {i: cls.s_i(i) for i in range(1, n)}
-        if n % 2 == 0:
-            start = cls.identity()
-            for i in range(1, n, 2):
-                start *= s[i]
-            level = {start}
-            while level:
-                next_level = set()
-                for w in level:
-                    yield w
-                    for i in range(1, n):
-                        if w(i) < w(i + 1):
-                            next_level.add(s[i] * w * s[i])
-                level = next_level
+        return cls.involutions(n, False, True)
 
     def fpf_involution_shape(self):
         cycles = [(a, self(a)) for a in range(1, self.rank + 1) if a < self(a)]
@@ -110,22 +134,6 @@ class Permutation:
 
     def is_identity(self):
         return self == self.identity()
-
-    # @classmethod
-    # def involutions(cls, n):
-    #     for w in Permutation.involutions(n):
-    #         oneline = w.oneline
-    #         oneline += tuple(range(len(oneline) + 1, n + 1))
-    #         cycles = [{i, oneline[i] - 1} for i in range(n) if i <= oneline[i] - 1]
-    #         k = len(cycles)
-    #         for v in range(2**k):
-    #             newline = list(oneline)
-    #             for i in range(k):
-    #                 if v % 2 != 0:
-    #                     for j in cycles[i]:
-    #                         newline[j] *= -1
-    #                 v = v // 2
-    #             yield Permutation(*newline)
 
     @classmethod
     def symplectic_hecke_words(cls, n, length_bound=-1):
@@ -493,20 +501,24 @@ class Permutation:
             atoms_b_cache[w] = list(w._get_atoms())
         return atoms_b_cache[w]
 
+    @classmethod
+    def from_involution_word(cls, word, strict=True):
+        w = cls.identity()
+        for i in word:
+            s = Permutation.s_i(i)
+            if i in w.right_descent_set:
+                if strict:
+                    return None
+            elif s * w == w * s:
+                w = w * s
+            else:
+                w = s * w * s
+        return w
+
     def _get_atoms(self):
         def involution(oneline):
-            word = Permutation(*oneline).get_reduced_word()
-            n = len(oneline)
-            w = self.identity()
-            for i in word:
-                s = Permutation.s_i(i)
-                if i in w.right_descent_set:
-                    return None
-                elif s * w == w * s:
-                    w = w * s
-                else:
-                    w = s * w * s
-            return w
+            word = reversed(Permutation(*oneline).get_reduced_word())
+            return self.from_involution_word(word)
 
         def next(oneline):
             y = involution(oneline)
