@@ -183,48 +183,86 @@ class Permutation:
         return all(i > 0 for i in self.oneline)
 
     @classmethod
-    def symplectic_hecke_words(cls, n, length_bound=-1):
-        assert n % 2 == 0
-        for level in cls.symplectic_hecke_levels(n, length_bound):
+    def hecke_words(cls, n, length_bound=None, ascent_bound=None):
+        for level in cls.hecke_levels(n, length_bound, ascent_bound):
             for pi, w in level:
                 yield w
 
     @classmethod
-    def symplectic_hecke_levels(cls, n, length_bound=-1):
-        assert n % 2 == 0
-        a = cls.identity()
-        for i in range(1, n, 2):
-            a *= cls.s_i(i)
-        start = (a, ())
+    def hecke_levels(cls, n, length_bound=None, ascent_bound=None):
+        length_bound = -1 if length_bound is None else length_bound
+        start = (cls.identity(), ())
         level = {start}
         while level:
             next_level = set()
             yield level
             for pi, w in level:
-                for i in range(n):
+                for i in range(1, n):
                     s = Permutation.s_i(i)
-                    if pi(i) != i + 1:
-                        sigma = s % pi % s
-                        next_level.add((sigma, w + (i,)))
+                    sigma = pi % s
+                    v = w + (i,)
+                    if ascent_bound is None or Word.ascents(v) < ascent_bound:
+                        next_level.add((sigma, v))
             level = next_level
             if length_bound == 0:
                 break
             length_bound -= 1
 
-    def get_symplectic_hecke_words(self, length_bound):
-        for level in self.symplectic_hecke_levels(self.rank, length_bound):
+    def get_hecke_words(self, length_bound=None, ascent_bound=None):
+        for level in self.hecke_levels(self.rank, length_bound, ascent_bound):
             for pi, w in level:
                 if self == pi:
                     yield w
 
     @classmethod
-    def involution_hecke_words(cls, n, length_bound=-1):
-        for level in cls.involution_hecke_levels(n, length_bound):
+    def symplectic_hecke_words(cls, n, length_bound=None, ascent_bound=None):
+        assert n % 2 == 0
+        for level in cls.symplectic_hecke_levels(n, length_bound, ascent_bound):
             for pi, w in level:
                 yield w
 
     @classmethod
-    def involution_hecke_levels(cls, n, length_bound=-1):
+    def symplectic_hecke_levels(cls, n, length_bound=None, ascent_bound=None):
+        assert n % 2 == 0
+        length_bound = -1 if length_bound is None else length_bound
+
+        a = cls.identity()
+        for i in range(1, n, 2):
+            a *= cls.s_i(i)
+        start = (a, ())
+
+        level = {start}
+        while level:
+            next_level = set()
+            yield level
+            for pi, w in level:
+                for i in range(1, n):
+                    s = Permutation.s_i(i)
+                    if pi(i) != i + 1:
+                        sigma = s % pi % s
+                        v = w + (i,)
+                        if ascent_bound is None or Word.ascents(v) < ascent_bound:
+                            next_level.add((sigma, v))
+            level = next_level
+            if length_bound == 0:
+                break
+            length_bound -= 1
+
+    def get_symplectic_hecke_words(self, length_bound=None, ascent_bound=None):
+        for level in self.symplectic_hecke_levels(self.rank, length_bound, ascent_bound):
+            for pi, w in level:
+                if self == pi:
+                    yield w
+
+    @classmethod
+    def involution_hecke_words(cls, n, length_bound=None, ascent_bound=None):
+        for level in cls.involution_hecke_levels(n, length_bound, ascent_bound):
+            for pi, w in level:
+                yield w
+
+    @classmethod
+    def involution_hecke_levels(cls, n, length_bound=None, ascent_bound=None):
+        length_bound = -1 if length_bound is None else length_bound
         start = (cls.identity(), ())
         level = {start}
         while level:
@@ -234,14 +272,16 @@ class Permutation:
                 for i in range(n):
                     s = Permutation.s_i(i)
                     sigma = s % pi % s
-                    next_level.add((sigma, w + (i,)))
+                    v = w + (i,)
+                    if ascent_bound is None or Word.peaks(v) < ascent_bound:
+                        next_level.add((sigma, w + (i,)))
             level = next_level
             if length_bound == 0:
                 break
             length_bound -= 1
 
-    def get_involution_hecke_words(self, length_bound):
-        for level in self.involution_hecke_levels(self.rank, length_bound):
+    def get_involution_hecke_words(self, length_bound=None, ascent_bound=None):
+        for level in self.involution_hecke_levels(self.rank, length_bound, ascent_bound):
             for pi, w in level:
                 if self == pi:
                     yield w
@@ -253,57 +293,47 @@ class Permutation:
 
         ans = SymmetricPolynomial({
             SymmetricMonomial(n, alpha): max(vector[a] for a in vector if sort(a) == sort(alpha))
-            for alpha in vector if sort(alpha) == alpha
+            for alpha in vector if sort(alpha) == alpha and len(alpha) <= n
         })
 
         if check:
             assert all(
                 vector.dictionary[sort(alpha)] == vector.dictionary[alpha]
-                for alpha in vector.dictionary
+                for alpha in vector.dictionary if len(alpha) <= n
             )
         return ans
 
-    def signed_involution_stable_grothendieck(self, degree_bound):
+    def stable_grothendieck(self, n, degree_bound=None):
+        assert self.is_unsigned()
         ans = Vector()
-        ell = self.involution_length
-        for w in self.get_involution_hecke_words(degree_bound):
-            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.unimodal_zeta)
-        return self._symmetrize(ans, degree_bound)
-
-    def symplectic_stable_grothendieck(self, degree_bound):
-        ans = Vector()
-        for w in self.get_symplectic_hecke_words(degree_bound):
-            ans += Word.quasisymmetrize(w, Word.decreasing_zeta)
-        return self._symmetrize(ans, degree_bound)
-
-    def involution_stable_grothendieck(self, degree_bound):
-        ans = Vector()
-        for w in self.get_involution_hecke_words(degree_bound):
-            ans += Word.quasisymmetrize(w, Word.decreasing_zeta)
-        return self._symmetrize(ans, degree_bound)
-
-    def marked_stable_grothendieck(self, degree_bound):
-        ans = Vector()
-        ell = self.involution_length
-        for w in self.get_marked_hecke_words(degree_bound):
+        ell = self.length
+        for w in self.get_hecke_words(degree_bound, n):
             ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
+        return self._symmetrize(ans, n)
 
-        def sort(t):
-            return tuple(reversed(sorted(t)))
+    def signed_involution_stable_grothendieck(self, n, degree_bound=None):
+        assert self.is_involution()
+        ans = Vector()
+        ell = self.involution_length
+        for w in self.get_involution_hecke_words(degree_bound, n):
+            print(w, Word.peaks(w), n)
+            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.unimodal_zeta)
+        return self._symmetrize(ans, n)
 
-        base = Vector({alpha: ans[alpha] for alpha in ans if sort(alpha) == alpha})
-        left = ans - base
-        rows = [base]
-        while left:
-            r = {}
-            for alpha in left:
-                if sort(alpha) not in r:
-                    r[sort(alpha)] = (alpha, left[alpha])
-            base = Vector({alpha: c for (alpha, c) in r.values()})
-            left = left - base
-            rows.append(base)
+    def symplectic_stable_grothendieck(self, n, degree_bound=None):
+        assert self.is_unsigned() and self.is_fpf_involution()
+        ans = Vector()
+        ell = self.fpf_involution_length
+        for w in self.get_symplectic_hecke_words(degree_bound, n):
+            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
+        return self._symmetrize(ans, n)
 
-        return self._symmetrize(ans, degree_bound, check=False), rows
+    def involution_stable_grothendieck(self, n, degree_bound=None):
+        assert self.is_involution() and self.is_unsigned()
+        ans = Vector()
+        for w in self.get_involution_hecke_words(degree_bound, n):
+            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
+        return self._symmetrize(ans, n)
 
     @property
     def reduced_word(self):
@@ -427,11 +457,15 @@ class Permutation:
 
     @property
     def length(self):
-        return self._len
+        return len(self)
 
     @property
     def involution_length(self):
         return (len(self.neg()) + len(self.pair()) + len(self)) // 2
+
+    @property
+    def fpf_involution_length(self):
+        return self.involution_length - self.rank // 2
 
     def __mod__(self, other):
         assert type(other) == Permutation
@@ -618,6 +652,31 @@ class Permutation:
                 else:
                     for a in (s * w).get_atoms_d():
                         yield a * s
+
+    # below: experimental code
+
+    def marked_stable_grothendieck(self, degree_bound):
+        ans = Vector()
+        ell = self.involution_length
+        for w in self.get_marked_hecke_words(degree_bound):
+            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
+
+        def sort(t):
+            return tuple(reversed(sorted(t)))
+
+        base = Vector({alpha: ans[alpha] for alpha in ans if sort(alpha) == alpha})
+        left = ans - base
+        rows = [base]
+        while left:
+            r = {}
+            for alpha in left:
+                if sort(alpha) not in r:
+                    r[sort(alpha)] = (alpha, left[alpha])
+            base = Vector({alpha: c for (alpha, c) in r.values()})
+            left = left - base
+            rows.append(base)
+
+        return self._symmetrize(ans, degree_bound, check=False), rows
 
     @classmethod
     def marked_hecke_words(cls, n, length_bound=-1):

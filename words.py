@@ -5,6 +5,14 @@ from collections import defaultdict
 class Word:
 
     @classmethod
+    def ascents(cls, v):
+        return len([i for i in range(len(v) - 1) if v[i] <= v[i + 1]])
+
+    @classmethod
+    def peaks(cls, v):
+        return len([i for i in range(1, len(v) - 1) if v[i - 1] <= v[i] >= v[i + 1]])
+
+    @classmethod
     def increasing_zeta(cls, word):
         return 1 if all(word[i] < word[i + 1] for i in range(len(word) - 1)) else 0
 
