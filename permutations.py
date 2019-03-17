@@ -2,6 +2,7 @@ import itertools
 from symmetric import SymmetricPolynomial, SymmetricMonomial
 from words import Word
 from vectors import Vector
+from tableaux import Partition
 
 
 INVOLUTION_WORDS = {(): {()}}
@@ -111,7 +112,47 @@ class Permutation:
     def fpf_involutions(cls, n):
         return cls.involutions(n, False, True)
 
+    def code(self):
+        assert self.is_unsigned()
+        code = ()
+        for i in range(1, 1 + self.rank):
+            code += (len([j for j in range(i + 1, self.rank + i) if self(j) < self(i)]),)
+        return code
+
+    def involution_code(self):
+        assert self.is_unsigned() and self.is_involution()
+        code = ()
+        for i in range(1, 1 + self.rank):
+            code += (len([
+                j for j in range(i + 1, self.rank + i)
+                if self(j) <= i and self(j) < self(i)
+            ]),)
+        return code
+
+    def fpf_involution_code(self):
+        assert self.is_unsigned() and self.is_fpf_involution()
+        code = ()
+        for i in range(1, 1 + self.rank):
+            code += (len([
+                j for j in range(i + 1, self.rank + i)
+                if self(j) < i and self(j) < self(i)
+            ]),)
+        return code
+
+    def shape(self):
+        return Partition.sort(self.inverse().code(), trim=True)
+
+    def involution_shape(self):
+        assert self.is_involution()
+        mu = Partition.sort(self.involution_code(), trim=True)
+        return Partition.transpose(mu)
+
     def fpf_involution_shape(self):
+        assert self.is_fpf_involution()
+        mu = Partition.sort(self.fpf_involution_code(), trim=True)
+        return Partition.transpose(mu)
+
+    def _fpf_grassmannian_shape(self):
         cycles = [(a, self(a)) for a in range(1, self.rank + 1) if a < self(a)]
         filtered = sorted([(a, b) for a, b in cycles if any(i < b and a < j < b for i, j in cycles)])
         r = len(filtered)
@@ -125,15 +166,21 @@ class Permutation:
         return tuple(n - a for a in phi)
 
     def is_fpf_grassmannian(self):
-        if any(self(i) < 0 or self(i) == i or self(self(i)) != i for i in range(1, 1 + self.rank)):
+        if not self.is_unsigned() and self.is_fpf_involution():
             return False
-        return self.fpf_involution_shape() is not None
+        return self._fpf_grassmannian_shape() is not None
+
+    def is_fpf_involution(self):
+        return self == self.inverse() and all(self(i) != i for i in range(1, self.rank + 1))
 
     def is_involution(self):
         return self == self.inverse()
 
     def is_identity(self):
         return self == self.identity()
+
+    def is_unsigned(self):
+        return all(i > 0 for i in self.oneline)
 
     @classmethod
     def symplectic_hecke_words(cls, n, length_bound=-1):
@@ -198,12 +245,6 @@ class Permutation:
             for pi, w in level:
                 if self == pi:
                     yield w
-
-    def filter_involution_hecke_words(self, length_bound):
-        for level in self.involution_hecke_levels(self.rank, length_bound):
-            for w in [w for pi, w in level if self == pi]:
-                print(w, ':', Word.quasisymmetrize(w, Word.decreasing_zeta))
-            print()
 
     @classmethod
     def _symmetrize(cls, vector, n, check=True):
@@ -628,6 +669,12 @@ class Permutation:
             for pi, w in level:
                 if self == pi:
                     yield w
+
+    def filter_involution_hecke_words(self, length_bound):
+        for level in self.involution_hecke_levels(self.rank, length_bound):
+            for w in [w for pi, w in level if self == pi]:
+                print(w, ':', Word.quasisymmetrize(w, Word.decreasing_zeta))
+            print()
 
     def filter_marked_hecke_words(self, length_bound):
         for level in self.marked_hecke_levels(self.rank, length_bound):

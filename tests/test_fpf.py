@@ -16,12 +16,16 @@ def test_generate():
 def test_fpf_involution_shape():
     w = Permutation(2, 1)
     assert w.fpf_involution_shape() == ()
+    assert w._fpf_grassmannian_shape() == ()
+
+    w = Permutation(4, 3, 2, 1)
+    print(w.fpf_involution_code())
+    assert w.fpf_involution_shape() == (2,)
+    assert w._fpf_grassmannian_shape() == (2,)
 
     w = Permutation(3, 4, 1, 2)
     assert w.fpf_involution_shape() == (1,)
-
-    w = Permutation(4, 3, 2, 1)
-    assert w.fpf_involution_shape() == (2,)
+    assert w._fpf_grassmannian_shape() == (1,)
 
 
 def _test(it, upper):
