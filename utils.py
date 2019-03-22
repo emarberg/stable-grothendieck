@@ -64,6 +64,7 @@ GP = grothendieck_P
 GQ = grothendieck_Q
 GS = grothendieck_S
 
+g = dual_grothendieck
 gp = dual_grothendieck_P
 gq = dual_grothendieck_Q
 
