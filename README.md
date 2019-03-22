@@ -11,8 +11,9 @@ Run the tests at the command line: `pytest`
 
 ## Usage
 
-1. `python3`
-```
+Use functions in the `python3` interpreter.
+
+```python3
 from utils import *
 
 # number of variables
