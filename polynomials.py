@@ -74,7 +74,6 @@ class Polynomial:
                 ans = d
             else:
                 ans = max(ans, d)
-
         return ans
 
     def __iter__(self):
@@ -250,8 +249,6 @@ class Polynomial:
     def __repr__(self):
         if self.nnz() == 0:
             return '0'
-        s = ''
-        filtered = filter(lambda x: self[x] != 0, self.coeffs)
 
         def sorter(index):
             ans = []
@@ -261,35 +258,25 @@ class Polynomial:
                 ans += abs(index[i]) * [-i]
             return (c,) + tuple(ans)
 
+        s = ''
+        filtered = filter(lambda x: self[x] != 0, self.coeffs)
         for i in sorted(filtered, key=sorter):
             monomial = Polynomial.index_to_str(i)
             coeff = str(abs(self[i]))
-
             if coeff == "1" and monomial != "":
                 coeff = ""
-
-            if self[i] < 0:
-                coeff = " - " + coeff
-            else:
-                coeff = " + " + coeff
-
+            coeff = (" - " if self[i] < 0 else " + ") + coeff
             s = s + coeff + monomial
         s = s[1:]
-        if s[0] == "+":
-            s = s[2:]
-        else:
-            s = "-" + s[2:]
-
+        s = s[2:] if s[0] == "+" else "-" + s[2:]
         return s
 
     def __hash__(self):
         return hash(str(self))
 
-
     @classmethod
     def x(cls, i):
         return cls.monomial(i)
-
 
     @classmethod
     def y(cls, i):
