@@ -10,7 +10,8 @@ class Word:
 
     @classmethod
     def peaks(cls, v):
-        return len([i for i in range(1, len(v) - 1) if v[i - 1] <= v[i] >= v[i + 1]])
+        s = [i for i in range(1, len(v) - 1) if v[i - 1] <= v[i] >= v[i + 1]]
+        return (1 + cls.peaks(v[s[0] + 1:])) if s else (1 if v else 0)
 
     @classmethod
     def increasing_zeta(cls, word):

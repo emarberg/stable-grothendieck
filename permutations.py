@@ -255,13 +255,13 @@ class Permutation:
                     yield w
 
     @classmethod
-    def involution_hecke_words(cls, n, length_bound=None, ascent_bound=None):
-        for level in cls.involution_hecke_levels(n, length_bound, ascent_bound):
+    def involution_hecke_words(cls, n, length_bound=None, variables_bound=None):
+        for level in cls.involution_hecke_levels(n, length_bound, variables_bound):
             for pi, w in level:
                 yield w
 
     @classmethod
-    def involution_hecke_levels(cls, n, length_bound=None, ascent_bound=None):
+    def involution_hecke_levels(cls, n, length_bound=None, variables_bound=None):
         length_bound = -1 if length_bound is None else length_bound
         start = (cls.identity(), ())
         level = {start}
@@ -273,15 +273,15 @@ class Permutation:
                     s = Permutation.s_i(i)
                     sigma = s % pi % s
                     v = w + (i,)
-                    if ascent_bound is None or Word.peaks(v) < ascent_bound:
+                    if variables_bound is None or Word.peaks(v) <= variables_bound:
                         next_level.add((sigma, w + (i,)))
             level = next_level
             if length_bound == 0:
                 break
             length_bound -= 1
 
-    def get_involution_hecke_words(self, length_bound=None, ascent_bound=None):
-        for level in self.involution_hecke_levels(self.rank, length_bound, ascent_bound):
+    def get_involution_hecke_words(self, length_bound=None, variables_bound=None):
+        for level in self.involution_hecke_levels(self.rank, length_bound, variables_bound):
             for pi, w in level:
                 if self == pi:
                     yield w
@@ -316,7 +316,6 @@ class Permutation:
         ans = Vector()
         ell = self.involution_length
         for w in self.get_involution_hecke_words(degree_bound, n):
-            print(w, Word.peaks(w), n)
             ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.unimodal_zeta)
         return self._symmetrize(ans, n)
 

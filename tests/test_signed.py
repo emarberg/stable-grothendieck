@@ -8,10 +8,10 @@ def _test(r, upper):
     mu = tuple(i for i in range(r, 0, -1))
     for n in range(upper):
         f = SymmetricPolynomial.stable_grothendieck_s(mu, n, n)
-        g = w.signed_involution_stable_grothendieck(degree_bound=n)
-        print(f)
+        g = w.signed_involution_stable_grothendieck(n, n)
+        print('f =', f)
         print()
-        print(g)
+        print('g =', g)
         print()
         print(f - g)
         print()
@@ -21,7 +21,7 @@ def _test(r, upper):
 
 
 def test_one():
-    _test(1, 12)
+    _test(1, 10)
 
 
 def test_two():
