@@ -399,7 +399,7 @@ class Tableau:
         return cls.count_semistandard_marked(mu, n, True)
 
     @cached_value(COUNT_SEMISTANDARD_SHIFTED_MARKED_CACHE)
-    def count_semistandard_shifted_marked(cls, mu, n, diagonalprimes=True, setvalued=False):  # noqa
+    def count_semistandard_shifted_marked(cls, mu, n, diagonal_primes=True, setvalued=False):  # noqa
         assert Partition.is_strict_partition(mu)
         ans = defaultdict(int)
         if mu == tuple():
@@ -407,11 +407,11 @@ class Tableau:
         elif n > 0:
             for nu1, diff1, corners1 in cls._shifted_horizontal_strips(mu):
                 for nu2, diff2, corners2 in cls._shifted_vertical_strips(nu1):
-                    if not diagonalprimes:
+                    if not diagonal_primes:
                         if any(i == j for (i, j) in diff2):
                             continue
                         corners2 = [(i, j) for (i, j) in corners2 if i != j]
-                    for partition, count in cls.count_semistandard_shifted_marked(nu2, n - 1, diagonalprimes, setvalued).items():
+                    for partition, count in cls.count_semistandard_shifted_marked(nu2, n - 1, diagonal_primes, setvalued).items():
                         for i in range(len(corners1) + 1 if setvalued else 1):
                             for j in range(len(corners2) + 1 if setvalued else 1):
                                 m = len(diff1) + len(diff2) + i + j
@@ -471,6 +471,10 @@ class Tableau:
                     ans.add(tab)
         return ans
 
+    @classmethod
+    def semistandard_shifted_rpp(cls, mu, n, diagonal_nonprimes=True):
+        return cls.semistandard_marked_rpp(mu, n, diagonal_nonprimes)
+
     @cached_value(SEMISTANDARD_MARKED_RPP_CACHE)
     def semistandard_marked_rpp(cls, mu, n, diagonal_nonprimes=True):  # noqa
         assert Partition.is_strict_partition(mu)
@@ -490,8 +494,8 @@ class Tableau:
         return ans
 
     @classmethod
-    def count_semistandard_shifted_marked_setvalued(cls, mu, n, diagonalprimes=True):
-        return cls.count_semistandard_shifted_marked(mu, n, diagonalprimes, True)
+    def count_semistandard_shifted_marked_setvalued(cls, mu, n, diagonal_primes=True):
+        return cls.count_semistandard_shifted_marked(mu, n, diagonal_primes, True)
 
     @cached_value(SEMISTANDARD_CACHE)
     def semistandard(cls, mu, n, setvalued=False):  # noqa
@@ -533,8 +537,12 @@ class Tableau:
     def semistandard_marked_setvalued(cls, mu, n):
         return cls.semistandard_marked(mu, n, True)
 
+    @classmethod
+    def semistandard_shifted(cls, mu, n, diagonal_primes=True, setvalued=False):
+        return cls.semistandard_shifted_marked(mu, n, diagonal_primes, setvalued)
+
     @cached_value(SEMISTANDARD_SHIFTED_MARKED_CACHE)
-    def semistandard_shifted_marked(cls, mu, n, diagonalprimes=True, setvalued=False):  # noqa
+    def semistandard_shifted_marked(cls, mu, n, diagonal_primes=True, setvalued=False):  # noqa
         assert Partition.is_strict_partition(mu)
         ans = set()
         if mu == tuple():
@@ -542,13 +550,13 @@ class Tableau:
         elif n > 0:
             for nu1, diff1, corners1 in cls._shifted_horizontal_strips(mu):
                 for nu2, diff2, corners2 in cls._shifted_vertical_strips(nu1):
-                    if not diagonalprimes:
+                    if not diagonal_primes:
                         if any(i == j for (i, j) in diff2):
                             continue
                         corners2 = [(i, j) for (i, j) in corners2 if i != j]
                     for aug1 in cls._subsets(diff1, corners1, setvalued):
                         for aug2 in cls._subsets(diff2, corners2, setvalued):
-                            for tab in cls.semistandard_shifted_marked(nu2, n - 1, diagonalprimes, setvalued):
+                            for tab in cls.semistandard_shifted_marked(nu2, n - 1, diagonal_primes, setvalued):
                                 for (i, j) in aug1:
                                     tab = tab.add(i, j, n)
                                 for (i, j) in aug2:
@@ -557,8 +565,12 @@ class Tableau:
         return ans
 
     @classmethod
-    def semistandard_shifted_marked_setvalued(cls, mu, n, diagonalprimes=True):
-        return cls.semistandard_shifted_marked(mu, n, diagonalprimes, True)
+    def semistandard_shifted_setvalued(cls, mu, n, diagonal_primes=True):
+        return cls.semistandard_shifted_marked_setvalued(mu, n, diagonal_primes)
+
+    @classmethod
+    def semistandard_shifted_marked_setvalued(cls, mu, n, diagonal_primes=True):
+        return cls.semistandard_shifted_marked(mu, n, diagonal_primes, True)
 
     @classmethod
     def _subsets(cls, diff, corners, setvalued):

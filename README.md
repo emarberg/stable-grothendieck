@@ -7,7 +7,8 @@ Python code for computations involving stable Grothendieck polynomials, their sh
 1. Install pytest: `pip3 install pytest`
 
 ## Tests
-Run the tests at the command line: `pytest`
+1. Run the tests at the command line: `pytest`
+1. If there's time to spare, run the slow tests with `pytest --runslow` 
 
 ## Usage
 
@@ -69,4 +70,26 @@ dual_grothendieck_P(mu, n)
 gq(mu, n)
 dual_grothendieck_Q(mu, n)
 
+# add, subtract, and multiply polynomials
+f = P(mu, n)
+g = Q(mu, n)
+8 * f == g
+
+alpha, beta = (3,), (4,)
+f = GP(alpha, n) - GP(beta, n)
+g = GQ(alpha, n)
+f == g
+
+# generate tableaux and reverse plane partitions
+from tableaux import Tableau
+mu = (4, 2, 1)
+
+a = Tableau.semistandard(mu, 3)
+b = Tableau.semistandard_setvalued(mu, 3)
+
+c = Tableau.semistandard_shifted(mu, 3, diagonal_primes=True)
+d = Tableau.semistandard_shifted_setvalued(mu, 4, diagonal_primes=False)
+
+e = Tableau.semistandard_rpp(mu, 3)
+f = Tableau.semistandard_shifted_rpp(mu, 3, diagonal_nonprimes=False)
 ```
