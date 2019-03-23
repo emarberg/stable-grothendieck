@@ -30,6 +30,9 @@ class SymmetricMonomial:
         self.n = n
         self.mu = Partition.sort(mu, trim=True)
 
+    def serialize(self):
+        return (self.mu, self.n)
+
     def index(self):
         return self.mu
 
@@ -165,6 +168,9 @@ class SymmetricMonomial:
 
 
 class SymmetricPolynomial(Vector):
+
+    def serialize(self):
+        return {key.serialize(): value for key, value in self.items()}
 
     def __repr__(self):
         printer = self.printer or repr

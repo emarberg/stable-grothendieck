@@ -98,6 +98,10 @@ f = GP(alpha, n) - GP(beta, n)
 g = GQ(alpha, n)
 f == g
 
+# serialize to change a SymmetricPolynomial into a dict representing its expansion into monomials
+f = GP(nu, n)
+f.serialize()
+
 # generate tableaux and reverse plane partitions
 from tableaux import Tableau
 mu = (4, 2, 1)
@@ -110,4 +114,7 @@ d = Tableau.semistandard_shifted_setvalued(mu, 4, diagonal_primes=False)
 
 e = Tableau.semistandard_rpp(mu, 3)
 f = Tableau.semistandard_shifted_rpp(mu, 3, diagonal_nonprimes=False)
+
+# serialize to change a Tableau into a dictionary
+{t.serialize() for t in a}
 ```

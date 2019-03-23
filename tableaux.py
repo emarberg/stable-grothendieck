@@ -105,6 +105,9 @@ class Tableau:
         for i, j in sorted(self.boxes):
             yield i, j, self.boxes[(i, j)]
 
+    def serialize(self):
+        return self.boxes
+
     def find(self, v):
         return [(i, j) for i, j, values in self if v in values]
 

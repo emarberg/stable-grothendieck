@@ -1,5 +1,6 @@
 
 class Vector:
+
     def __init__(self, dictionary={}, printer=None):
         self.dictionary = {key: value for key, value in dictionary.items() if value}
         self.printer = printer
