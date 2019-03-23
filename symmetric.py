@@ -211,6 +211,14 @@ class SymmetricPolynomial(Vector):
             if mon.degree() == m
         })
 
+    def highest_degree_terms(self):
+        degrees = {m.degree() for m in self}
+        m = max(degrees) if degrees else 0
+        return SymmetricPolynomial({
+            mon: val for mon, val in self.items()
+            if mon.degree() == m
+        })
+
     @classmethod
     def _vectorize(cls, n, tableaux, signs=False, degree_bound=None):
         dictionary = defaultdict(int)
@@ -277,12 +285,37 @@ class SymmetricPolynomial(Vector):
         return cls._vectorize(n, tableaux)
 
     @classmethod
-    def schur_expansion(cls, f, n):
+    def schur_expansion(cls, f):
         if f:
             t = max(f)
+            n = t.n
             c = f[t]
             mu = t.index()
-            ans = cls.schur_expansion(f - c * cls.schur(mu, n), n)
+            ans = cls.schur_expansion(f - c * cls.schur(mu, n))
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
+    def grothendieck_expansion(cls, f):
+        if f:
+            t = max(f.lowest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            ans = cls.grothendieck_expansion(f - c * cls.stable_grothendieck(mu, n))
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
+    def dual_grothendieck_expansion(cls, f):
+        if f:
+            t = max(f.highest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            ans = cls.dual_grothendieck_expansion(f - c * cls.dual_stable_grothendieck(mu, n))
             return ans + Vector({mu: c})
         else:
             return Vector()

@@ -40,7 +40,12 @@ class Vector:
     def __getitem__(self, item):
         return self.dictionary.get(item, 0)
 
+    def __radd__(self, other):
+        return self.__add__(other)
+
     def __add__(self, other):
+        if other == 0:
+            return self
         if type(other) == type(self):
             keys = self.keys() | other.keys()
             return self.__class__({key: self[key] + other[key] for key in keys}, self.printer or other.printer)
@@ -48,6 +53,8 @@ class Vector:
             return other.__radd__(self)
 
     def __sub__(self, other):
+        if other == 0:
+            return self
         if type(other) == type(self):
             keys = self.keys() | other.keys()
             return self.__class__({key: self[key] - other[key] for key in keys}, self.printer or other.printer)

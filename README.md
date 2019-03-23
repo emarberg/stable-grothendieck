@@ -22,14 +22,11 @@ n = 6
 
 # define a partition
 mu = (3, 2, 1)
+nu = (4, 2, 1)
 
 # compute Schur function in variables x_1, x_2, ..., x_n
 schur(mu, n)
 s(mu, n)
-
-# compute Schur decomposition
-f = schur(mu, n) * schur(mu, n)
-SymmetricPolynomial.schur_expansion(f, n)
 
 # compute Schur P-function in variables x_1, x_2, ..., x_n
 schur_P(mu, n)
@@ -42,6 +39,13 @@ Q(mu, n)
 # compute Schur S-function in variables x_1, x_2, ..., x_n
 schur_S(mu, n)
 S(mu, n)
+
+# compute Schur decomposition
+f = schur(mu, n) * schur(mu, n)
+SymmetricPolynomial.schur_expansion(f)
+
+f = schur_P(nu, n)
+SymmetricPolynomial.schur_expansion(f)
 
 # compute stable Grothendieck polynomial in variables x_1, x_2, ..., x_n
 grothendieck(mu, n)
@@ -59,6 +63,13 @@ GQ(mu, n)
 grothendieck_S(mu, n)
 GS(mu, n)
 
+# compute stable Grothendieck decomposition
+f = GP(nu, n)
+SymmetricPolynomial.grothendieck_expansion(f)
+
+f = GQ(nu, n)
+SymmetricPolynomial.grothendieck_expansion(f)
+
 # compute dual stable Grothendieck polynomial in variables x_1, x_2, ..., x_n
 g(mu, n)
 dual_grothendieck(mu, n)
@@ -69,6 +80,13 @@ dual_grothendieck_P(mu, n)
 
 gq(mu, n)
 dual_grothendieck_Q(mu, n)
+
+# compute dual stable Grothendieck decomposition
+f = gp(nu, n)
+SymmetricPolynomial.dual_grothendieck_expansion(f)
+
+f = gq(nu, n)
+SymmetricPolynomial.dual_grothendieck_expansion(f)
 
 # add, subtract, and multiply polynomials
 f = P(mu, n)

@@ -154,6 +154,43 @@ def test_slow_dual_stable_grothendieck_pq():
         SymmetricPolynomial._slow_dual_stable_grothendieck(mu, 6)
 
 
+def test_decompose():
+    schur = SymmetricPolynomial.schur
+    schur_P = SymmetricPolynomial.schur_p  # noqa
+    dual_grothendieck = SymmetricPolynomial.dual_stable_grothendieck
+    grothendieck = SymmetricPolynomial.stable_grothendieck
+    GP = SymmetricPolynomial.stable_grothendieck_p  # noqa
+    GQ = SymmetricPolynomial.stable_grothendieck_q  # noqa
+
+    n = 6
+    mu = (3, 2, 1)
+    nu = (4, 2, 1)
+
+    f = schur(mu, n) * schur(mu, n)
+    exp = SymmetricPolynomial.schur_expansion(f)
+    assert f == sum([schur(a, n) * coeff for a, coeff in exp.items()])
+
+    f = schur_P(nu, n)
+    exp = SymmetricPolynomial.schur_expansion(f)
+    assert f == sum([schur(a, n) * coeff for a, coeff in exp.items()])
+
+    f = GP(nu, n)
+    exp = SymmetricPolynomial.grothendieck_expansion(f)
+    assert f == sum([grothendieck(a, n) * coeff for a, coeff in exp.items()])
+
+    f = GQ(nu, n)
+    exp = SymmetricPolynomial.grothendieck_expansion(f)
+    assert f == sum([grothendieck(a, n) * coeff for a, coeff in exp.items()])
+
+    f = SymmetricPolynomial.dual_stable_grothendieck_p(nu, n)
+    exp = SymmetricPolynomial.dual_grothendieck_expansion(f)
+    assert f == sum([dual_grothendieck(a, n) * coeff for a, coeff in exp.items()])
+
+    f = SymmetricPolynomial.dual_stable_grothendieck_q(nu, n)
+    exp = SymmetricPolynomial.dual_grothendieck_expansion(f)
+    assert f == sum([dual_grothendieck(a, n) * coeff for a, coeff in exp.items()])
+
+
 @pytest.mark.slow
 def test_symmetric_functions():
     nn = 6
