@@ -116,5 +116,5 @@ e = Tableau.semistandard_rpp(mu, 3)
 f = Tableau.semistandard_shifted_rpp(mu, 3, diagonal_nonprimes=False)
 
 # serialize to change a Tableau into a dictionary
-{t.serialize() for t in a}
+s = [t.serialize() for t in c]
 ```
