@@ -112,6 +112,43 @@ class Permutation:
     def fpf_involutions(cls, n):
         return cls.involutions(n, False, True)
 
+    def rothe_diagram(self):
+        n = len(self.oneline)
+        return sorted([
+            (i, self(j)) for i in range(1, n + 1) for j in range(i + 1, n + 1) if self(i) > self(j)
+        ])
+
+    def fpf_rothe_diagram(self, fpf=False):
+        return self.involution_rothe_diagram(True)
+
+    def involution_rothe_diagram(self, fpf=False):
+        return [(i, j) for (i, j) in self.rothe_diagram() if i > j or (not fpf and i == j)]
+
+    def print_rothe_diagram(self, french=False, sep=' '):
+        print(self.print_diagram(self.rothe_diagram(), french=french, sep=sep))
+
+    def print_fpf_rothe_diagram(self, french=False, sep=' '):
+        print(self.print_diagram(self.involution_rothe_diagram(True), french=french, sep=sep))
+
+    def print_involution_rothe_diagram(self, french=False, sep=' '):
+        print(self.print_diagram(self.involution_rothe_diagram(False), french=french, sep=sep))
+
+    @classmethod
+    def print_diagram(cls, diagram, french=False, sep=' '):
+        if not diagram:
+            return ''
+        rows = max([a[0] for a in diagram])
+        cols = max([a[1] for a in diagram])
+        arr = [[sep for i in range(cols)] for j in range(rows)]
+        for a in diagram:
+            i, j = tuple(a[:2])
+            arr[i - 1][j - 1] = '*'
+        tojoin = [''.join(row) for row in arr]
+        if french:
+            return '\n'.join(reversed(tojoin))
+        else:
+            return '\n'.join([''.join(row) for row in arr])
+
     def code(self):
         assert self.is_unsigned()
         code = ()
