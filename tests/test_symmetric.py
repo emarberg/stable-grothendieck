@@ -1,8 +1,45 @@
 from symmetric import SymmetricMonomial, SymmetricPolynomial
 from tableaux import Tableau, Partition
-from polynomials import Polynomial
+from polynomials import Polynomial, X
+from utils import GQ
 import itertools
 import pytest
+
+
+def test_multipeak_formula():
+    """
+    Tests that explicit summation formula for
+
+      K^{(-1)}_{(2,1)}(x_1, x_2, ..., x_N)
+
+    is the same as
+
+      GQ^{(-1)}_{(2,1)}(x_1, x_2, ... ,x_N)
+
+    """
+    for N in range(6):
+        ans = 0
+        for n in range(2, N + 1):
+            for i in itertools.combinations(range(1, N + 1), n):
+                term = 1 if (n - 3) % 2 == 0 else -1
+                for j in range(n):
+                    x = X(i[j])
+                    term *= (2 * x - x**2)
+                sigma = (n - 1) * (n - 2) // 2
+                for j in range(n):
+                    for k in range(j + 1, n):
+                        x = X(i[j])
+                        y = X(i[k])
+                        sigma -= (x + y - x * y)
+                print(i, term * sigma)
+                ans += term * sigma
+        bns = GQ((2, 1), N).polynomial()
+        print(ans)
+        print()
+        print(bns)
+        print()
+        print(ans - bns)
+        assert ans == bns
 
 
 def test_destandardize():

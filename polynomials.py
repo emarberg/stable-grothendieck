@@ -11,6 +11,10 @@ class HashableDict(dict):
         return d
 
 
+def X(i):
+    return Polynomial.x(i)
+
+
 class Polynomial:
 
     """
