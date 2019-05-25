@@ -54,7 +54,7 @@ class Permutation:
             if i < 0:
                 s += ['\u0305']
         if s:
-            return ''.join(s)
+            return ('' if len(self.oneline) < 10 else ',').join(s)
         else:
             return '1'
 
