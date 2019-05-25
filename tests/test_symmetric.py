@@ -58,6 +58,8 @@ def test_overline_multipeak_formula():
         for n in range(2, N + 1):
             for i in itertools.combinations(range(1, N + 1), n):
                 term = 1 if (n - 3) % 2 == 0 else -1
+                for t in range(n):
+                    term *= X(i[t])
                 for j in range(n):
                     x = X(i[j])
                     for k in range(j + 1, n):
@@ -65,16 +67,10 @@ def test_overline_multipeak_formula():
                         pi = 1
                         if j + 1 == k:
                             pi *= -(x + y - x * y)
-                            for t in range(n):
-                                pi *= X(i[t])
                         else:
-                            for t in range(j + 1):
-                                pi *= X(i[t])
-                            for t in range(k, n):
-                                pi *= X(i[t])
                             pi *= (1 - x) * (1 - y)
                             for t in range(j + 1, k):
-                                pi *= (2 * X(i[t]) - X(i[t])**2)
+                                pi *= (2 - X(i[t]))
                         print(i, j, k, term * pi)
                         print()
                         ans += term * pi
