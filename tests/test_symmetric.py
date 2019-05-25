@@ -1,7 +1,7 @@
 from symmetric import SymmetricMonomial, SymmetricPolynomial
 from tableaux import Tableau, Partition
 from polynomials import Polynomial, X
-from utils import GQ
+from utils import GQ, GP
 import itertools
 import pytest
 
@@ -34,6 +34,52 @@ def test_multipeak_formula():
                 print(i, term * sigma)
                 ans += term * sigma
         bns = GQ((2, 1), N).polynomial()
+        print(ans)
+        print()
+        print(bns)
+        print()
+        print(ans - bns)
+        assert ans == bns
+
+
+def test_overline_multipeak_formula():
+    """
+    Tests that explicit summation formula for
+
+      oK^{(-1)}_{(2,1)}(x_1, x_2, ..., x_N)
+
+    is the same as
+
+      GP^{(-1)}_{(2,1)}(x_1, x_2, ... ,x_N)
+
+    """
+    for N in range(7):
+        ans = 0
+        for n in range(2, N + 1):
+            for i in itertools.combinations(range(1, N + 1), n):
+                term = 1 if (n - 3) % 2 == 0 else -1
+                for j in range(n):
+                    x = X(i[j])
+                    for k in range(j + 1, n):
+                        y = X(i[k])
+                        pi = 1
+                        if j + 1 == k:
+                            pi *= -(x + y - x * y)
+                            for t in range(n):
+                                pi *= X(i[t])
+                        else:
+                            for t in range(j + 1):
+                                pi *= X(i[t])
+                            for t in range(k, n):
+                                pi *= X(i[t])
+                            pi *= (1 - x) * (1 - y)
+                            for t in range(j + 1, k):
+                                pi *= (2 * X(i[t]) - X(i[t])**2)
+                        print(i, j, k, term * pi)
+                        print()
+                        ans += term * pi
+        bns = GP((2, 1), N).polynomial()
+        print()
         print(ans)
         print()
         print(bns)
