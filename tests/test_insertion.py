@@ -279,7 +279,7 @@ def test_symplectic_hecke_insertion():
     w = (4, 2, 6, 1, 7, 5, 3, 4, 2, 1, 3, 2)
     i = (1, 2, 2, 3, 3, 4, 5, 5, 6, 8, 8, 9)
 
-    insertion, recording = Word.symplectic_hecke_insert(w)
+    insertion, recording = Word.symplectic_hecke_insertion(w)
 
     p = Tableau({
         (1, 1): 2, (1, 2): 3, (1, 3): 4, (1, 4): 5, (1, 5): 6, (1, 6): 7,
@@ -293,21 +293,25 @@ def test_symplectic_hecke_insertion():
     })
     assert insertion == p
     assert recording == q
+    assert Word.inverse_symplectic_hecke_insertion(p, q) == (w, tuple(range(1, 13)))
 
-    insertion, recording = Word.symplectic_hecke_insert(w, i)
+    insertion, recording = Word.symplectic_hecke_insertion(w, i)
 
     q = Tableau({
         (1, 1): 1, (1, 2): -2, (1, 3): 2, (1, 4): -3, (1, 5): 3, (1, 6): -8,
         (2, 2): 4, (2, 3): -5, (2, 4): -6, (2, 5): -9,
         (3, 3): 5, (3, 4): -8,
     })
+    assert insertion == p
+    assert recording == q
+    assert Word.inverse_symplectic_hecke_insertion(p, q) == (w, i)
 
 
 def test_symplectic_hecke_insertion_setvalued():
     w = (2, 2, 4, 3)
     i = (1, 1, 1, 4)
 
-    insertion, recording = Word.symplectic_hecke_insert(w)
+    insertion, recording = Word.symplectic_hecke_insertion(w)
 
     p = Tableau({
         (1, 1): 2, (1, 2): 3,
@@ -319,8 +323,9 @@ def test_symplectic_hecke_insertion_setvalued():
     })
     assert insertion == p
     assert recording == q
+    assert Word.inverse_symplectic_hecke_insertion(p, q) == (w, (1, 2, 3, 4))
 
-    insertion, recording = Word.symplectic_hecke_insert(w, i)
+    insertion, recording = Word.symplectic_hecke_insertion(w, i)
 
     q = Tableau({
         (1, 1): (1, 1), (1, 2): 1,
@@ -328,11 +333,12 @@ def test_symplectic_hecke_insertion_setvalued():
     })
     assert insertion == p
     assert recording == q
+    assert Word.inverse_symplectic_hecke_insertion(p, q) == (w, i)
 
     w = (4, 2, 2, 3)
     i = (2, 4, 4, 4)
 
-    insertion, recording = Word.symplectic_hecke_insert(w)
+    insertion, recording = Word.symplectic_hecke_insertion(w)
 
     p = Tableau({
         (1, 1): 2, (1, 2): 3,
@@ -344,8 +350,9 @@ def test_symplectic_hecke_insertion_setvalued():
     })
     assert insertion == p
     assert recording == q
+    assert Word.inverse_symplectic_hecke_insertion(p, q) == (w, (1, 2, 3, 4))
 
-    insertion, recording = Word.symplectic_hecke_insert(w, i)
+    insertion, recording = Word.symplectic_hecke_insertion(w, i)
 
     q = Tableau({
         (1, 1): 2, (1, 2): (-4, -4),
@@ -353,3 +360,4 @@ def test_symplectic_hecke_insertion_setvalued():
     })
     assert insertion == p
     assert recording == q
+    assert Word.inverse_symplectic_hecke_insertion(p, q) == (w, i)

@@ -15,6 +15,19 @@ def test_transpose():
     assert Partition.transpose(mu) == (9, 5, 3, 1, 1)
 
 
+def test_standardize():
+    t = Tableau({
+        (1, 1): 1, (1, 2): (-3, 2), (1, 3): (4, 5), (1, 4): (-7, -6, 7), (1, 5): (9, 10),
+        (2, 2): (4, 4), (2, 3): (6, -7), (2, 4): -8,
+        (3, 3): 8
+    })
+    assert t.standardize() == Tableau({
+        (1, 1): 1, (1, 2): (-3, 2), (1, 3): (6, 7), (1, 4): (-10, -8, 12), (1, 5): (15, 16),
+        (2, 2): (4, 5), (2, 3): (9, -11), (2, 4): -13,
+        (3, 3): 14
+    })
+
+
 def test_generate_partitions():
     assert set(Partition.generate(0)) == {()}
     assert set(Partition.generate(1)) == {(1,)}

@@ -105,14 +105,34 @@ class Tableau:
         for i, j in sorted(self.boxes):
             yield i, j, self.boxes[(i, j)]
 
+    def __len__(self):
+        ans = 0
+        for i, j, value in self:
+            ans += len(value)
+        return ans
+
+    def standardize(self):
+        entries = sorted(
+            [(v, i, j) for i, j, value in self for v in value],
+            key=lambda x: (-2 * x[0] - 1, x[1]) if x[0] < 0 else (2 * x[0], x[2])
+        )
+        ans = Tableau()
+        for a, (v, i, j) in enumerate(entries):
+            a = a + 1 if v > 0 else -a - 1
+            ans = ans.add(i, j, a)
+        return ans
+
     def serialize(self):
         return self.boxes
 
     def find(self, v):
         return [(i, j) for i, j, values in self if v in values]
 
-    def get(self, i, j, default=None):
-        return self.boxes.get((i, j), default)
+    def get(self, i, j, default=None, unpack=True):
+        ans = self.boxes.get((i, j), default)
+        if unpack and type(ans) == tuple and len(ans) == 1:
+            ans = ans[0]
+        return ans
 
     def add(self, i, j, v):
         mapping = self.boxes.copy()
@@ -122,16 +142,26 @@ class Tableau:
         mapping[(i, j)] = tuple(sorted(mapping[(i, j)] + (v,)))
         return self.__class__(mapping)
 
-    def remove(self, i, j, v):
+    def remove(self, i, j, v=None):
         assert (i, j) in self
-        assert v in self.get(i, j)
         mapping = self.boxes.copy()
+        if v is None:
+            del mapping[(i, j)]
+            return self.__class__(mapping)
+
+        assert v in self.get(i, j, unpack=False)
         k = 0
-        while self.get(i, j)[k] != v:
+        while self.get(i, j, unpack=False)[k] != v:
             k += 1
-        mapping[(i, j)] = self.get(i, j)[:k] + self.get(i, j)[k + 1:]
+        mapping[(i, j)] = self.get(i, j, unpack=False)[:k] + self.get(i, j, unpack=False)[k + 1:]
         if len(mapping[(i, j)]) == 0:
             del mapping[(i, j)]
+        return self.__class__(mapping)
+
+    def replace(self, i, j, v):
+        assert (i, j) in self
+        mapping = self.boxes.copy()
+        mapping[(i, j)] = v
         return self.__class__(mapping)
 
     def clear(self, i, j):
@@ -139,6 +169,31 @@ class Tableau:
         mapping = self.boxes.copy()
         del mapping[(i, j)]
         return self.__class__(mapping)
+
+    def values(self):
+        ans = set()
+        for i, j, v in self:
+            ans |= set(v) if type(v) != int else {v}
+        return ans
+
+    def last(self):
+        v = self.values()
+        n = max(abs(min(v)), abs(max(v))) if v else 0
+        assert not (n in v and -n in v)
+        return n if n in v else -n
+
+    def pop(self):
+        n = self.last()
+        boxes = self.find(n)
+        assert len(boxes) == 1
+        i, j = list(boxes)[0]
+        record = i, j, self.get(i, j)
+        v = self.get(i, j)
+        if n == v or -n == v or (n,) == v or (-n,) == v:
+            return self.remove(i, j), record
+        else:
+            v = tuple(sorted(set(self.get(i, j)) - {n, -n}))
+            return self.remove(i, j).add(i, j, v), record
 
     def max_row(self):
         return max([i for i, j in self.boxes]) if self.boxes else 0
