@@ -55,8 +55,35 @@ def test_crystal_operators():
     })
     print(t)
     print(t.e_crystal_operator(4))
+    assert t.e_crystal_operator(4) == Tableau({
+        (1, 1): (1, 2, 4, 4),
+        (2, 1): (5, 6, 6),
+        (3, 1): (7, 7, 7),
+    })
     assert t.f_crystal_operator(4) is None
 
+    t = Tableau({
+        (1, 1): 1, (1, 2): (1, 2, 3),
+        (2, 1): 3
+    })
+    u = Tableau({
+        (1, 1): (1, 2), (1, 2): (2, 3),
+        (2, 1): 3
+    })
+    assert t.f_crystal_operator(1, multisetvalued=False) == u
+    assert u.e_crystal_operator(1, multisetvalued=False) == t
+
+    t = Tableau({
+        (1, 1): 1, (1, 2): (1, 2),
+        (2, 1): 2
+    })
+    u = Tableau({
+        (1, 1): 1, (1, 2): (1, 3),
+        (2, 1): 2
+    })
+    assert t.f_crystal_operator(2, multisetvalued=False) == u
+    assert t.e_crystal_operator(2, multisetvalued=False) is None
+    assert u.e_crystal_operator(2, multisetvalued=False) == t
 
 
 def test_generate_partitions():

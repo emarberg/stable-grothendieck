@@ -112,6 +112,9 @@ class Tableau:
             ans += len(value)
         return ans
 
+    def transpose(self):
+        return Tableau({(j, i): v for i, j, v in self})
+
     def standardize(self):
         entries = sorted(
             [(v, i, j) for i, j, value in self for v in value],
@@ -162,15 +165,57 @@ class Tableau:
                 ans = ans.add(i + 1, j + 1, a)
         return ans
 
-    def e_crystal_operator(self, i):
-        crystal_word = self.crystal_reading_word()
-        operated = Word.e_crystal_operator(i, *crystal_word, unpack=False)
-        return self.from_crystal_reading_word(operated)
+    def e_crystal_operator(self, i, multisetvalued=True):
+        if multisetvalued:
+            crystal_word = self.crystal_reading_word()
+            operated = Word.e_crystal_operator(i, *crystal_word, unpack=False)
+            return self.from_crystal_reading_word(operated)
+        else:
+            s = sorted(
+                [(x, y, v) for x, y, value in self for v in value if v in [i, i + 1]],
+                key=lambda t: (t[1], -t[0], -t[2])
+            )
+            ell = len(s) + 1
+            while len(s) < ell:
+                ell = len(s)
+                for x in range(len(s) - 1):
+                    if s[x][-1] > s[x + 1][-1]:
+                        s = s[:x] + s[x + 2:]
+                        break
+            s = [p for p in s if p[-1] == i + 1]
+            if len(s) == 0:
+                return None
+            x, y, _ = s[0]
+            if (x, y - 1) in self and i + 1 in self.get(x, y - 1, unpack=False):
+                return self.remove(x, y - 1, i + 1).add(x, y, i)
+            else:
+                return self.remove(x, y, i + 1).add(x, y, i)
 
-    def f_crystal_operator(self, i):
-        crystal_word = self.crystal_reading_word()
-        operated = Word.f_crystal_operator(i, *crystal_word, unpack=False)
-        return self.from_crystal_reading_word(operated)
+    def f_crystal_operator(self, i, multisetvalued=True):
+        if multisetvalued:
+            crystal_word = self.crystal_reading_word()
+            operated = Word.f_crystal_operator(i, *crystal_word, unpack=False)
+            return self.from_crystal_reading_word(operated)
+        else:
+            s = sorted(
+                [(x, y, v) for x, y, value in self for v in value if v in [i, i + 1]],
+                key=lambda t: (t[1], -t[0], -t[2])
+            )
+            ell = len(s) + 1
+            while len(s) < ell:
+                ell = len(s)
+                for x in range(len(s) - 1):
+                    if s[x][-1] > s[x + 1][-1]:
+                        s = s[:x] + s[x + 2:]
+                        break
+            s = [p for p in s if p[-1] == i]
+            if len(s) == 0:
+                return None
+            x, y, _ = s[-1]
+            if (x, y + 1) in self and i in self.get(x, y + 1, unpack=False):
+                return self.remove(x, y + 1, i).add(x, y, i + 1)
+            else:
+                return self.remove(x, y, i).add(x, y, i + 1)
 
     def apply(self, function):
         return Tableau(mapping={
@@ -269,13 +314,13 @@ class Tableau:
         maximum = max([len(str(v)) for v in boxes.values()]) if self.boxes else 0
 
         def pad(x):
-            return (maximum - len(str(x))) * ' ' + str(x)
+            return str(x) + (maximum - len(str(x))) * ' '
 
         array = []
         for i in range(1, self.max_row() + 1):
             row = []
             for j in range(1, self.max_column() + 1):
-                row += [pad(boxes.get((i, j), '.'))]
+                row += [pad(boxes.get((i, j), ''))]
             array += [row]
         return array
 

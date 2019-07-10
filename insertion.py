@@ -4,11 +4,14 @@ from tableaux import Tableau
 class InsertionAlgorithm:
 
     @classmethod
-    def _check_record(cls, word, record):
+    def _check_record(cls, word, record, multisetvalued=True):
         record = tuple(range(1, len(word) + 1)) if record is None else record
         assert len(word) == len(record)
         assert all(record[i] <= record[i + 1] for i in range(len(record) - 1))
-        assert all(record[i] < record[i + 1] for i in range(len(record) - 1) if word[i] > word[i + 1])
+        if multisetvalued:
+            assert all(record[i] < record[i + 1] for i in range(len(record) - 1) if word[i] > word[i + 1])
+        else:
+            assert all(record[i] < record[i + 1] for i in range(len(record) - 1) if word[i] <= word[i + 1])
         mapping = {}
         for i, a in enumerate(record):
             mapping[i + 1] = a
@@ -16,7 +19,7 @@ class InsertionAlgorithm:
         return mapping
 
     @classmethod
-    def _check_recording_tableau(cls, recording_tableau):
+    def _standardize_recording_tableau(cls, recording_tableau):
         standard_tableau = recording_tableau.standardize()
         record = len(recording_tableau) * [0]
         for i, j, value in standard_tableau:
@@ -25,9 +28,12 @@ class InsertionAlgorithm:
         return standard_tableau, tuple(record)
 
     @classmethod
-    def hecke(cls, word, record=None):
-        record = cls._check_record(word, record)
+    def hecke(cls, word, record=None, multisetvalued=True):
+        record = cls._check_record(word, record, multisetvalued)
         insertion_tableau, recording_tableau = HState.insertion_tableaux(*word)
+        if not multisetvalued:
+            insertion_tableau = insertion_tableau.transpose()
+            recording_tableau = recording_tableau.transpose()
         return insertion_tableau, recording_tableau.apply(lambda x: record[x])
 
     @classmethod
@@ -43,8 +49,11 @@ class InsertionAlgorithm:
         return insertion_tableau, recording_tableau.apply(lambda x: record[x])
 
     @classmethod
-    def inverse_hecke(cls, insertion_tableau, recording_tableau):
-        standard_tableau, record = cls._check_recording_tableau(recording_tableau)
+    def inverse_hecke(cls, insertion_tableau, recording_tableau, multisetvalued=True):
+        standard_tableau, record = cls._standardize_recording_tableau(recording_tableau)
+        if not multisetvalued:
+            insertion_tableau = insertion_tableau.transpose()
+            standard_tableau = standard_tableau.transpose()
         word = HState.inverse_insertion(insertion_tableau, standard_tableau)
         return word, record
 
@@ -57,7 +66,7 @@ class InsertionAlgorithm:
 
     @classmethod
     def inverse_symplectic_hecke(cls, insertion_tableau, recording_tableau):
-        standard_tableau, record = cls._check_recording_tableau(recording_tableau)
+        standard_tableau, record = cls._standardize_recording_tableau(recording_tableau)
         word = FState.inverse_insertion(insertion_tableau, standard_tableau)
         return word, record
 

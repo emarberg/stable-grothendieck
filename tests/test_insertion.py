@@ -392,6 +392,43 @@ def test_orthogonal_hecke_insertion():
 
 
 def test_hecke_insertion():
+    w = (3, 2, 1, 1)
+    i = (1, 1, 1, 2)
+    insertion, recording = InsertionAlgorithm.hecke(w, i, multisetvalued=False)
+    p = Tableau({
+        (1, 1): 1, (1, 2): 2, (1, 3): 3
+    })
+    q = Tableau({
+        (1, 1): 1, (1, 2): 1, (1, 3): (1, 2)
+    })
+    print(insertion)
+    assert insertion == p
+    assert recording == q
+    assert InsertionAlgorithm.inverse_hecke(p, q, multisetvalued=False) == (w, i)
+
+    p = Tableau({
+        (1, 1): 1, (1, 2): 2,
+        (2, 1): 2
+    })
+    q = Tableau({
+        (1, 1): 2, (1, 2): 3,
+        (2, 1): 3
+    })
+    assert InsertionAlgorithm.inverse_hecke(p, q, multisetvalued=False) == ((1, 2, 1), (2, 3, 3))
+
+    i = (1, 2, 3, 3)
+    insertion, recording = InsertionAlgorithm.hecke(w, i)
+    p = Tableau({
+        (1, 1): 1, (2, 1): 2, (3, 1): 3
+    })
+    q = Tableau({
+        (1, 1): 1, (2, 1): 2, (3, 1): (3, 3)
+    })
+    print(insertion)
+    assert insertion == p
+    assert recording == q
+    assert InsertionAlgorithm.inverse_hecke(p, q) == (w, i)
+
     w = (1, 5, 1, 3, 3)
     i = (1, 1, 3, 3, 3)
     insertion, recording = InsertionAlgorithm.hecke(w)
