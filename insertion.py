@@ -1,6 +1,63 @@
 from tableaux import Tableau
 
 
+class InsertionAlgorithm:
+
+    @classmethod
+    def _check_record(cls, word, record):
+        record = tuple(range(1, len(word) + 1)) if record is None else record
+        assert len(word) == len(record)
+        assert all(record[i] <= record[i + 1] for i in range(len(record) - 1))
+        assert all(record[i] < record[i + 1] for i in range(len(record) - 1) if word[i] > word[i + 1])
+        mapping = {}
+        for i, a in enumerate(record):
+            mapping[i + 1] = a
+            mapping[-i - 1] = -a
+        return mapping
+
+    @classmethod
+    def _check_recording_tableau(cls, recording_tableau):
+        standard_tableau = recording_tableau.standardize()
+        record = len(recording_tableau) * [0]
+        for i, j, value in standard_tableau:
+            for k, v in enumerate(value):
+                record[abs(v) - 1] = abs(recording_tableau.get(i, j, unpack=False)[k])
+        return standard_tableau, tuple(record)
+
+    @classmethod
+    def hecke(cls, word, record=None):
+        record = cls._check_record(word, record)
+
+    @classmethod
+    def orthogonal_hecke(cls, word, record=None):
+        evenword = tuple(2 * i for i in word)
+        insertion_tableau, recording_tableau = cls.symplectic_hecke(evenword, record)
+        return insertion_tableau.halve(), recording_tableau
+
+    @classmethod
+    def symplectic_hecke(cls, word, record=None):
+        record = cls._check_record(word, record)
+        insertion_tableau, recording_tableau = FState.insertion_tableaux(*word)
+        return insertion_tableau, recording_tableau.apply(lambda x: record[x])
+
+    @classmethod
+    def inverse_hecke(cls, insertion_tableau, recording_tableau):
+        pass
+
+    @classmethod
+    def inverse_orthogonal_hecke(cls, insertion_tableau, recording_tableau):
+        word, record = cls.inverse_symplectic_hecke(insertion_tableau.double(), recording_tableau)
+        assert all(i % 2 == 0 for i in word)
+        word = tuple(i // 2 for i in word)
+        return word, record
+
+    @classmethod
+    def inverse_symplectic_hecke(cls, insertion_tableau, recording_tableau):
+        standard_tableau, record = cls._check_recording_tableau(recording_tableau)
+        word = FState.inverse_insertion(insertion_tableau, standard_tableau)
+        return word, record
+
+
 class InsertionState:
 
     def __init__(self, tableau=None, outer=None):

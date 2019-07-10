@@ -28,6 +28,25 @@ def test_standardize():
     })
 
 
+def test_crystal_reading_word():
+    t = Tableau({
+        (1, 1): 1, (1, 2): (3, 2), (1, 3): (3, 4, 5), (1, 4): (7, 6, 7), (1, 5): (9, 10),
+        (2, 2): (4, 4), (2, 3): (6, 7), (2, 4): 8,
+        (3, 3): 8
+    })
+    print(t)
+    print(t.crystal_reading_word())
+    assert t.is_semistandard()
+    assert t.crystal_reading_word() == (
+        (1,),
+        (4, 2, 3, 4),
+        (8, 6, 3, 4, 5, 7),
+        (8, 6, 7, 7),
+        (9, 10)
+    )
+    assert t == Tableau.from_crystal_reading_word(t.crystal_reading_word())
+
+
 def test_generate_partitions():
     assert set(Partition.generate(0)) == {()}
     assert set(Partition.generate(1)) == {(1,)}

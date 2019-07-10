@@ -1,4 +1,5 @@
 from cached import cached_value
+from words import Word
 from collections import defaultdict
 
 COUNT_SEMISTANDARD_CACHE = {}
@@ -121,6 +122,67 @@ class Tableau:
             a = a + 1 if v > 0 else -a - 1
             ans = ans.add(i, j, a)
         return ans
+
+    def is_semistandard(self):
+        for i, j, values in self:
+            if (i, j + 1) in self and max(values) > min(self.get(i, j + 1, unpack=False)):
+                return False
+            if (i + 1, j) in self and max(values) >= min(self.get(i + 1, j, unpack=False)):
+                return False
+        return True
+
+    def crystal_reading_word(self):
+        columns = defaultdict(dict)
+        for i, j, value in self:
+            columns[j][i] = value
+        columns = [[columns[j][i] for i in sorted(columns[j])] for j in sorted(columns)]
+        ans = ()
+        for col in columns:
+            pre, post = (), ()
+            for row in col:
+                pre = row[:1] + pre
+                post = post + row[1:]
+            ans += (pre + post,)
+        return ans
+
+    @classmethod
+    def from_crystal_reading_word(cls, crystal_reading_word):
+        ans = Tableau()
+        for j, col in enumerate(crystal_reading_word):
+            rows = []
+            for i in range(len(col)):
+                if i == 0 or col[i - 1] > col[i]:
+                    rows = [col[i]] + rows
+                else:
+                    print(rows)
+                    r = 1 + [a for a in range(len(rows)) if rows[a] <= col[i]][-1]
+                    ans = ans.add(r, j + 1, col[i])
+            for i, a in enumerate(rows):
+                ans = ans.add(i + 1, j + 1, a)
+        return ans
+
+    def e_crystal_operator(self, i):
+        crystal_word = self.crystal_reading_word()
+        operated = Word.e_crystal_operator(i, *crystal_word)
+        return self.from_crystal_reading_word(operated)
+
+    def f_crystal_operator(self, i):
+        crystal_word = self.crystal_reading_word()
+        operated = Word.f_crystal_operator(i, *crystal_word)
+        return self.from_crystal_reading_word(operated)
+
+    def apply(self, function):
+        return Tableau(mapping={
+            (i, j): tuple(function(v) for v in value)
+            for i, j, value in self
+        })
+
+    def double(self):
+        return self.apply(lambda x: 2 * x)
+
+    def halve(self):
+        assert all(v % 2 == 0 for _, _, value in self for v in value)
+        return self.apply(lambda x: x // 2)
 
     def serialize(self):
         return self.boxes

@@ -1,7 +1,6 @@
 from tableaux import Tableau
-from states import FState
+from insertion import FState, InsertionAlgorithm
 from permutations import Permutation
-from words import Word
 
 
 def test_next_f_r1():
@@ -279,7 +278,7 @@ def test_symplectic_hecke_insertion():
     w = (4, 2, 6, 1, 7, 5, 3, 4, 2, 1, 3, 2)
     i = (1, 2, 2, 3, 3, 4, 5, 5, 6, 8, 8, 9)
 
-    insertion, recording = Word.symplectic_hecke_insertion(w)
+    insertion, recording = InsertionAlgorithm.symplectic_hecke(w)
 
     p = Tableau({
         (1, 1): 2, (1, 2): 3, (1, 3): 4, (1, 4): 5, (1, 5): 6, (1, 6): 7,
@@ -293,9 +292,9 @@ def test_symplectic_hecke_insertion():
     })
     assert insertion == p
     assert recording == q
-    assert Word.inverse_symplectic_hecke_insertion(p, q) == (w, tuple(range(1, 13)))
+    assert InsertionAlgorithm.inverse_symplectic_hecke(p, q) == (w, tuple(range(1, 13)))
 
-    insertion, recording = Word.symplectic_hecke_insertion(w, i)
+    insertion, recording = InsertionAlgorithm.symplectic_hecke(w, i)
 
     q = Tableau({
         (1, 1): 1, (1, 2): -2, (1, 3): 2, (1, 4): -3, (1, 5): 3, (1, 6): -8,
@@ -304,14 +303,14 @@ def test_symplectic_hecke_insertion():
     })
     assert insertion == p
     assert recording == q
-    assert Word.inverse_symplectic_hecke_insertion(p, q) == (w, i)
+    assert InsertionAlgorithm.inverse_symplectic_hecke(p, q) == (w, i)
 
 
 def test_symplectic_hecke_insertion_setvalued():
     w = (2, 2, 4, 3)
     i = (1, 1, 1, 4)
 
-    insertion, recording = Word.symplectic_hecke_insertion(w)
+    insertion, recording = InsertionAlgorithm.symplectic_hecke(w)
 
     p = Tableau({
         (1, 1): 2, (1, 2): 3,
@@ -323,9 +322,9 @@ def test_symplectic_hecke_insertion_setvalued():
     })
     assert insertion == p
     assert recording == q
-    assert Word.inverse_symplectic_hecke_insertion(p, q) == (w, (1, 2, 3, 4))
+    assert InsertionAlgorithm.inverse_symplectic_hecke(p, q) == (w, (1, 2, 3, 4))
 
-    insertion, recording = Word.symplectic_hecke_insertion(w, i)
+    insertion, recording = InsertionAlgorithm.symplectic_hecke(w, i)
 
     q = Tableau({
         (1, 1): (1, 1), (1, 2): 1,
@@ -333,12 +332,12 @@ def test_symplectic_hecke_insertion_setvalued():
     })
     assert insertion == p
     assert recording == q
-    assert Word.inverse_symplectic_hecke_insertion(p, q) == (w, i)
+    assert InsertionAlgorithm.inverse_symplectic_hecke(p, q) == (w, i)
 
     w = (4, 2, 2, 3)
     i = (2, 4, 4, 4)
 
-    insertion, recording = Word.symplectic_hecke_insertion(w)
+    insertion, recording = InsertionAlgorithm.symplectic_hecke(w)
 
     p = Tableau({
         (1, 1): 2, (1, 2): 3,
@@ -350,9 +349,9 @@ def test_symplectic_hecke_insertion_setvalued():
     })
     assert insertion == p
     assert recording == q
-    assert Word.inverse_symplectic_hecke_insertion(p, q) == (w, (1, 2, 3, 4))
+    assert InsertionAlgorithm.inverse_symplectic_hecke(p, q) == (w, (1, 2, 3, 4))
 
-    insertion, recording = Word.symplectic_hecke_insertion(w, i)
+    insertion, recording = InsertionAlgorithm.symplectic_hecke(w, i)
 
     q = Tableau({
         (1, 1): 2, (1, 2): (-4, -4),
@@ -360,4 +359,33 @@ def test_symplectic_hecke_insertion_setvalued():
     })
     assert insertion == p
     assert recording == q
-    assert Word.inverse_symplectic_hecke_insertion(p, q) == (w, i)
+    assert InsertionAlgorithm.inverse_symplectic_hecke(p, q) == (w, i)
+
+
+def test_orthogonal_hecke_insertion():
+    w = (4, 5, 1, 1, 3, 2)
+    i = (1, 1, 3, 4, 4, 6)
+
+    insertion, recording = InsertionAlgorithm.orthogonal_hecke(w)
+
+    p = Tableau({
+        (1, 1): 1, (1, 2): 2, (1, 3): 4, (1, 4): 5,
+        (2, 2): 3
+    })
+    q = Tableau({
+        (1, 1): 1, (1, 2): 2, (1, 3): (-3, -4), (1, 4): -6,
+        (2, 2): 5
+    })
+    assert insertion == p
+    assert recording == q
+    assert InsertionAlgorithm.inverse_orthogonal_hecke(p, q) == (w, (1, 2, 3, 4, 5, 6))
+
+    insertion, recording = InsertionAlgorithm.orthogonal_hecke(w, i)
+
+    q = Tableau({
+        (1, 1): 1, (1, 2): 1, (1, 3): (-3, -4), (1, 4): -6,
+        (2, 2): 4
+    })
+    assert insertion == p
+    assert recording == q
+    assert InsertionAlgorithm.inverse_orthogonal_hecke(p, q) == (w, i)

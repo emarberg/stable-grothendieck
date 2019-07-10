@@ -1,63 +1,72 @@
 from vectors import Vector
-from tableaux import Tableau
-from states import FState
 from collections import defaultdict
 
 
 class Word:
 
     @classmethod
-    def _check_record(cls, word, record):
-        record = tuple(range(1, len(word) + 1)) if record is None else record
-        assert len(word) == len(record)
-        assert all(record[i] <= record[i + 1] for i in range(len(record) - 1))
-        assert all(record[i] < record[i + 1] for i in range(len(record) - 1) if word[i] > word[i + 1])
-        mapping = {}
-        for i, a in enumerate(record):
-            mapping[i + 1] = a
-            mapping[-i - 1] = -a
-        return mapping
+    def f_crystal_operator(cls, i, *args):
+        w = ()
+        for subword in args:
+            w += subword
+
+        s = [(j, a) for j, a in enumerate(w) if a in [i, i + 1]]
+        ell = len(s) + 1
+        while len(s) < ell:
+            ell = len(s)
+            for x in range(len(s) - 1):
+                (j, a) = s[x]
+                (k, b) = s[x + 1]
+                if a > b:
+                    s = s[:x] + s[x + 2:]
+                    break
+        s = [p for p in s if p[-1] == i]
+        if len(s) == 0:
+            return None
+        j, _ = s[-1]
+        assert w[j] == i
+        w = w[:j] + (i + 1,) + w[j + 1:]
+
+        if len(args) <= 1:
+            return w
+
+        ans = ()
+        for a in args:
+            ans += w[:len(a)]
+            w = w[len(a):]
+        return ans
 
     @classmethod
-    def _check_recording_tableau(cls, recording_tableau):
-        standard_tableau = recording_tableau.standardize()
-        record = len(recording_tableau) * [0]
-        for i, j, value in standard_tableau:
-            for k, v in enumerate(value):
-                record[abs(v) - 1] = abs(recording_tableau.get(i, j, unpack=False)[k])
-        return standard_tableau, tuple(record)
+    def e_crystal_operator(cls, i, *args):
+        w = ()
+        for subword in args:
+            w += subword
 
-    @classmethod
-    def hecke_insertion(cls, word, record=None):
-        record = cls._check_record(word, record)
+        s = [(j, a) for j, a in enumerate(w) if a in [i, i + 1]]
+        ell = len(s) + 1
+        while len(s) < ell:
+            ell = len(s)
+            for x in range(len(s) - 1):
+                (j, a) = s[x]
+                (k, b) = s[x + 1]
+                if a > b:
+                    s = s[:x] + s[x + 2:]
+                    break
+        s = [p for p in s if p[-1] == i + 1]
+        if len(s) == 0:
+            return None
+        j, _ = s[0]
+        assert w[j] == i + 1
+        w = w[:j] + (i,) + w[j + 1:]
 
-    @classmethod
-    def orthogonal_hecke_insertion(cls, word, record=None):
-        record = cls._check_record(word, record)
+        if len(args) <= 1:
+            return w
 
-    @classmethod
-    def symplectic_hecke_insertion(cls, word, record=None):
-        record = cls._check_record(word, record)
-        insertion_tableau, recording_tableau = FState.insertion_tableaux(*word)
-        recording_tableau = Tableau(mapping={
-            (i, j): tuple(record[v] for v in value)
-            for i, j, value in recording_tableau
-        })
-        return insertion_tableau, recording_tableau
-
-    @classmethod
-    def inverse_hecke_insertion(cls, insertion_tableau, recording_tableau):
-        pass
-
-    @classmethod
-    def inverse_orthogonal_hecke_insertion(cls, insertion_tableau, recording_tableau):
-        pass
-
-    @classmethod
-    def inverse_symplectic_hecke_insertion(cls, insertion_tableau, recording_tableau):
-        standard_tableau, record = cls._check_recording_tableau(recording_tableau)
-        word = FState.inverse_insertion(insertion_tableau, standard_tableau)
-        return word, record
+        ans = ()
+        for a in args:
+            ans += w[:len(a)]
+            w = w[len(a):]
+        return ans
 
     @classmethod
     def ascents(cls, v):
