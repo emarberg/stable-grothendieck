@@ -43,20 +43,35 @@ class Permutation:
     def rank(self):
         return self._rank
 
-    def __repr__(self):
-        # return 'Permutation(' + ', '.join([repr(i) for i in self.oneline]) + ')'
-        return str(self)
-
     def __str__(self):
-        s = []
-        for i in self.oneline:
-            s += [str(abs(i))]
-            if i < 0:
-                s += ['\u0305']
-        if s:
-            return ('' if len(self.oneline) < 10 else ',').join(s)
-        else:
+        # return str(self)
+        return self.cycle_repr()
+
+    @property
+    def cycles(self):
+        oneline = self.oneline
+        cycles = []
+        numbers = list(range(1, len(oneline) + 1))
+        while len(numbers) > 0:
+            cycle = [numbers[0]]
+            nxt = oneline[numbers[0] - 1]
+            numbers.remove(numbers[0])
+            while nxt != cycle[0]:
+                cycle.append(nxt)
+                numbers.remove(nxt)
+                nxt = oneline[cycle[len(cycle) - 1] - 1]
+            cycles.append(cycle)
+        return cycles
+
+    def cycle_repr(self):
+        if len(self) == 0:
             return '1'
+
+        s = ''
+        for c in self.cycles:
+            if len(c) > 1:
+                s += '(' + ' '.join([str(x) for x in c]) + ')'
+        return s
 
     @classmethod
     def all(cls, n, signed=False):
@@ -183,6 +198,25 @@ class Permutation:
         assert self.is_involution()
         mu = Partition.sort(self.involution_code(), trim=True)
         return Partition.transpose(mu)
+
+    @classmethod
+    def get_inv_grassmannian(cls, *mu):
+        assert all(mu[i - 1] > mu[i] for i in range(1, len(mu)))
+        ans = Permutation()
+        for i in range(len(mu)):
+            ans *= Permutation.transposition(1 + mu[0] - mu[i], i + 1 + mu[0])
+        return ans
+
+    @classmethod
+    def get_fpf_grassmannian(cls, *mu):
+        assert all(mu[i - 1] > mu[i] for i in range(1, len(mu)))
+        ans = Permutation()
+        for i in range(len(mu)):
+            ans *= Permutation.transposition(1 + mu[0] - mu[i], i + 2 + mu[0])
+        while not ans.is_fpf_involution():
+            f = [i for i in range(1, ans.rank + 2) if ans(i) == i]
+            ans *= Permutation.transposition(f[0], f[1])
+        return ans
 
     def fpf_involution_shape(self):
         assert self.is_fpf_involution()
