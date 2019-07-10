@@ -47,6 +47,18 @@ def test_crystal_reading_word():
     assert t == Tableau.from_crystal_reading_word(t.crystal_reading_word())
 
 
+def test_crystal_operators():
+    t = Tableau({
+        (1, 1): (1, 2, 4),
+        (2, 1): (5, 5, 6, 6),
+        (3, 1): (7, 7, 7),
+    })
+    print(t)
+    print(t.e_crystal_operator(4))
+    assert t.f_crystal_operator(4) is None
+
+
+
 def test_generate_partitions():
     assert set(Partition.generate(0)) == {()}
     assert set(Partition.generate(1)) == {(1,)}

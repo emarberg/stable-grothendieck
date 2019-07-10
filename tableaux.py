@@ -147,6 +147,8 @@ class Tableau:
 
     @classmethod
     def from_crystal_reading_word(cls, crystal_reading_word):
+        if crystal_reading_word is None:
+            return None
         ans = Tableau()
         for j, col in enumerate(crystal_reading_word):
             rows = []
@@ -154,7 +156,6 @@ class Tableau:
                 if i == 0 or col[i - 1] > col[i]:
                     rows = [col[i]] + rows
                 else:
-                    print(rows)
                     r = 1 + [a for a in range(len(rows)) if rows[a] <= col[i]][-1]
                     ans = ans.add(r, j + 1, col[i])
             for i, a in enumerate(rows):
@@ -163,12 +164,12 @@ class Tableau:
 
     def e_crystal_operator(self, i):
         crystal_word = self.crystal_reading_word()
-        operated = Word.e_crystal_operator(i, *crystal_word)
+        operated = Word.e_crystal_operator(i, *crystal_word, unpack=False)
         return self.from_crystal_reading_word(operated)
 
     def f_crystal_operator(self, i):
         crystal_word = self.crystal_reading_word()
-        operated = Word.f_crystal_operator(i, *crystal_word)
+        operated = Word.f_crystal_operator(i, *crystal_word, unpack=False)
         return self.from_crystal_reading_word(operated)
 
     def apply(self, function):

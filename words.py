@@ -5,7 +5,7 @@ from collections import defaultdict
 class Word:
 
     @classmethod
-    def f_crystal_operator(cls, i, *args):
+    def f_crystal_operator(cls, i, *args, **kwargs):
         w = ()
         for subword in args:
             w += subword
@@ -27,17 +27,17 @@ class Word:
         assert w[j] == i
         w = w[:j] + (i + 1,) + w[j + 1:]
 
-        if len(args) <= 1:
+        if len(args) <= 1 and kwargs.get('unpack', True):
             return w
 
         ans = ()
         for a in args:
-            ans += w[:len(a)]
+            ans += (w[:len(a)],)
             w = w[len(a):]
         return ans
 
     @classmethod
-    def e_crystal_operator(cls, i, *args):
+    def e_crystal_operator(cls, i, *args, **kwargs):
         w = ()
         for subword in args:
             w += subword
@@ -59,12 +59,12 @@ class Word:
         assert w[j] == i + 1
         w = w[:j] + (i,) + w[j + 1:]
 
-        if len(args) <= 1:
+        if len(args) <= 1 and kwargs.get('unpack', True):
             return w
 
         ans = ()
         for a in args:
-            ans += w[:len(a)]
+            ans += (w[:len(a)],)
             w = w[len(a):]
         return ans
 

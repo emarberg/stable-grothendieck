@@ -389,3 +389,51 @@ def test_orthogonal_hecke_insertion():
     assert insertion == p
     assert recording == q
     assert InsertionAlgorithm.inverse_orthogonal_hecke(p, q) == (w, i)
+
+
+def test_hecke_insertion():
+    w = (1, 5, 1, 3, 3)
+    i = (1, 1, 3, 3, 3)
+    insertion, recording = InsertionAlgorithm.hecke(w)
+
+    p = Tableau({
+        (1, 1): 1, (1, 2): 3,
+        (2, 1): 5
+    })
+    q = Tableau({
+        (1, 1): 1, (1, 2): (2, 5),
+        (2, 1): (3, 4)
+    })
+
+    assert insertion == p
+    assert recording == q
+    assert InsertionAlgorithm.inverse_hecke(p, q) == (w, (1, 2, 3, 4, 5))
+
+    insertion, recording = InsertionAlgorithm.hecke(w, i)
+
+    q = Tableau({
+        (1, 1): 1, (1, 2): (1, 3),
+        (2, 1): (3, 3)
+    })
+
+    assert insertion == p
+    assert recording == q
+    assert InsertionAlgorithm.inverse_hecke(p, q) == (w, i)
+
+    insertion, q = InsertionAlgorithm.hecke((3, 4, 1, 2, 4))
+
+    p = Tableau({
+        (1, 1): 1, (1, 2): 2, (1, 3): 4,
+        (2, 1): 3, (2, 2): 4,
+    })
+    assert insertion == p
+    assert InsertionAlgorithm.inverse_hecke(p, q) == ((3, 4, 1, 2, 4), (1, 2, 3, 4, 5))
+
+    insertion, q = InsertionAlgorithm.hecke((3, 1, 2, 4))
+
+    p = Tableau({
+        (1, 1): 1, (1, 2): 2, (1, 3): 4,
+        (2, 1): 3
+    })
+    assert insertion == p
+    assert InsertionAlgorithm.inverse_hecke(p, q) == ((3, 1, 2, 4), (1, 2, 3, 4))
