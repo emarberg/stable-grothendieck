@@ -27,6 +27,8 @@ class InsertionAlgorithm:
     @classmethod
     def hecke(cls, word, record=None):
         record = cls._check_record(word, record)
+        insertion_tableau, recording_tableau = HState.insertion_tableaux(*word)
+        return insertion_tableau, recording_tableau.apply(lambda x: record[x])
 
     @classmethod
     def orthogonal_hecke(cls, word, record=None):
@@ -42,7 +44,9 @@ class InsertionAlgorithm:
 
     @classmethod
     def inverse_hecke(cls, insertion_tableau, recording_tableau):
-        pass
+        standard_tableau, record = cls._check_recording_tableau(recording_tableau)
+        word = HState.inverse_insertion(insertion_tableau, standard_tableau)
+        return word, record
 
     @classmethod
     def inverse_orthogonal_hecke(cls, insertion_tableau, recording_tableau):
@@ -151,7 +155,129 @@ class InsertionState:
 
 
 class HState(InsertionState):
-    pass
+
+    @classmethod
+    def inverse_insertion(cls, p, q):
+        ans = tuple()
+        while p:
+            q, record = q.pop()
+            s, _ = HState(p).previous(record)
+            while not s.is_initial():
+                s, _ = s.previous()
+            p, v = s.pop()
+            ans = (v,) + ans
+        return ans
+
+    @classmethod
+    def insertion_tableaux(cls, *args, **kwargs):
+        if len(args) == 1 and type(args[0]) != int:
+            args = args[0]
+        p = kwargs.get('p', Tableau())
+        q = kwargs.get('q', Tableau())
+        offset = abs(q.last())
+        state = HState(p)
+        for index, a in enumerate(args):
+            state, path = state.insert(a)
+            i, j = path[-1]
+            r = index + 1 + offset
+
+            if (i, j) not in state:
+                a = max([a for (a, b) in state.boxes if b == j - 1])
+                i, j = a, j - 1
+            elif (i, j) not in state:
+                b = max([b for (a, b) in state.boxes if i - 1 == a])
+                i, j = i - 1, b
+
+            q = q.add(i, j, r)
+        p = state.tableau
+        return p, q
+
+    def _row_transition(self):
+        i, n = self.outer
+        a = self.get(i, n)
+
+        # no row/diagonal transition unless row with outer box excluded is increasing
+        row = sorted([self.get(i, x) for x in range(1, n) if (i, x) in self])
+        assert row == [self.get(i, x) for x in range(1, 1 + len(row))]
+
+        # row transition R1
+        if all(x <= a for x in row):
+            j = 1 + len(row)
+            col = [self.get(r, s) for (r, s) in self.boxes if s == j]
+            if all(x < a for x in row) and all(x < a for x in col):
+                tableau = self.tableau.add(i, j, a).remove(i, n)
+            else:
+                tableau = self.tableau.remove(i, n)
+            return HState(tableau), (i, j)
+
+        x = 1
+        while self.get(i, x) <= a:
+            x += 1
+        b = self.get(i, x)
+
+        # row transition R2
+        if (x == 1 or self.get(i, x - 1) < a) and (i == 1 or self.get(i - 1, x) < a):
+            tableau = self.tableau.add(i + 1, n, b).replace(i, x, a).remove(i, n)
+            return HState(tableau, (i + 1, n)), (i, x)
+        # row transition R3
+        else:
+            tableau = self.tableau.add(i + 1, n, b).remove(i, n)
+            return HState(tableau, (i + 1, n)), (i, x)
+
+    def next(self):
+        if self.has_outer_box_in_last_column():
+            return self._row_transition()
+        else:
+            return self, None
+
+    def previous(self, record=None):
+        if self.is_initial():
+            return self, None
+        elif self.has_outer_box_in_last_column():
+            return self._inverse_row_transition()
+        else:
+            return self._inverse_terminal_transition(record)
+
+    def _inverse_terminal_transition(self, record):
+        i, j, v = record
+        values = {v} if type(v) == int else set(v)
+
+        if len(values) == 1:
+            a, b = i, j
+            c = self.get(i, j)
+            t = self.tableau.remove(i, j)
+            j = t.max_column() + 2
+
+        elif len(values) > 1:
+            t = self.tableau
+            while (i - 1, j) in t and (i - 1, j + 1) not in t:
+                i = i - 1
+            a, b = i, j + 1
+            c = max(self.get(i, j), self.get(a - 1, b, 0))
+            j = self.tableau.max_column() + 2
+
+        t = t.add(i, j, c)
+        return HState(t, (i, j)), (a, b)
+
+    def _inverse_row_transition(self):
+        i, n = self.outer
+        b = self.get(i, n)
+
+        x = 1
+        while (i - 1, x + 1) in self and self.get(i - 1, x + 1) <= b:
+            x += 1
+        a = self.get(i - 1, x)
+
+        # row transition R2
+        if a == b:
+            c = max(self.get(i - 1, x - 1), self.get(i - 2, x, 0))
+            t = self.tableau.remove(i, n).add(i - 1, n, c)
+            return HState(t, (i - 1, n)), (i - 1, x)
+
+        # row transition R3
+        else:
+            t = self.tableau.remove(i, n).replace(i - 1, x, b).add(i - 1, n, a)
+            return HState(t, (i - 1, n)), (i - 1, x)
 
 
 class FState(InsertionState):
