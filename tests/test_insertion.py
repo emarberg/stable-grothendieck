@@ -334,6 +334,17 @@ def test_symplectic_hecke_insertion_setvalued():
     assert recording == q
     assert InsertionAlgorithm.inverse_symplectic_hecke(p, q) == (w, i)
 
+    i = (1, 2, 3, 3)
+    insertion, recording = InsertionAlgorithm.symplectic_hecke(w, i, False)
+
+    q = Tableau({
+        (1, 1): (1, 2), (1, 2): -3,
+        (2, 2): 3
+    })
+    assert insertion == p
+    assert recording == q
+    assert InsertionAlgorithm.inverse_symplectic_hecke(p, q, False) == (w, i)
+
     w = (4, 2, 2, 3)
     i = (2, 4, 4, 4)
 
@@ -360,6 +371,17 @@ def test_symplectic_hecke_insertion_setvalued():
     assert insertion == p
     assert recording == q
     assert InsertionAlgorithm.inverse_symplectic_hecke(p, q) == (w, i)
+
+    i = (1, 1, 2, 3)
+    insertion, recording = InsertionAlgorithm.symplectic_hecke(w, i, False)
+
+    q = Tableau({
+        (1, 1): 1, (1, 2): (1, 2),
+        (2, 2): 3
+    })
+    assert insertion == p
+    assert recording == q
+    assert InsertionAlgorithm.inverse_symplectic_hecke(p, q, False) == (w, i)
 
 
 def test_orthogonal_hecke_insertion():

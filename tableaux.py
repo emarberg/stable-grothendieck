@@ -230,6 +230,15 @@ class Tableau:
         assert all(v % 2 == 0 for _, _, value in self for v in value)
         return self.apply(lambda x: x // 2)
 
+    def negate(self, skipdiagonal=True):
+        if skipdiagonal:
+            return Tableau(mapping={
+                (i, j): tuple(-v if i != j else v for v in value)
+                for i, j, value in self
+            })
+        else:
+            return self.apply(lambda x: -x)
+
     def serialize(self):
         return self.boxes
 

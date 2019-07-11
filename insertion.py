@@ -37,15 +37,17 @@ class InsertionAlgorithm:
         return insertion_tableau, recording_tableau.apply(lambda x: record[x])
 
     @classmethod
-    def orthogonal_hecke(cls, word, record=None):
+    def orthogonal_hecke(cls, word, record=None, multisetvalued=True):
         evenword = tuple(2 * i for i in word)
-        insertion_tableau, recording_tableau = cls.symplectic_hecke(evenword, record)
+        insertion_tableau, recording_tableau = cls.symplectic_hecke(evenword, record, multisetvalued)
         return insertion_tableau.halve(), recording_tableau
 
     @classmethod
-    def symplectic_hecke(cls, word, record=None):
-        record = cls._check_record(word, record)
+    def symplectic_hecke(cls, word, record=None, multisetvalued=True):
+        record = cls._check_record(word, record, multisetvalued)
         insertion_tableau, recording_tableau = FState.insertion_tableaux(*word)
+        if not multisetvalued:
+            recording_tableau = recording_tableau.negate()
         return insertion_tableau, recording_tableau.apply(lambda x: record[x])
 
     @classmethod
@@ -58,15 +60,17 @@ class InsertionAlgorithm:
         return word, record
 
     @classmethod
-    def inverse_orthogonal_hecke(cls, insertion_tableau, recording_tableau):
-        word, record = cls.inverse_symplectic_hecke(insertion_tableau.double(), recording_tableau)
+    def inverse_orthogonal_hecke(cls, insertion_tableau, recording_tableau, multisetvalued=True):
+        word, record = cls.inverse_symplectic_hecke(insertion_tableau.double(), recording_tableau, multisetvalued)
         assert all(i % 2 == 0 for i in word)
         word = tuple(i // 2 for i in word)
         return word, record
 
     @classmethod
-    def inverse_symplectic_hecke(cls, insertion_tableau, recording_tableau):
+    def inverse_symplectic_hecke(cls, insertion_tableau, recording_tableau, multisetvalued=True):
         standard_tableau, record = cls._standardize_recording_tableau(recording_tableau)
+        if not multisetvalued:
+            standard_tableau = standard_tableau.negate()
         word = FState.inverse_insertion(insertion_tableau, standard_tableau)
         return word, record
 

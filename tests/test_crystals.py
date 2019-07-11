@@ -1,5 +1,6 @@
-from crystals import WordCrystalGenerator, TableauCrystalGenerator
+from crystals import WordCrystalGenerator, TableauCrystalGenerator, ShiftedCrystalGenerator
 from permutations import Permutation
+from tableaux import Partition
 from insertion import InsertionAlgorithm
 import pytest
 
@@ -20,6 +21,20 @@ def test_word_crystal_generator():
     print(g.edges)
 
 
+def test_shifted_crystal_generate():
+    for mvs in [False, True]:
+        for fpf in [False, True]:
+            ShiftedCrystalGenerator((2, 1), rank=3, excess=0, multisetvalued=mvs, fpf=fpf).generate()
+            ShiftedCrystalGenerator((2, 1), rank=3, excess=1, multisetvalued=mvs, fpf=fpf).generate()
+            ShiftedCrystalGenerator((2, 1), rank=3, excess=2, multisetvalued=mvs, fpf=fpf).generate()
+            ShiftedCrystalGenerator((3, 1), rank=3, excess=0, multisetvalued=mvs, fpf=fpf).generate()
+            ShiftedCrystalGenerator((3, 1), rank=3, excess=1, multisetvalued=mvs, fpf=fpf).generate()
+            ShiftedCrystalGenerator((3, 1), rank=3, excess=2, multisetvalued=mvs, fpf=fpf).generate()
+            ShiftedCrystalGenerator((3,), rank=3, excess=0, multisetvalued=mvs, fpf=fpf).generate()
+            ShiftedCrystalGenerator((3,), rank=3, excess=1, multisetvalued=mvs, fpf=fpf).generate()
+            ShiftedCrystalGenerator((3,), rank=3, excess=2, multisetvalued=mvs, fpf=fpf).generate()
+
+
 @pytest.mark.slow
 def test_word_crystal_generate():
     WordCrystalGenerator((3, 2, 1), 3, 3).generate()
@@ -32,6 +47,7 @@ def test_word_crystal_generate():
     WordCrystalGenerator((3, 2, 1), 5, 5, True).generate()
 
 
+@pytest.mark.slow
 def test_tableau_crystal_generate():
     TableauCrystalGenerator((2, 1), 3).generate()
 
@@ -72,6 +88,7 @@ def test_word_crystal_locality():
                         assert len(t) <= 1
 
 
+@pytest.mark.slow
 def test_decreasing_word_crystal_locality():
     def to_tuple(word, record, k):
         tup = tuple(tuple(word[x] for x in range(len(record)) if record[x] == y) for y in range(1, k + 1))
