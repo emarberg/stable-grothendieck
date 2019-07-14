@@ -3,7 +3,11 @@ from symmetric import SymmetricPolynomial, SymmetricMonomial
 from words import Word
 from vectors import Vector
 from tableaux import Partition
+from collections import defaultdict
 
+HECKE_CACHE = defaultdict(list)
+SYMPLECTIC_HECKE_CACHE = defaultdict(list)
+ORTHOGONAL_HECKE_CACHE = defaultdict(list)
 
 INVOLUTION_WORDS = {(): {()}}
 SIGNED_REDUCED_WORDS = {(): {()}}
@@ -43,9 +47,11 @@ class Permutation:
     def rank(self):
         return self._rank
 
-    def __str__(self):
-        # return str(self)
-        return self.cycle_repr()
+    def __repr__(self):
+        if self.is_unsigned():
+            return self.cycle_repr()
+        else:
+            return ' '.join([str(i) for i in self.oneline])
 
     @property
     def cycles(self):
@@ -97,7 +103,6 @@ class Permutation:
             for i in range(len(delta)):
                 w *= cls.transposition(numbers[0], numbers[delta[i]])
                 numbers = numbers[1:delta[i]] + numbers[delta[i] + 1:]
-                print(numbers)
             return w
 
         if not signed:
@@ -262,19 +267,32 @@ class Permutation:
     @classmethod
     def hecke_levels(cls, n, length_bound=None, ascent_bound=None):
         length_bound = -1 if length_bound is None else length_bound
-        start = (cls.identity(), ())
-        level = {start}
-        while level:
-            next_level = set()
+        key = (n, ascent_bound)
+
+        def generate():
+            for level in HECKE_CACHE[key][:-1]:
+                yield level
+            if HECKE_CACHE[key]:
+                level = HECKE_CACHE[key][-1]
+            else:
+                start = (cls.identity(), ())
+                level = {start}
+            while level:
+                next_level = set()
+                yield level
+                for pi, w in level:
+                    for i in range(1, n):
+                        s = Permutation.s_i(i)
+                        sigma = pi % s
+                        v = w + (i,)
+                        if ascent_bound is None or Word.ascents(v) < ascent_bound:
+                            next_level.add((sigma, v))
+                level = next_level
+
+        for i, level in enumerate(generate()):
+            if i >= len(HECKE_CACHE[key]):
+                HECKE_CACHE[key].append(level)
             yield level
-            for pi, w in level:
-                for i in range(1, n):
-                    s = Permutation.s_i(i)
-                    sigma = pi % s
-                    v = w + (i,)
-                    if ascent_bound is None or Word.ascents(v) < ascent_bound:
-                        next_level.add((sigma, v))
-            level = next_level
             if length_bound == 0:
                 break
             length_bound -= 1
@@ -296,26 +314,37 @@ class Permutation:
     def symplectic_hecke_levels(cls, n, length_bound=None, ascent_bound=None, hecke=True):
         assert n % 2 == 0
         length_bound = -1 if length_bound is None else length_bound
+        key = (n, ascent_bound, hecke)
 
-        a = cls.identity()
-        for i in range(1, n, 2):
-            a *= cls.s_i(i)
-        start = (a, ())
+        def generate():
+            for level in SYMPLECTIC_HECKE_CACHE[key][:-1]:
+                yield level
+            if SYMPLECTIC_HECKE_CACHE[key]:
+                level = SYMPLECTIC_HECKE_CACHE[key][-1]
+            else:
+                a = cls.identity()
+                for i in range(1, n, 2):
+                    a *= cls.s_i(i)
+                start = (a, ())
+                level = {start}
+            while level:
+                next_level = set()
+                yield level
+                for pi, w in level:
+                    for i in range(1, n):
+                        s = Permutation.s_i(i)
+                        if pi(i) != i + 1:
+                            sigma = s % pi % s
+                            v = w + (i,)
+                            if ascent_bound is None or Word.ascents(v) < ascent_bound:
+                                if hecke or sigma != pi:
+                                    next_level.add((sigma, v))
+                level = next_level
 
-        level = {start}
-        while level:
-            next_level = set()
+        for i, level in enumerate(generate()):
+            if i >= len(SYMPLECTIC_HECKE_CACHE[key]):
+                SYMPLECTIC_HECKE_CACHE[key].append(level)
             yield level
-            for pi, w in level:
-                for i in range(1, n):
-                    s = Permutation.s_i(i)
-                    if pi(i) != i + 1:
-                        sigma = s % pi % s
-                        v = w + (i,)
-                        if ascent_bound is None or Word.ascents(v) < ascent_bound:
-                            if hecke or sigma != pi:
-                                next_level.add((sigma, v))
-            level = next_level
             if length_bound == 0:
                 break
             length_bound -= 1
@@ -327,33 +356,47 @@ class Permutation:
                     yield w
 
     @classmethod
-    def involution_hecke_words(cls, n, length_bound=None, variables_bound=None):
-        for level in cls.involution_hecke_levels(n, length_bound, variables_bound):
+    def involution_hecke_words(cls, n, length_bound=None, peak_bound=None):
+        for level in cls.involution_hecke_levels(n, length_bound, peak_bound):
             for pi, w in level:
                 yield w
 
     @classmethod
-    def involution_hecke_levels(cls, n, length_bound=None, variables_bound=None):
+    def involution_hecke_levels(cls, n, length_bound=None, peak_bound=None, hecke=True):
         length_bound = -1 if length_bound is None else length_bound
-        start = (cls.identity(), ())
-        level = {start}
-        while level:
-            next_level = set()
+        key = (n, peak_bound, hecke)
+
+        def generate():
+            for level in ORTHOGONAL_HECKE_CACHE[key][:-1]:
+                yield level
+            if ORTHOGONAL_HECKE_CACHE[key]:
+                level = ORTHOGONAL_HECKE_CACHE[key][-1]
+            else:
+                start = (cls.identity(), ())
+                level = {start}
+            while level:
+                next_level = set()
+                yield level
+                for pi, w in level:
+                    for i in range(n):
+                        s = Permutation.s_i(i)
+                        sigma = s % pi % s
+                        v = w + (i,)
+                        if peak_bound is None or Word.peaks(v) <= peak_bound:
+                            if hecke or sigma != pi:
+                                next_level.add((sigma, v))
+                level = next_level
+
+        for i, level in enumerate(generate()):
+            if i >= len(ORTHOGONAL_HECKE_CACHE[key]):
+                ORTHOGONAL_HECKE_CACHE[key].append(level)
             yield level
-            for pi, w in level:
-                for i in range(n):
-                    s = Permutation.s_i(i)
-                    sigma = s % pi % s
-                    v = w + (i,)
-                    if variables_bound is None or Word.peaks(v) <= variables_bound:
-                        next_level.add((sigma, w + (i,)))
-            level = next_level
             if length_bound == 0:
                 break
             length_bound -= 1
 
-    def get_involution_hecke_words(self, length_bound=None, variables_bound=None):
-        for level in self.involution_hecke_levels(self.rank, length_bound, variables_bound):
+    def get_involution_hecke_words(self, length_bound=None, peak_bound=None):
+        for level in self.involution_hecke_levels(self.rank, length_bound, peak_bound):
             for pi, w in level:
                 if self == pi:
                     yield w
@@ -402,6 +445,7 @@ class Permutation:
     def involution_stable_grothendieck(self, n, degree_bound=None):
         assert self.is_involution() and self.is_unsigned()
         ans = Vector()
+        ell = self.involution_length
         for w in self.get_involution_hecke_words(degree_bound, n):
             ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
         return self._symmetrize(ans, n)
