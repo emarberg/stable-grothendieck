@@ -319,7 +319,11 @@ class Tableau:
         return max([j for i, j in self.boxes]) if self.boxes else 0
 
     def _string_array(self):
-        boxes = {k: ','.join(map(str, v)) for k, v in self.boxes.items()}
+        boxes = {
+            k: ''.join([
+                str(-x) + '\'' if x < 0 else str(x) + ' '
+                for x in sorted(v, key=lambda x:(abs(x), x))
+            ]) for k, v in self.boxes.items()}
         maximum = max([len(str(v)) for v in boxes.values()]) if self.boxes else 0
 
         def pad(x):

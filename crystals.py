@@ -131,42 +131,43 @@ class ShiftedCrystalGenerator(CrystalMixin):
 
     DIRECTORY = '/Users/emarberg/Desktop/crystals/shifted/'
 
+    @property
+    def SUBDIRECTORY(self):
+        return ('multisets/' if self.multisetvalued else 'sets/') + ('symplectic/' if self.is_symplectic else 'orthogonal/')
+
     def _filename(self, j):
         mu = ''.join([str(i) for i in self.mu])
-        return 'mu[%s]_rank[%s]_excess[%s]_size[%s]' % (mu, str(self.rank), str(self.excess), str(len(self._components[j])))
-
-    @property
-    def symbol(self):
-        return ('<=' if self.multisetvalued else '>') + ' ' + ('sp' if self.fpf else 'o')
+        size = len(self._components[j])
+        return 'mu[%s]_rank[%s]_excess[%s]_size[%s]' % (mu, self.rank, self.excess, size)
 
     def dot_filename(self, i):
         c = 'component[%s]' % i if type(i) == int else 'all'
-        return self.DIRECTORY + 'dot/' + '%s %s_c%s.dot' % (self.symbol, self._filename(i), c)
+        return self.DIRECTORY + 'dot/' + self.SUBDIRECTORY + '%s_%s.dot' % (self._filename(i), c)
 
     def png_filename(self, i):
         c = 'component[%s]' % i if type(i) == int else 'all'
-        return self.DIRECTORY + 'png/' + '%s %s_%s.png' % (self.symbol, self._filename(i), c)
+        return self.DIRECTORY + 'png/' + self.SUBDIRECTORY + '%s_%s.png' % (self._filename(i), c)
 
     def node_label(self, i):
         return str(self[i])
 
     @classmethod
-    def all(cls, n, rank, excess):
+    def all(cls, n, rank, excess, is_multisetvalued, is_symplectic):
         for mu in Partition.generate(n, strict=True):
-            cg = cls(mu, rank, excess)
+            cg = cls(mu, rank, excess, is_multisetvalued, is_symplectic)
             if cg.edges:
                 cg.generate()
 
     @property
     def forward(self):
-        if not self.fpf:
+        if not self.is_symplectic:
             return lambda x, y: InsertionAlgorithm.orthogonal_hecke(x, y, self.multisetvalued)
         else:
             return lambda x, y: InsertionAlgorithm.symplectic_hecke(x, y, self.multisetvalued)
 
     @property
     def backward(self):
-        if not self.fpf:
+        if not self.is_symplectic:
             return lambda x, y: InsertionAlgorithm.inverse_orthogonal_hecke(x, y, self.multisetvalued)
         else:
             return lambda x, y: InsertionAlgorithm.inverse_symplectic_hecke(x, y, self.multisetvalued)
@@ -179,14 +180,14 @@ class ShiftedCrystalGenerator(CrystalMixin):
     def inverse_hecke(self):
         return lambda p, q: InsertionAlgorithm.inverse_hecke(p, q, multisetvalued=self.multisetvalued)
 
-    def __init__(self, mu, rank, excess, multisetvalued=True, fpf=False):
+    def __init__(self, mu, rank, excess, multisetvalued=True, is_symplectic=False):
         self.mu = mu
         self.rank = rank
         self.excess = excess
-        self.fpf = fpf
+        self.is_symplectic = is_symplectic
         self.multisetvalued = multisetvalued
 
-        if self.fpf:
+        if self.is_symplectic:
             z = Permutation.get_fpf_grassmannian(*mu)
             ell = z.fpf_involution_length + excess
             words = [w for w in z.get_symplectic_hecke_words(length_bound=ell) if len(w) == ell]
@@ -207,7 +208,6 @@ class ShiftedCrystalGenerator(CrystalMixin):
 
         self._edges = None
         self._components = None
-        self.multisetvalued = multisetvalued
 
     @property
     def elements(self):
@@ -227,6 +227,11 @@ class ShiftedCrystalGenerator(CrystalMixin):
             element_indices = [x for x in range(len(self)) if self[x] == q]
             assert len(element_indices) == 1
             return element_indices[0]
+
+
+class OrthogonalSetvaluedShiftedCrystalGenerator(ShiftedCrystalGenerator):
+    def __init__(self, mu, rank, excess):
+        super(OrthogonalSetvaluedShiftedCrystalGenerator, self).__init__(mu, rank, excess, False, False)
 
 
 class WordCrystalGenerator(CrystalMixin):

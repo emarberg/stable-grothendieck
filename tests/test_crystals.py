@@ -1,4 +1,9 @@
-from crystals import WordCrystalGenerator, TableauCrystalGenerator, ShiftedCrystalGenerator
+from crystals import (
+    WordCrystalGenerator,
+    TableauCrystalGenerator,
+    ShiftedCrystalGenerator,
+    OrthogonalSetvaluedShiftedCrystalGenerator
+)
 from permutations import Permutation
 from tableaux import Partition
 from insertion import InsertionAlgorithm
@@ -24,15 +29,22 @@ def test_word_crystal_generator():
 def test_shifted_crystal_generate():
     for mvs in [False, True]:
         for fpf in [False, True]:
-            ShiftedCrystalGenerator((2, 1), rank=3, excess=0, multisetvalued=mvs, fpf=fpf).generate()
-            ShiftedCrystalGenerator((2, 1), rank=3, excess=1, multisetvalued=mvs, fpf=fpf).generate()
-            ShiftedCrystalGenerator((2, 1), rank=3, excess=2, multisetvalued=mvs, fpf=fpf).generate()
-            ShiftedCrystalGenerator((3, 1), rank=3, excess=0, multisetvalued=mvs, fpf=fpf).generate()
-            ShiftedCrystalGenerator((3, 1), rank=3, excess=1, multisetvalued=mvs, fpf=fpf).generate()
-            ShiftedCrystalGenerator((3, 1), rank=3, excess=2, multisetvalued=mvs, fpf=fpf).generate()
-            ShiftedCrystalGenerator((3,), rank=3, excess=0, multisetvalued=mvs, fpf=fpf).generate()
-            ShiftedCrystalGenerator((3,), rank=3, excess=1, multisetvalued=mvs, fpf=fpf).generate()
-            ShiftedCrystalGenerator((3,), rank=3, excess=2, multisetvalued=mvs, fpf=fpf).generate()
+            ShiftedCrystalGenerator((2,), rank=3, excess=0, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((2,), rank=3, excess=1, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((2,), rank=3, excess=2, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((2, 1), rank=3, excess=0, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((2, 1), rank=3, excess=1, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((2, 1), rank=3, excess=2, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((3, 1), rank=3, excess=0, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((3, 1), rank=3, excess=1, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((3, 1), rank=3, excess=2, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((3,), rank=3, excess=0, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((3,), rank=3, excess=1, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((3,), rank=3, excess=2, multisetvalued=mvs, is_symplectic=fpf).generate()
+
+
+def test_shifted_reading_words():
+    cg = OrthogonalSetvaluedShiftedCrystalGenerator((3, 1), rank=3, excess=2)
 
 
 @pytest.mark.slow
