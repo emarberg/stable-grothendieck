@@ -180,32 +180,36 @@ class ShiftedCrystalGenerator(CrystalMixin):
     def inverse_hecke(self):
         return lambda p, q: InsertionAlgorithm.inverse_hecke(p, q, multisetvalued=self.multisetvalued)
 
+    @property
+    def tableaux(self):
+        if self._tableaux is None:
+            if self.is_symplectic:
+                z = Permutation.get_fpf_grassmannian(*self.mu)
+                ell = z.fpf_involution_length + self.excess
+                return [w for w in z.get_symplectic_hecke_words(length_bound=ell) if len(w) == ell]
+            else:
+                z = Permutation.get_inv_grassmannian(*self.mu)
+                ell = z.involution_length + self.excess
+                return [w for w in z.get_involution_hecke_words(length_bound=ell) if len(w) == ell]
+
+            self._tableaux = []
+            for word in self._words():
+                for f in WordCrystalGenerator.get_increasing_factorizations(word, self.rank, not self.multisetvalued):
+                    w, i = WordCrystalGenerator.factorization_tuple_to_array(f)
+                    p, q = self.forward(w, i)
+                    assert self.insertion_tableau is None or self.insertion_tableau == p
+                    self.insertion_tableau = p
+                    self._tableaux.append(q)
+        return self._tableaux
+
     def __init__(self, mu, rank, excess, multisetvalued=True, is_symplectic=False):
         self.mu = mu
         self.rank = rank
         self.excess = excess
         self.is_symplectic = is_symplectic
         self.multisetvalued = multisetvalued
-
-        if self.is_symplectic:
-            z = Permutation.get_fpf_grassmannian(*mu)
-            ell = z.fpf_involution_length + excess
-            words = [w for w in z.get_symplectic_hecke_words(length_bound=ell) if len(w) == ell]
-        else:
-            z = Permutation.get_inv_grassmannian(*mu)
-            ell = z.involution_length + excess
-            words = [w for w in z.get_involution_hecke_words(length_bound=ell) if len(w) == ell]
-
-        self.tableaux = []
         self.insertion_tableau = None
-        for word in words:
-            for f in WordCrystalGenerator.get_increasing_factorizations(word, rank, not self.multisetvalued):
-                w, i = WordCrystalGenerator.factorization_tuple_to_array(f)
-                p, q = self.forward(w, i)
-                assert self.insertion_tableau is None or self.insertion_tableau == p
-                self.insertion_tableau = p
-                self.tableaux.append(q)
-
+        self._tableaux = None
         self._edges = None
         self._components = None
 
@@ -232,6 +236,54 @@ class ShiftedCrystalGenerator(CrystalMixin):
 class OrthogonalSetvaluedShiftedCrystalGenerator(ShiftedCrystalGenerator):
     def __init__(self, mu, rank, excess):
         super(OrthogonalSetvaluedShiftedCrystalGenerator, self).__init__(mu, rank, excess, False, False)
+
+
+class URTShiftedCrystalGenerator(ShiftedCrystalGenerator):
+
+    @property
+    def SUBDIRECTORY(self):
+        return ('multisets/' if self.multisetvalued else 'sets/') + 'urt/'
+
+    def __init__(self, mu, rank, excess):
+        super(URTShiftedCrystalGenerator, self).__init__(mu, rank, excess, False, False)
+        t = Tableau()
+        for i in range(len(mu)):
+            for j in range(mu[i]):
+                t = t.add(i + 1, i + j + 1, len(t) + 1)
+        self.insertion_tableau = t
+
+    @property
+    def tableaux(self):
+        if self._tableaux is None:
+            self._tableaux = [
+                t for t in Tableau.semistandard_shifted_marked_setvalued(self.mu, self.rank, False)
+                if len(t) == sum(self.mu) + self.excess
+            ]
+        return self._tableaux
+
+
+class MRTShiftedCrystalGenerator(ShiftedCrystalGenerator):
+
+    @property
+    def SUBDIRECTORY(self):
+        return ('multisets/' if self.multisetvalued else 'sets/') + ('mrt_sp/' if self.is_symplectic else 'mrt/')
+
+    def __init__(self, mu, rank, excess):
+        super(MRTShiftedCrystalGenerator, self).__init__(mu, rank, excess, False, True)
+        t = Tableau()
+        for i in range(len(mu)):
+            for j in range(mu[i]):
+                t = t.add(i + 1, i + j + 1, 2 * i + j + 1 + int(self.is_symplectic))
+        self.insertion_tableau = t
+
+    @property
+    def tableaux(self):
+        if self._tableaux is None:
+            self._tableaux = [
+                t for t in Tableau.semistandard_shifted_marked_setvalued(self.mu, self.rank, False)
+                if len(t) == sum(self.mu) + self.excess
+            ]
+        return self._tableaux
 
 
 class WordCrystalGenerator(CrystalMixin):

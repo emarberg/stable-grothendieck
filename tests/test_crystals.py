@@ -2,7 +2,9 @@ from crystals import (
     WordCrystalGenerator,
     TableauCrystalGenerator,
     ShiftedCrystalGenerator,
-    OrthogonalSetvaluedShiftedCrystalGenerator
+    OrthogonalSetvaluedShiftedCrystalGenerator,
+    URTShiftedCrystalGenerator,
+    MRTShiftedCrystalGenerator
 )
 from permutations import Permutation
 from tableaux import Partition
@@ -26,10 +28,14 @@ def test_word_crystal_generator():
     print(g.edges)
 
 
+@pytest.mark.slow
 def test_shifted_crystal_generate():
-    for mvs in [False, True]:
-        for fpf in [False, True]:
-            ShiftedCrystalGenerator((2,), rank=3, excess=0, multisetvalued=mvs, is_symplectic=fpf).generate()
+    for mvs in [False]:
+        for fpf in [False]:
+            ShiftedCrystalGenerator((4, 2), rank=3, excess=0, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((4, 2), rank=3, excess=1, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((4, 2), rank=3, excess=2, multisetvalued=mvs, is_symplectic=fpf).generate()
+            ShiftedCrystalGenerator((4, 2), rank=3, excess=3, multisetvalued=mvs, is_symplectic=fpf).generate()
             ShiftedCrystalGenerator((2,), rank=3, excess=1, multisetvalued=mvs, is_symplectic=fpf).generate()
             ShiftedCrystalGenerator((2,), rank=3, excess=2, multisetvalued=mvs, is_symplectic=fpf).generate()
             ShiftedCrystalGenerator((2, 1), rank=3, excess=0, multisetvalued=mvs, is_symplectic=fpf).generate()
@@ -43,8 +49,17 @@ def test_shifted_crystal_generate():
             ShiftedCrystalGenerator((3,), rank=3, excess=2, multisetvalued=mvs, is_symplectic=fpf).generate()
 
 
-def test_shifted_reading_words():
-    cg = OrthogonalSetvaluedShiftedCrystalGenerator((3, 1), rank=3, excess=2)
+@pytest.mark.slow
+def test_urt_crystal():
+    for mu in [(2,), (2, 1), (3, 1), (3,)]:
+        for excess in range(3):
+            URTShiftedCrystalGenerator(mu, rank=3, excess=excess).generate()
+
+
+def test_mrt_crystal():
+    for mu in [(2,), (2, 1), (3, 1), (3,)]:
+        for excess in range(3):
+            MRTShiftedCrystalGenerator(mu, rank=3, excess=excess).generate()
 
 
 @pytest.mark.slow
@@ -59,9 +74,8 @@ def test_word_crystal_generate():
     WordCrystalGenerator((3, 2, 1), 5, 5, True).generate()
 
 
-@pytest.mark.slow
 def test_tableau_crystal_generate():
-    TableauCrystalGenerator((2, 1), 3).generate()
+    TableauCrystalGenerator((2,), 3).generate()
 
 
 @pytest.mark.slow

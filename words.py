@@ -123,3 +123,4 @@ class Word:
                     ans[(i,) + k] += z * v
         ans = Vector({k: v for k, v in ans.items() if v != 0})
         return ans
+
