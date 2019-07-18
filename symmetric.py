@@ -327,6 +327,18 @@ class SymmetricPolynomial(Vector):
             return Vector()
 
     @classmethod
+    def gp_expansion(cls, f):
+        if f:
+            t = max(f.lowest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            ans = cls.gp_expansion(f - c * cls.stable_grothendieck_p(mu, n))
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
     def _slow_vectorize(cls, n, tableaux, signs=False):
         dictionary = defaultdict(int)
         for tab in tableaux:

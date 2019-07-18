@@ -22,6 +22,8 @@ RPP_HORIZONTAL_STRIPS_CACHE = {}
 SHIFTED_RPP_HORIZONTAL_STRIPS_CACHE = {}
 SHIFTED_RPP_VERTICAL_STRIPS_CACHE = {}
 
+PARTITIONS = {}
+
 
 def nchoosek(m, k):
     ans = 1
@@ -33,6 +35,13 @@ def nchoosek(m, k):
 
 
 class Partition:
+
+    @classmethod
+    def printable(cls, mu, shifted=False):
+        s = []
+        for i, a in enumerate(mu):
+            s = [(i * '  ' if shifted else '') + a * '* '] + s
+        return '\n'.join(s)
 
     @classmethod
     def sort(cls, mu, trim=False):
@@ -63,16 +72,34 @@ class Partition:
         return ans
 
     @classmethod
+    def contains(cls, nu, mu):
+        return all(0 <= (mu[i] if i < len(mu) else 0) <= nu[i] for i in range(len(nu)))
+
+    @classmethod
+    def all(cls, n, strict=False):
+        for i in range(n + 1):
+            for mu in cls.generate(i, strict=strict):
+                yield mu
+
+    @classmethod
     def generate(cls, n, max_part=None, strict=False):
         if n == 0:
             yield ()
         else:
-            max_part = n if (max_part is None or max_part > n) else max_part
-            for i in range(1, max_part + 1):
-                for mu in cls.generate(n - i, i):
-                    nu = (i,) + mu
-                    if not strict or Partition.is_strict_partition(nu):
-                        yield (i,) + mu
+            if (n, max_part, strict) not in PARTITIONS:
+                ans = []
+                max_part = n if (max_part is None or max_part > n) else max_part
+                for i in range(1, max_part + 1):
+                    for mu in cls.generate(n - i, i):
+                        nu = (i,) + mu
+                        if not strict or Partition.is_strict_partition(nu):
+                            ku = (i,) + mu
+                            ans.append(ku)
+                            yield ku
+                PARTITIONS[(n, max_part, strict)] = ans
+            else:
+                for mu in PARTITIONS[(n, max_part, strict)]:
+                    yield mu
 
 
 class Tableau:
