@@ -3,28 +3,30 @@ from permutations import Permutation
 
 
 def test_grothendieck():
+    n = 3
     w = Permutation(4, 3, 2, 1)
-    f = G((3, 2, 1), 3)
+    f = G(n, (3, 2, 1))
     print(f)
-    g = G(w, 3)
+    g = G(n, w)
     print(g)
     assert f == g
 
 
 def test_grothendieck_p():
+    n = 3
     w = Permutation(4, 3, 2, 1)
-    f = GP((2,), 3)
+    f = GP(n, (2,))
     print(f)
-    g = GP(w, 3)
+    g = GP(n, w)
     print(g)
     assert f == g
 
 
 def test_grothendieck_s():
+    n = 3
     w = Permutation(-1)
-    f = GS((1,), 3)
+    f = GS(n, (1,))
     print(f)
-    g = GS(w, 3)
+    g = GS(n, w)
     print(g)
     assert f == g
-

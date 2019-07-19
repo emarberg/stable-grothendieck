@@ -12,8 +12,8 @@ def _test(n_max, v_max):
                 for mu in Partition.generate(k):
                     if mu and mu[0] + k > n:
                         continue
-                    a += [SymmetricPolynomial.dual_stable_grothendieck(mu, v).truncate(n)]
-                    b += [SymmetricPolynomial.stable_grothendieck(mu, v).truncate(n)]
+                    a += [SymmetricPolynomial.dual_stable_grothendieck(v, mu).truncate(n)]
+                    b += [SymmetricPolynomial.stable_grothendieck(v, mu).truncate(n)]
 
             s = Polynomial()
             for i in range(len(a)):
@@ -72,8 +72,8 @@ def _test_shifted_q(n_max, v_max):
             a, b = [], []
             for k in range(max(n, 1)):
                 for mu in Partition.generate(k, strict=True):
-                    a += [SymmetricPolynomial.dual_stable_grothendieck_p(mu, v).truncate(n)]
-                    b += [SymmetricPolynomial.stable_grothendieck_q(mu, v).truncate(n)]
+                    a += [SymmetricPolynomial.dual_stable_grothendieck_p(v, mu).truncate(n)]
+                    b += [SymmetricPolynomial.stable_grothendieck_q(v, mu).truncate(n)]
 
             s = Polynomial()
             for i in range(len(a)):
@@ -108,8 +108,8 @@ def _test_shifted_p(n_max, v_max):
             a, b = [], []
             for k in range(max(n, 1)):
                 for mu in Partition.generate(k, strict=True):
-                    a += [SymmetricPolynomial.dual_stable_grothendieck_q(mu, v).truncate(n)]
-                    b += [SymmetricPolynomial.stable_grothendieck_p(mu, v).truncate(n)]
+                    a += [SymmetricPolynomial.dual_stable_grothendieck_q(v, mu).truncate(n)]
+                    b += [SymmetricPolynomial.stable_grothendieck_p(v, mu).truncate(n)]
 
             s = Polynomial()
             for i in range(len(a)):

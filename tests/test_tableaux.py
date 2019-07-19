@@ -197,7 +197,6 @@ def test_shifted_vertical_strips():
     ]
 
 
-
 def test_shifted_rpp_horizontal_strips():
     mu = ()
     assert Tableau._shifted_rpp_horizontal_strips(mu) == [
@@ -339,15 +338,15 @@ def test_shifted_rpp_verticle_strips():
 
 def test_semistandard_marked_rpp():
     mu = (1,)
-    print(Tableau.semistandard_marked_rpp(1, mu, True))
+    print(Tableau.semistandard_marked_rpp(1, mu, diagonal_nonprimes=True))
     print()
-    assert Tableau.semistandard_marked_rpp(1, mu, True) == {
+    assert Tableau.semistandard_marked_rpp(1, mu, diagonal_nonprimes=True) == {
         MarkedReversePlanePartition({(1, 1): 1}),
         MarkedReversePlanePartition({(1, 1): -1}),
     }
-    print(Tableau.semistandard_marked_rpp(1, mu, False))
+    print(Tableau.semistandard_marked_rpp(1, mu, diagonal_nonprimes=False))
     print()
-    assert Tableau.semistandard_marked_rpp(1, mu, False) == {
+    assert Tableau.semistandard_marked_rpp(1, mu, diagonal_nonprimes=False) == {
         MarkedReversePlanePartition({(1, 1): -1}),
     }
 
@@ -485,7 +484,7 @@ def test_semistandard_shifted_marked():
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): -1}),
     }
-    assert Tableau.semistandard_shifted_marked(1, mu, False) == {
+    assert Tableau.semistandard_shifted_marked(1, mu, diagonal_primes=False) == {
         Tableau({(1, 1): 1}),
     }
 
@@ -495,14 +494,14 @@ def test_semistandard_shifted_marked():
         Tableau({(1, 1): 2}),
         Tableau({(1, 1): -2}),
     }
-    assert Tableau.semistandard_shifted_marked(2, mu, False) == {
+    assert Tableau.semistandard_shifted_marked(2, mu, diagonal_primes=False) == {
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): 2}),
     }
 
     mu = (3, 1)
     assert Tableau.semistandard_shifted_marked(1, mu) == set()
-    assert Tableau.semistandard_shifted_marked(1, mu, False) == set()
+    assert Tableau.semistandard_shifted_marked(1, mu, diagonal_primes=False) == set()
 
     assert Tableau.semistandard_shifted_marked(2, mu) == {
         Tableau({(1, 1): 1, (2, 2): 2, (1, 2): 1, (1, 3): 1}),
@@ -522,7 +521,7 @@ def test_semistandard_shifted_marked():
         Tableau({(1, 1): -1, (2, 2): -2, (1, 2): 1, (1, 3): -2}),
         Tableau({(1, 1): -1, (2, 2): -2, (1, 2): -2, (1, 3): 2}),
     }
-    assert Tableau.semistandard_shifted_marked(2, mu, False) == {
+    assert Tableau.semistandard_shifted_marked(2, mu, diagonal_primes=False) == {
         Tableau({(1, 1): 1, (2, 2): 2, (1, 2): 1, (1, 3): 1}),
         Tableau({(1, 1): 1, (2, 2): 2, (1, 2): 1, (1, 3): 2}),
         Tableau({(1, 1): 1, (2, 2): 2, (1, 2): 1, (1, 3): -2}),
@@ -531,7 +530,7 @@ def test_semistandard_shifted_marked():
 
     mu = (3, 2)
     assert Tableau.semistandard_shifted_marked(1, mu) == set()
-    assert Tableau.semistandard_shifted_marked(1, mu, False) == set()
+    assert Tableau.semistandard_shifted_marked(1, mu, diagonal_primes=False) == set()
 
 
 def test_semistandard_shifted_marked_setvalued():

@@ -73,6 +73,7 @@ class Partition:
 
     @classmethod
     def contains(cls, nu, mu):
+        """Returns true if mu subseteq nu as partitions."""
         return all(0 <= (mu[i] if i < len(mu) else 0) <= nu[i] for i in range(len(nu)))
 
     @classmethod
@@ -680,38 +681,46 @@ class Tableau:
                             ans[partition + (m,)] += count
         return ans
 
+    @classmethod
+    def count_semistandard_shifted_marked_setvalued(cls, max_entry, mu, diagonal_primes=True):
+        return cls.count_semistandard_shifted_marked(max_entry, mu, diagonal_primes, True)
+
+    @classmethod
+    def semistandard_rpp(cls, max_entry, mu, nu=()):  # noqa
+        return cls._semistandard_rpp(max_entry, mu, nu)
+
     @cached_value(SEMISTANDARD_RPP_CACHE)
-    def semistandard_rpp(cls, max_entry, mu):  # noqa
+    def _semistandard_rpp(cls, max_entry, mu, lam):  # noqa
         ans = set()
-        if mu == tuple():
+        if mu == lam:
             ans = {ReversePlanePartition()}
-        elif max_entry > 0:
+        elif Partition.contains(mu, lam) and max_entry > 0:
             for nu, diff in cls._rpp_vertical_strips(mu):
-                for tab in cls.semistandard_rpp(max_entry - 1, nu):
+                for tab in cls._semistandard_rpp(max_entry - 1, nu, lam):
                     for (i, j) in diff:
                         tab = tab.add(i, j, max_entry)
                     ans.add(tab)
         return ans
 
     @classmethod
-    def semistandard_shifted_rpp(cls, max_entry, mu, diagonal_nonprimes=True):
-        return cls.semistandard_marked_rpp(max_entry, mu, diagonal_nonprimes)
+    def semistandard_shifted_rpp(cls, max_entry, mu, nu=(), diagonal_nonprimes=True):
+        return cls.semistandard_marked_rpp(max_entry, mu, nu, diagonal_nonprimes)
 
     @classmethod
-    def semistandard_marked_rpp(cls, max_entry, mu, diagonal_nonprimes=True):  # noqa
-        return cls._semistandard_marked_rpp(max_entry, mu, diagonal_nonprimes)
+    def semistandard_marked_rpp(cls, max_entry, mu, nu=(), diagonal_nonprimes=True):  # noqa
+        return cls._semistandard_marked_rpp(max_entry, mu, nu, diagonal_nonprimes)
 
     @cached_value(SEMISTANDARD_MARKED_RPP_CACHE)
-    def _semistandard_marked_rpp(cls, max_entry, mu, diagonal_nonprimes):  # noqa
+    def _semistandard_marked_rpp(cls, max_entry, mu, lam, diagonal_nonprimes):  # noqa
         assert Partition.is_strict_partition(mu)
         ans = set()
-        if mu == tuple():
+        if mu == lam:
             ans = {MarkedReversePlanePartition()}
-        elif max_entry > 0:
+        elif Partition.contains(mu, lam) and max_entry > 0:
             for nu1, diff1 in cls._shifted_rpp_horizontal_strips(mu):
                 for nu2, diff2 in cls._shifted_rpp_vertical_strips(nu1):
                     if diagonal_nonprimes or not any(i == j for i, j in diff1):
-                        for tab in cls._semistandard_marked_rpp(max_entry - 1, nu2, diagonal_nonprimes):
+                        for tab in cls._semistandard_marked_rpp(max_entry - 1, nu2, lam, diagonal_nonprimes):
                             for (i, j) in diff1:
                                 tab = tab.add(i, j, max_entry)
                             for (i, j) in diff2:
@@ -720,46 +729,42 @@ class Tableau:
         return ans
 
     @classmethod
-    def count_semistandard_shifted_marked_setvalued(cls, max_entry, mu, diagonal_primes=True):
-        return cls.count_semistandard_shifted_marked(max_entry, mu, diagonal_primes, True)
-
-    @classmethod
-    def semistandard(cls, max_entry, mu, setvalued=False):  # noqa
-        return cls._semistandard(max_entry, mu, setvalued)
+    def semistandard(cls, max_entry, mu, nu=(), setvalued=False):  # noqa
+        return cls._semistandard(max_entry, mu, nu, setvalued)
 
     @cached_value(SEMISTANDARD_CACHE)
-    def _semistandard(cls, max_entry, mu, setvalued):  # noqa
+    def _semistandard(cls, max_entry, mu, lam, setvalued):  # noqa
         ans = set()
-        if mu == tuple():
+        if mu == lam:
             ans = {Tableau()}
-        elif max_entry > 0:
+        elif Partition.contains(mu, lam) and max_entry > 0:
             for nu, diff, corners in cls._horizontal_strips(mu):
                     for aug in cls._subsets(diff, corners, setvalued):
-                        for tab in cls._semistandard(max_entry - 1, nu, setvalued):
+                        for tab in cls._semistandard(max_entry - 1, nu, lam, setvalued):
                             for (i, j) in aug:
                                 tab = tab.add(i, j, max_entry)
                             ans.add(tab)
         return ans
 
     @classmethod
-    def semistandard_setvalued(cls, max_entry, mu):
-        return cls.semistandard(max_entry, mu, True)
+    def semistandard_setvalued(cls, max_entry, mu, nu=()):
+        return cls.semistandard(max_entry, mu, nu, setvalued=True)
 
     @classmethod
-    def semistandard_marked(cls, max_entry, mu, setvalued=False):  # noqa
-        return cls._semistandard_marked(max_entry, mu, setvalued)
+    def semistandard_marked(cls, max_entry, mu, nu=(), setvalued=False):  # noqa
+        return cls._semistandard_marked(max_entry, mu, nu, setvalued)
 
     @cached_value(SEMISTANDARD_MARKED_CACHE)
-    def _semistandard_marked(cls, max_entry, mu, setvalued):  # noqa
+    def _semistandard_marked(cls, max_entry, mu, lam, setvalued):  # noqa
         ans = set()
-        if mu == tuple():
+        if mu == lam:
             ans = {Tableau()}
-        elif max_entry > 0:
+        elif Partition.contains(mu, lam) and max_entry > 0:
             for nu1, diff1, corners1 in cls._horizontal_strips(mu):
                 for nu2, diff2, corners2 in cls._vertical_strips(nu1):
                     for aug1 in cls._subsets(diff1, corners1, setvalued):
                         for aug2 in cls._subsets(diff2, corners2, setvalued):
-                            for tab in cls._semistandard_marked(max_entry - 1, nu2, setvalued):
+                            for tab in cls._semistandard_marked(max_entry - 1, nu2, lam, setvalued):
                                 for (i, j) in aug1:
                                     tab = tab.add(i, j, max_entry)
                                 for (i, j) in aug2:
@@ -768,24 +773,24 @@ class Tableau:
         return ans
 
     @classmethod
-    def semistandard_marked_setvalued(cls, max_entry, mu):
-        return cls.semistandard_marked(max_entry, mu, True)
+    def semistandard_marked_setvalued(cls, max_entry, mu, nu=()):
+        return cls.semistandard_marked(max_entry, mu, nu, True)
 
     @classmethod
-    def semistandard_shifted(cls, max_entry, mu, diagonal_primes=True, setvalued=False):
-        return cls.semistandard_shifted_marked(max_entry, mu, diagonal_primes, setvalued)
+    def semistandard_shifted(cls, max_entry, mu, nu=(), diagonal_primes=True, setvalued=False):
+        return cls.semistandard_shifted_marked(max_entry, mu, nu, diagonal_primes, setvalued)
 
     @classmethod
-    def semistandard_shifted_marked(cls, max_entry, mu, diagonal_primes=True, setvalued=False):  # noqa
-        return cls._semistandard_shifted_marked(max_entry, mu, diagonal_primes, setvalued)
+    def semistandard_shifted_marked(cls, max_entry, mu, nu=(), diagonal_primes=True, setvalued=False):  # noqa
+        return cls._semistandard_shifted_marked(max_entry, mu, nu, diagonal_primes, setvalued)
 
     @cached_value(SEMISTANDARD_SHIFTED_MARKED_CACHE)
-    def _semistandard_shifted_marked(cls, max_entry, mu, diagonal_primes, setvalued):  # noqa
+    def _semistandard_shifted_marked(cls, max_entry, mu, lam, diagonal_primes, setvalued):  # noqa
         assert Partition.is_strict_partition(mu)
         ans = set()
-        if mu == tuple():
+        if mu == lam:
             ans = {Tableau()}
-        elif max_entry > 0:
+        elif Partition.contains(mu, lam) and max_entry > 0:
             for nu1, diff1, corners1 in cls._shifted_horizontal_strips(mu):
                 for nu2, diff2, corners2 in cls._shifted_vertical_strips(nu1):
                     if not diagonal_primes:
@@ -794,7 +799,7 @@ class Tableau:
                         corners2 = [(i, j) for (i, j) in corners2 if i != j]
                     for aug1 in cls._subsets(diff1, corners1, setvalued):
                         for aug2 in cls._subsets(diff2, corners2, setvalued):
-                            for tab in cls._semistandard_shifted_marked(max_entry - 1, nu2, diagonal_primes, setvalued):
+                            for tab in cls._semistandard_shifted_marked(max_entry - 1, nu2, lam, diagonal_primes, setvalued):
                                 for (i, j) in aug1:
                                     tab = tab.add(i, j, max_entry)
                                 for (i, j) in aug2:
@@ -803,12 +808,12 @@ class Tableau:
         return ans
 
     @classmethod
-    def semistandard_shifted_setvalued(cls, max_entry, mu, diagonal_primes=True):
-        return cls.semistandard_shifted_marked_setvalued(max_entry, mu, diagonal_primes)
+    def semistandard_shifted_setvalued(cls, max_entry, mu, nu=(), diagonal_primes=True):
+        return cls.semistandard_shifted_marked_setvalued(max_entry, mu, nu, diagonal_primes)
 
     @classmethod
-    def semistandard_shifted_marked_setvalued(cls, max_entry, mu, diagonal_primes=True):
-        return cls.semistandard_shifted_marked(max_entry, mu, diagonal_primes, True)
+    def semistandard_shifted_marked_setvalued(cls, max_entry, mu, nu=(), diagonal_primes=True):
+        return cls.semistandard_shifted_marked(max_entry, mu, nu, diagonal_primes, True)
 
     @classmethod
     def _subsets(cls, diff, corners, setvalued):

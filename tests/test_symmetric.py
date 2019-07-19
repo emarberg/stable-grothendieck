@@ -17,6 +17,7 @@ def test_multipeak_formula():
       GQ^{(-1)}_{(2,1)}(x_1, x_2, ... ,x_N)
 
     """
+    mu = (2, 1)
     for N in range(6):
         ans = 0
         for n in range(2, N + 1):
@@ -33,7 +34,7 @@ def test_multipeak_formula():
                         sigma -= (x + y - x * y)
                 print(i, term * sigma)
                 ans += term * sigma
-        bns = GQ((2, 1), N).polynomial()
+        bns = GQ(N, mu).polynomial()
         print(ans)
         print()
         print(bns)
@@ -53,6 +54,7 @@ def test_overline_multipeak_formula():
       GP^{(-1)}_{(2,1)}(x_1, x_2, ... ,x_N)
 
     """
+    mu = (2, 1)
     for N in range(7):
         ans = 0
         for n in range(2, N + 1):
@@ -74,7 +76,7 @@ def test_overline_multipeak_formula():
                         print(i, j, k, term * pi)
                         print()
                         ans += term * pi
-        bns = GP((2, 1), N).polynomial()
+        bns = GP(N, mu).polynomial()
         print()
         print(ans)
         print()
@@ -87,7 +89,7 @@ def test_overline_multipeak_formula():
 def test_destandardize():
     mu = (2, 1)
     n = 3
-    assert set(SymmetricMonomial._destandardize(mu, n)) == {
+    assert set(SymmetricMonomial._destandardize(n, mu)) == {
         (1, 2, 0),
         (1, 0, 2),
         (0, 1, 2),
@@ -95,16 +97,16 @@ def test_destandardize():
         (2, 0, 1),
         (0, 2, 1),
     }
-    assert len(list(SymmetricMonomial._destandardize(mu, n))) == 6
+    assert len(list(SymmetricMonomial._destandardize(n, mu))) == 6
 
     mu = (2, 2)
     n = 3
-    assert set(SymmetricMonomial._destandardize(mu, n)) == {
+    assert set(SymmetricMonomial._destandardize(n, mu)) == {
         (2, 2, 0),
         (2, 0, 2),
         (0, 2, 2),
     }
-    assert len(list(SymmetricMonomial._destandardize(mu, n))) == 3
+    assert len(list(SymmetricMonomial._destandardize(n, mu))) == 3
 
 
 def test_basic():
@@ -168,69 +170,77 @@ def test_polynomials():
 def test_slow_symmetric_functions():
     for mu in [(), (1,), (1, 1), (2,), (2, 1)]:
         for n in range(4):
-            f = SymmetricPolynomial._slow_schur(mu, n)
-            g = SymmetricPolynomial._slow_stable_grothendieck(mu, n)
-            h = SymmetricPolynomial._slow_schur_s(mu, n)
-            k = SymmetricPolynomial._slow_stable_grothendieck_s(mu, n)
+            f = SymmetricPolynomial._slow_schur(n, mu)
+            g = SymmetricPolynomial._slow_stable_grothendieck(n, mu)
+            h = SymmetricPolynomial._slow_schur_s(n, mu)
+            k = SymmetricPolynomial._slow_stable_grothendieck_s(n, mu)
             assert g.lowest_degree_terms() == f
             assert k.lowest_degree_terms() == h
 
 
 def test_slow_dual_stable_grothendieck():
+    n = 3
     mu = (1,)
-    g = SymmetricPolynomial._slow_dual_stable_grothendieck(mu, 3)
+    g = SymmetricPolynomial._slow_dual_stable_grothendieck(n, mu)
     print(g)
-    assert g == SymmetricMonomial(3, (1,))
+    assert g == SymmetricMonomial(n, (1,))
 
+    n = 3
     mu = (2,)
-    g = SymmetricPolynomial._slow_dual_stable_grothendieck(mu, 3)
+    g = SymmetricPolynomial._slow_dual_stable_grothendieck(n, mu)
     print(g)
-    assert g == SymmetricMonomial(3, (1, 1)) + SymmetricMonomial(3, (2,))
+    assert g == SymmetricMonomial(n, (1, 1)) + SymmetricMonomial(n, (2,))
 
+    n = 3
     mu = (2, 1)
-    for t in Tableau.semistandard_rpp(3, mu):
+    for t in Tableau.semistandard_rpp(n, mu):
         print(t)
-    g = SymmetricPolynomial._slow_dual_stable_grothendieck(mu, 3)
+    g = SymmetricPolynomial._slow_dual_stable_grothendieck(n, mu)
     print(g)
-    assert g == SymmetricMonomial(3, (1, 1)) + SymmetricMonomial(3, (2,)) + 2 * SymmetricMonomial(3, (1, 1, 1)) + SymmetricMonomial(3, (2, 1))
+    assert g == SymmetricMonomial(n, (1, 1)) + SymmetricMonomial(n, (2,)) + 2 * SymmetricMonomial(n, (1, 1, 1)) + SymmetricMonomial(n, (2, 1))
 
 
 def test_slow_dual_stable_grothendieck_pq():
+    n = 3
     mu = (1,)
-    g = SymmetricPolynomial._slow_dual_stable_grothendieck_p(mu, 3)
-    h = SymmetricPolynomial._slow_dual_stable_grothendieck_q(mu, 3)
+    g = SymmetricPolynomial._slow_dual_stable_grothendieck_p(n, mu)
+    h = SymmetricPolynomial._slow_dual_stable_grothendieck_q(n, mu)
     print(g)
     print(h)
     print()
-    assert g == SymmetricMonomial(3, (1,))
-    assert h == 2 * SymmetricMonomial(3, (1,))
+    assert g == SymmetricMonomial(n, (1,))
+    assert h == 2 * SymmetricMonomial(n, (1,))
 
+    n = 3
     mu = (2,)
-    for t in Tableau.semistandard_marked_rpp(3, mu, False):
+    for t in Tableau.semistandard_marked_rpp(3, mu, diagonal_nonprimes=False):
         print(t)
-    g = SymmetricPolynomial._slow_dual_stable_grothendieck_p(mu, 3)
+    g = SymmetricPolynomial._slow_dual_stable_grothendieck_p(n, mu)
     print(g)
     assert g == \
-        SymmetricPolynomial._slow_dual_stable_grothendieck((1, 1), 3) + \
-        SymmetricPolynomial._slow_dual_stable_grothendieck((2,), 3)
+        SymmetricPolynomial._slow_dual_stable_grothendieck(n, (1, 1)) + \
+        SymmetricPolynomial._slow_dual_stable_grothendieck(n, (2,))
 
+    n = 3
     mu = (2, 1)
-    for t in Tableau.semistandard_marked_rpp(3, mu):
+    for t in Tableau.semistandard_marked_rpp(n, mu):
         print(t)
-    g = SymmetricPolynomial._slow_dual_stable_grothendieck_p(mu, 3)
-    h = SymmetricPolynomial._slow_dual_stable_grothendieck_q(mu, 3)
+    g = SymmetricPolynomial._slow_dual_stable_grothendieck_p(n, mu)
+    h = SymmetricPolynomial._slow_dual_stable_grothendieck_q(n, mu)
     print(g)
     print(h)
     print()
-    assert g == SymmetricMonomial(3, (1, 1)) + SymmetricMonomial(3, (2,)) + 2 * SymmetricMonomial(3, (1, 1, 1)) + SymmetricMonomial(3, (2, 1))
+    assert g == SymmetricMonomial(n, (1, 1)) + SymmetricMonomial(n, (2,)) + 2 * SymmetricMonomial(n, (1, 1, 1)) + SymmetricMonomial(n, (2, 1))
 
+    n = 5
     mu = (3, 2)
-    g = SymmetricPolynomial._slow_dual_stable_grothendieck_p(mu, 5)
-    h = SymmetricPolynomial._slow_dual_stable_grothendieck_q(mu, 5)
+    g = SymmetricPolynomial._slow_dual_stable_grothendieck_p(n, mu)
+    h = SymmetricPolynomial._slow_dual_stable_grothendieck_q(n, mu)
 
+    n = 6
     mu = (3, 2, 1)
-    assert SymmetricPolynomial._slow_dual_stable_grothendieck_p(mu, 6) == \
-        SymmetricPolynomial._slow_dual_stable_grothendieck(mu, 6)
+    assert SymmetricPolynomial._slow_dual_stable_grothendieck_p(n, mu) == \
+        SymmetricPolynomial._slow_dual_stable_grothendieck(n, mu)
 
 
 def test_decompose():
@@ -245,29 +255,29 @@ def test_decompose():
     mu = (3, 2, 1)
     nu = (4, 2, 1)
 
-    f = schur(mu, n) * schur(mu, n)
+    f = schur(n, mu) * schur(n, mu)
     exp = SymmetricPolynomial.schur_expansion(f)
-    assert f == sum([schur(a, n) * coeff for a, coeff in exp.items()])
+    assert f == sum([schur(n, a) * coeff for a, coeff in exp.items()])
 
-    f = schur_P(nu, n)
+    f = schur_P(n, nu)
     exp = SymmetricPolynomial.schur_expansion(f)
-    assert f == sum([schur(a, n) * coeff for a, coeff in exp.items()])
+    assert f == sum([schur(n, a) * coeff for a, coeff in exp.items()])
 
-    f = GP(nu, n)
+    f = GP(n, nu)
     exp = SymmetricPolynomial.grothendieck_expansion(f)
-    assert f == sum([grothendieck(a, n) * coeff for a, coeff in exp.items()])
+    assert f == sum([grothendieck(n, a) * coeff for a, coeff in exp.items()])
 
-    f = GQ(nu, n)
+    f = GQ(n, nu)
     exp = SymmetricPolynomial.grothendieck_expansion(f)
-    assert f == sum([grothendieck(a, n) * coeff for a, coeff in exp.items()])
+    assert f == sum([grothendieck(n, a) * coeff for a, coeff in exp.items()])
 
-    f = SymmetricPolynomial.dual_stable_grothendieck_p(nu, n)
+    f = SymmetricPolynomial.dual_stable_grothendieck_p(n, nu)
     exp = SymmetricPolynomial.dual_grothendieck_expansion(f)
-    assert f == sum([dual_grothendieck(a, n) * coeff for a, coeff in exp.items()])
+    assert f == sum([dual_grothendieck(n, a) * coeff for a, coeff in exp.items()])
 
-    f = SymmetricPolynomial.dual_stable_grothendieck_q(nu, n)
+    f = SymmetricPolynomial.dual_stable_grothendieck_q(n, nu)
     exp = SymmetricPolynomial.dual_grothendieck_expansion(f)
-    assert f == sum([dual_grothendieck(a, n) * coeff for a, coeff in exp.items()])
+    assert f == sum([dual_grothendieck(n, a) * coeff for a, coeff in exp.items()])
 
 
 @pytest.mark.slow
@@ -275,16 +285,16 @@ def test_symmetric_functions():
     nn = 6
     for mu in itertools.chain(*[Partition.generate(n + 1) for n in range(nn)]):
         for n in range(nn):
-            print(mu, n)
+            print(n, mu)
             print()
 
-            f = SymmetricPolynomial.schur(mu, n)
-            g = SymmetricPolynomial.stable_grothendieck(mu, n)
-            h = SymmetricPolynomial.dual_stable_grothendieck(mu, n)
+            f = SymmetricPolynomial.schur(n, mu)
+            g = SymmetricPolynomial.stable_grothendieck(n, mu)
+            h = SymmetricPolynomial.dual_stable_grothendieck(n, mu)
 
-            fs = SymmetricPolynomial._slow_schur(mu, n)
-            gs = SymmetricPolynomial._slow_stable_grothendieck(mu, n)
-            hs = SymmetricPolynomial._slow_dual_stable_grothendieck(mu, n)
+            fs = SymmetricPolynomial._slow_schur(n, mu)
+            gs = SymmetricPolynomial._slow_stable_grothendieck(n, mu)
+            hs = SymmetricPolynomial._slow_dual_stable_grothendieck(n, mu)
 
             print(f)
             print(fs)
@@ -301,8 +311,8 @@ def test_symmetric_functions():
             assert g == gs
             assert h == hs
 
-            h = SymmetricPolynomial.schur_s(mu, n)
-            k = SymmetricPolynomial.stable_grothendieck_s(mu, n)
+            h = SymmetricPolynomial.schur_s(n, mu)
+            k = SymmetricPolynomial.stable_grothendieck_s(n, mu)
             assert g.lowest_degree_terms() == f
             assert k.lowest_degree_terms() == h
 
@@ -312,18 +322,18 @@ def test_strict_symmetric_functions():
     nn = 5
     for mu in itertools.chain(*[Partition.generate(n + 1, strict=True) for n in range(nn)]):
         for n in range(nn):
-            print(mu, n)
+            print(n, mu)
             print()
 
             # Schur-P and GP
 
-            f = SymmetricPolynomial.schur_p(mu, n)
-            g = SymmetricPolynomial.stable_grothendieck_p(mu, n)
-            h = SymmetricPolynomial.dual_stable_grothendieck_p(mu, n)
+            f = SymmetricPolynomial.schur_p(n, mu)
+            g = SymmetricPolynomial.stable_grothendieck_p(n, mu)
+            h = SymmetricPolynomial.dual_stable_grothendieck_p(n, mu)
 
-            fs = SymmetricPolynomial._slow_schur_p(mu, n)
-            gs = SymmetricPolynomial._slow_stable_grothendieck_p(mu, n)
-            hs = SymmetricPolynomial._slow_dual_stable_grothendieck_p(mu, n)
+            fs = SymmetricPolynomial._slow_schur_p(n, mu)
+            gs = SymmetricPolynomial._slow_stable_grothendieck_p(n, mu)
+            hs = SymmetricPolynomial._slow_dual_stable_grothendieck_p(n, mu)
 
             print(f)
             print(fs)
@@ -343,13 +353,13 @@ def test_strict_symmetric_functions():
 
             # Schur-Q and GQ
 
-            f = SymmetricPolynomial.schur_q(mu, n)
-            g = SymmetricPolynomial.stable_grothendieck_q(mu, n)
-            h = SymmetricPolynomial.dual_stable_grothendieck_q(mu, n)
+            f = SymmetricPolynomial.schur_q(n, mu)
+            g = SymmetricPolynomial.stable_grothendieck_q(n, mu)
+            h = SymmetricPolynomial.dual_stable_grothendieck_q(n, mu)
 
-            fs = SymmetricPolynomial._slow_schur_q(mu, n)
-            gs = SymmetricPolynomial._slow_stable_grothendieck_q(mu, n)
-            hs = SymmetricPolynomial._slow_dual_stable_grothendieck_q(mu, n)
+            fs = SymmetricPolynomial._slow_schur_q(n, mu)
+            gs = SymmetricPolynomial._slow_stable_grothendieck_q(n, mu)
+            hs = SymmetricPolynomial._slow_dual_stable_grothendieck_q(n, mu)
 
             print(f)
             print(fs)

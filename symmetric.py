@@ -124,7 +124,7 @@ class SymmetricMonomial:
             return self.symmetric_polynomial() * other
 
     @classmethod
-    def _destandardize(cls, mu, n):
+    def _destandardize(cls, n, mu):
         if mu == ():
             yield n * (0,)
             return
@@ -132,13 +132,13 @@ class SymmetricMonomial:
         if n == 0:
             return
 
-        for alpha in cls._destandardize(mu, n - 1):
+        for alpha in cls._destandardize(n - 1, mu):
             yield (0,) + alpha
 
         for i, part in enumerate(mu):
             if i == 0 or mu[i] != mu[i - 1]:
                 nu = mu[:i] + mu[i + 1:]
-                for alpha in cls._destandardize(nu, n - 1):
+                for alpha in cls._destandardize(n - 1, nu):
                     yield (part,) + alpha
 
     @classmethod
@@ -150,8 +150,8 @@ class SymmetricMonomial:
         n = min(f.order(), len(mu) + len(nu))
         if (mu, nu, n) not in MONOMIAL_PRODUCT_CACHE:
             ans = defaultdict(int)
-            for alpha in cls._destandardize(mu, n):
-                for beta in cls._destandardize(nu, n):
+            for alpha in cls._destandardize(n, mu):
+                for beta in cls._destandardize(n, nu):
                     gamma = tuple(alpha[i] + beta[i] for i in range(n))
                     if Partition.is_partition(gamma):
                         while gamma and gamma[-1] == 0:
@@ -236,59 +236,75 @@ class SymmetricPolynomial(Vector):
         return SymmetricPolynomial(dictionary)
 
     @cached_value(SCHUR_CACHE)
-    def schur(cls, mu, n):  # noqa
-        tableaux = Tableau.count_semistandard(n, mu)
-        return cls._vectorize(n, tableaux)
+    def schur(cls, num_variables, mu):  # noqa
+        tableaux = Tableau.count_semistandard(num_variables, mu)
+        return cls._vectorize(num_variables, tableaux)
 
     @cached_value(SCHUR_S_CACHE)
-    def schur_s(cls, mu, n):  # noqa
-        tableaux = Tableau.count_semistandard_marked(n, mu)
-        return cls._vectorize(n, tableaux)
+    def schur_s(cls, num_variables, mu):  # noqa
+        tableaux = Tableau.count_semistandard_marked(num_variables, mu)
+        return cls._vectorize(num_variables, tableaux)
 
     @cached_value(SCHUR_Q_CACHE)
-    def schur_q(cls, mu, n):  # noqa
-        tableaux = Tableau.count_semistandard_shifted_marked(n, mu)
-        return cls._vectorize(n, tableaux)
+    def schur_q(cls, num_variables, mu):  # noqa
+        tableaux = Tableau.count_semistandard_shifted_marked(num_variables, mu)
+        return cls._vectorize(num_variables, tableaux)
 
     @cached_value(SCHUR_P_CACHE)
-    def schur_p(cls, mu, n):  # noqa
-        tableaux = Tableau.count_semistandard_shifted_marked(n, mu, False)
-        return cls._vectorize(n, tableaux)
+    def schur_p(cls, num_variables, mu):  # noqa
+        tableaux = Tableau.count_semistandard_shifted_marked(num_variables, mu, False)
+        return cls._vectorize(num_variables, tableaux)
+
+    @classmethod
+    def stable_grothendieck_s(cls, num_variables, mu, degree_bound=None):  # noqa
+        return cls._stable_grothendieck_s(num_variables, mu, degree_bound)
 
     @cached_value(STABLE_GROTHENDIECK_S_CACHE)
-    def stable_grothendieck_s(cls, mu, n, degree_bound=None):  # noqa
-        tableaux = Tableau.count_semistandard_marked_setvalued(n, mu)
-        return (-1)**sum(mu) * cls._vectorize(n, tableaux, True, degree_bound)
+    def _stable_grothendieck_s(cls, num_variables, mu, degree_bound):  # noqa
+        tableaux = Tableau.count_semistandard_marked_setvalued(num_variables, mu)
+        return (-1)**sum(mu) * cls._vectorize(num_variables, tableaux, True, degree_bound)
+
+    @classmethod
+    def stable_grothendieck_q(cls, num_variables, mu, degree_bound=None):  # noqa
+        return cls._stable_grothendieck_q(num_variables, mu, degree_bound)
 
     @cached_value(STABLE_GROTHENDIECK_Q_CACHE)
-    def stable_grothendieck_q(cls, mu, n, degree_bound=None):  # noqa
-        tableaux = Tableau.count_semistandard_shifted_marked_setvalued(n, mu)
-        return (-1)**sum(mu) * cls._vectorize(n, tableaux, True, degree_bound)
+    def _stable_grothendieck_q(cls, num_variables, mu, degree_bound):  # noqa
+        tableaux = Tableau.count_semistandard_shifted_marked_setvalued(num_variables, mu)
+        return (-1)**sum(mu) * cls._vectorize(num_variables, tableaux, True, degree_bound)
+
+    @classmethod
+    def stable_grothendieck_p(cls, num_variables, mu, degree_bound=None):  # noqa
+        return cls._stable_grothendieck_p(num_variables, mu, degree_bound)
 
     @cached_value(STABLE_GROTHENDIECK_P_CACHE)
-    def stable_grothendieck_p(cls, mu, n, degree_bound=None):  # noqa
-        tableaux = Tableau.count_semistandard_shifted_marked_setvalued(n, mu, False)
-        return (-1)**sum(mu) * cls._vectorize(n, tableaux, True, degree_bound)
+    def _stable_grothendieck_p(cls, num_variables, mu, degree_bound):  # noqa
+        tableaux = Tableau.count_semistandard_shifted_marked_setvalued(num_variables, mu, diagonal_primes=False)
+        return (-1)**sum(mu) * cls._vectorize(num_variables, tableaux, True, degree_bound)
+
+    @classmethod
+    def stable_grothendieck(cls, num_variables, mu, degree_bound=None):  # noqa
+        return cls._stable_grothendieck(num_variables, mu, degree_bound)
 
     @cached_value(STABLE_GROTHENDIECK_CACHE)
-    def stable_grothendieck(cls, mu, n, degree_bound=None):  # noqa
-        tableaux = Tableau.count_semistandard_setvalued(n, mu)
-        return (-1)**sum(mu) * cls._vectorize(n, tableaux, True, degree_bound)
+    def _stable_grothendieck(cls, num_variables, mu, degree_bound):  # noqa
+        tableaux = Tableau.count_semistandard_setvalued(num_variables, mu)
+        return (-1)**sum(mu) * cls._vectorize(num_variables, tableaux, True, degree_bound)
 
     @cached_value(DUAL_STABLE_GROTHENDIECK_CACHE)
-    def dual_stable_grothendieck(cls, mu, n):  # noqa
-        tableaux = Tableau.count_semistandard_rpp(n, mu)
-        return cls._vectorize(n, tableaux)
+    def dual_stable_grothendieck(cls, num_variables, mu):  # noqa
+        tableaux = Tableau.count_semistandard_rpp(num_variables, mu)
+        return cls._vectorize(num_variables, tableaux)
 
     @cached_value(DUAL_STABLE_GROTHENDIECK_P_CACHE)
-    def dual_stable_grothendieck_p(cls, mu, n):  # noqa
-        tableaux = Tableau.count_semistandard_marked_rpp(n, mu, False)
-        return cls._vectorize(n, tableaux)
+    def dual_stable_grothendieck_p(cls, num_variables, mu):  # noqa
+        tableaux = Tableau.count_semistandard_marked_rpp(num_variables, mu, diagonal_nonprimes=False)
+        return cls._vectorize(num_variables, tableaux)
 
     @cached_value(DUAL_STABLE_GROTHENDIECK_Q_CACHE)
-    def dual_stable_grothendieck_q(cls, mu, n):  # noqa
-        tableaux = Tableau.count_semistandard_marked_rpp(n, mu, True)
-        return cls._vectorize(n, tableaux)
+    def dual_stable_grothendieck_q(cls, num_variables, mu):  # noqa
+        tableaux = Tableau.count_semistandard_marked_rpp(num_variables, mu, diagonal_nonprimes=True)
+        return cls._vectorize(num_variables, tableaux)
 
     @classmethod
     def schur_expansion(cls, f):
@@ -297,7 +313,7 @@ class SymmetricPolynomial(Vector):
             n = t.n
             c = f[t]
             mu = t.index()
-            ans = cls.schur_expansion(f - c * cls.schur(mu, n))
+            ans = cls.schur_expansion(f - c * cls.schur(n, mu))
             return ans + Vector({mu: c})
         else:
             return Vector()
@@ -309,7 +325,7 @@ class SymmetricPolynomial(Vector):
             n = t.n
             c = f[t]
             mu = t.index()
-            ans = cls.grothendieck_expansion(f - c * cls.stable_grothendieck(mu, n))
+            ans = cls.grothendieck_expansion(f - c * cls.stable_grothendieck(n, mu))
             return ans + Vector({mu: c})
         else:
             return Vector()
@@ -321,7 +337,7 @@ class SymmetricPolynomial(Vector):
             n = t.n
             c = f[t]
             mu = t.index()
-            ans = cls.dual_grothendieck_expansion(f - c * cls.dual_stable_grothendieck(mu, n))
+            ans = cls.dual_grothendieck_expansion(f - c * cls.dual_stable_grothendieck(n, mu))
             return ans + Vector({mu: c})
         else:
             return Vector()
@@ -333,7 +349,7 @@ class SymmetricPolynomial(Vector):
             n = t.n
             c = f[t]
             mu = t.index()
-            ans = cls.gp_expansion(f - c * cls.stable_grothendieck_p(mu, n))
+            ans = cls.gp_expansion(f - c * cls.stable_grothendieck_p(n, mu))
             return ans + Vector({mu: c})
         else:
             return Vector()
@@ -351,45 +367,73 @@ class SymmetricPolynomial(Vector):
         })
 
     @classmethod
-    def _slow_schur(cls, mu, n):
-        return cls._slow_vectorize(n, Tableau.semistandard(n, mu))
+    def _slow_schur(cls, num_variables, mu):
+        return cls._slow_vectorize(num_variables, Tableau.semistandard(num_variables, mu))
 
     @classmethod
-    def _slow_schur_s(cls, mu, n):
-        return cls._slow_vectorize(n, Tableau.semistandard_marked(n, mu))
+    def _slow_schur_s(cls, num_variables, mu):
+        return cls._slow_vectorize(num_variables, Tableau.semistandard_marked(num_variables, mu))
 
     @classmethod
-    def _slow_schur_q(cls, mu, n):
-        return cls._slow_vectorize(n, Tableau.semistandard_shifted_marked(n, mu))
+    def _slow_schur_q(cls, num_variables, mu):
+        return cls._slow_vectorize(
+            num_variables,
+            Tableau.semistandard_shifted_marked(num_variables, mu)
+        )
 
     @classmethod
-    def _slow_schur_p(cls, mu, n):
-        return cls._slow_vectorize(n, Tableau.semistandard_shifted_marked(n, mu, False))
+    def _slow_schur_p(cls, num_variables, mu):
+        return cls._slow_vectorize(
+            num_variables,
+            Tableau.semistandard_shifted_marked(num_variables, mu, diagonal_primes=False)
+        )
 
     @classmethod
-    def _slow_stable_grothendieck_s(cls, mu, n):
-        return (-1)**sum(mu) * cls._slow_vectorize(n, Tableau.semistandard_marked_setvalued(n, mu), True)
+    def _slow_stable_grothendieck_s(cls, num_variables, mu):
+        return (-1)**sum(mu) * cls._slow_vectorize(
+            num_variables,
+            Tableau.semistandard_marked_setvalued(num_variables, mu),
+            True
+        )
 
     @classmethod
-    def _slow_stable_grothendieck_q(cls, mu, n):
-        return (-1)**sum(mu) * cls._slow_vectorize(n, Tableau.semistandard_shifted_marked_setvalued(n, mu), True)
+    def _slow_stable_grothendieck_q(cls, num_variables, mu):
+        return (-1)**sum(mu) * cls._slow_vectorize(
+            num_variables,
+            Tableau.semistandard_shifted_marked_setvalued(num_variables, mu),
+            True
+        )
 
     @classmethod
-    def _slow_stable_grothendieck_p(cls, mu, n):
-        return (-1)**sum(mu) * cls._slow_vectorize(n, Tableau.semistandard_shifted_marked_setvalued(n, mu, False), True)
+    def _slow_stable_grothendieck_p(cls, num_variables, mu):
+        return (-1)**sum(mu) * cls._slow_vectorize(
+            num_variables,
+            Tableau.semistandard_shifted_marked_setvalued(num_variables, mu, diagonal_primes=False),
+            True
+        )
 
     @classmethod
-    def _slow_stable_grothendieck(cls, mu, n):
-        return (-1)**sum(mu) * cls._slow_vectorize(n, Tableau.semistandard_setvalued(n, mu), True)
+    def _slow_stable_grothendieck(cls, num_variables, mu):
+        return (-1)**sum(mu) * cls._slow_vectorize(
+            num_variables,
+            Tableau.semistandard_setvalued(num_variables, mu),
+            True
+        )
 
     @classmethod
-    def _slow_dual_stable_grothendieck(cls, mu, n):
-        return cls._slow_vectorize(n, Tableau.semistandard_rpp(n, mu))
+    def _slow_dual_stable_grothendieck(cls, num_variables, mu):
+        return cls._slow_vectorize(num_variables, Tableau.semistandard_rpp(num_variables, mu))
 
     @classmethod
-    def _slow_dual_stable_grothendieck_p(cls, mu, n):
-        return cls._slow_vectorize(n, Tableau.semistandard_marked_rpp(n, mu, False))
+    def _slow_dual_stable_grothendieck_p(cls, num_variables, mu):
+        return cls._slow_vectorize(
+            num_variables,
+            Tableau.semistandard_marked_rpp(num_variables, mu, diagonal_nonprimes=False)
+        )
 
     @classmethod
-    def _slow_dual_stable_grothendieck_q(cls, mu, n):
-        return cls._slow_vectorize(n, Tableau.semistandard_marked_rpp(n, mu, True))
+    def _slow_dual_stable_grothendieck_q(cls, num_variables, mu):
+        return cls._slow_vectorize(
+            num_variables,
+            Tableau.semistandard_marked_rpp(num_variables, mu, diagonal_nonprimes=True)
+        )
