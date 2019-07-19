@@ -336,21 +336,6 @@ def test_shifted_rpp_verticle_strips():
     }
 
 
-def test_semistandard_marked_rpp():
-    mu = (1,)
-    print(Tableau.semistandard_marked_rpp(1, mu, diagonal_nonprimes=True))
-    print()
-    assert Tableau.semistandard_marked_rpp(1, mu, diagonal_nonprimes=True) == {
-        MarkedReversePlanePartition({(1, 1): 1}),
-        MarkedReversePlanePartition({(1, 1): -1}),
-    }
-    print(Tableau.semistandard_marked_rpp(1, mu, diagonal_nonprimes=False))
-    print()
-    assert Tableau.semistandard_marked_rpp(1, mu, diagonal_nonprimes=False) == {
-        MarkedReversePlanePartition({(1, 1): -1}),
-    }
-
-
 def test_semistandard():
     mu = ()
     assert Tableau.semistandard(0, mu) == {Tableau()}
@@ -381,6 +366,66 @@ def test_semistandard():
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): 2}),
         Tableau({(1, 1): 3}),
+    }
+
+
+def test_skew_semistandard():
+    mu = ()
+    nu = ()
+    assert Tableau.semistandard(0, mu, nu) == {Tableau()}
+    assert Tableau.semistandard(1, mu, nu) == {Tableau()}
+    assert Tableau.semistandard(2, mu, nu) == {Tableau()}
+
+    mu = (1, 1)
+    nu = (1,)
+    assert Tableau.semistandard(2, mu, nu) == {
+        Tableau({(2, 1): 1}),
+        Tableau({(2, 1): 2})
+    }
+
+    mu = (2,)
+    nu = (1,)
+    assert Tableau.semistandard(2, mu, nu) == {
+        Tableau({(1, 2): 1}),
+        Tableau({(1, 2): 2}),
+    }
+
+    mu = (2, 1)
+    nu = (1,)
+    assert Tableau.semistandard(2, mu, nu) == {
+        Tableau({(1, 2): 1, (2, 1): 1}),
+        Tableau({(1, 2): 1, (2, 1): 2}),
+        Tableau({(1, 2): 2, (2, 1): 1}),
+        Tableau({(1, 2): 2, (2, 1): 2}),
+    }
+
+    mu = (2, 2)
+    nu = (1,)
+    assert Tableau.semistandard(3, mu, nu) == {
+        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 2}),
+        Tableau({(1, 2): 1, (2, 1): 2, (2, 2): 2}),
+        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 3}),
+        Tableau({(1, 2): 1, (2, 1): 2, (2, 2): 3}),
+        Tableau({(1, 2): 1, (2, 1): 3, (2, 2): 3}),
+        Tableau({(1, 2): 2, (2, 1): 1, (2, 2): 3}),
+        Tableau({(1, 2): 2, (2, 1): 2, (2, 2): 3}),
+        Tableau({(1, 2): 2, (2, 1): 3, (2, 2): 3}),
+    }
+
+    mu = (2, 2, 1)
+    nu = (1,)
+    assert Tableau.semistandard(3, mu, nu) == {
+        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 2, (3, 1): 3}),
+        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 2, (3, 1): 2}),
+        Tableau({(1, 2): 1, (2, 1): 2, (2, 2): 2, (3, 1): 3}),
+        #
+        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 3, (3, 1): 3}),
+        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 3, (3, 1): 2}),
+        Tableau({(1, 2): 1, (2, 1): 2, (2, 2): 3, (3, 1): 3}),
+        #
+        Tableau({(1, 2): 2, (2, 1): 1, (2, 2): 3, (3, 1): 3}),
+        Tableau({(1, 2): 2, (2, 1): 1, (2, 2): 3, (3, 1): 2}),
+        Tableau({(1, 2): 2, (2, 1): 2, (2, 2): 3, (3, 1): 3}),
     }
 
 
@@ -561,4 +606,19 @@ def test_semistandard_shifted_marked_setvalued():
         Tableau({(1, 1): (-1, 1, 2)}),
         Tableau({(1, 1): (-1, 1, -2)}),
         Tableau({(1, 1): (-1, 1, -2, 2)})
+    }
+
+
+def test_semistandard_marked_rpp():
+    mu = (1,)
+    print(Tableau.semistandard_marked_rpp(1, mu, diagonal_nonprimes=True))
+    print()
+    assert Tableau.semistandard_marked_rpp(1, mu, diagonal_nonprimes=True) == {
+        MarkedReversePlanePartition({(1, 1): 1}),
+        MarkedReversePlanePartition({(1, 1): -1}),
+    }
+    print(Tableau.semistandard_marked_rpp(1, mu, diagonal_nonprimes=False))
+    print()
+    assert Tableau.semistandard_marked_rpp(1, mu, diagonal_nonprimes=False) == {
+        MarkedReversePlanePartition({(1, 1): -1}),
     }
