@@ -56,6 +56,7 @@ def test_urt_crystal():
             URTShiftedCrystalGenerator(mu, rank=3, excess=excess).generate()
 
 
+@pytest.mark.slow
 def test_mrt_crystal():
     for mu in [(2,), (2, 1), (3, 1), (3,)]:
         for excess in range(3):

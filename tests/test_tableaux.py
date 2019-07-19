@@ -339,46 +339,46 @@ def test_shifted_rpp_verticle_strips():
 
 def test_semistandard_marked_rpp():
     mu = (1,)
-    print(Tableau.semistandard_marked_rpp(mu, 1, True))
+    print(Tableau.semistandard_marked_rpp(1, mu, True))
     print()
-    assert Tableau.semistandard_marked_rpp(mu, 1, True) == {
+    assert Tableau.semistandard_marked_rpp(1, mu, True) == {
         MarkedReversePlanePartition({(1, 1): 1}),
         MarkedReversePlanePartition({(1, 1): -1}),
     }
-    print(Tableau.semistandard_marked_rpp(mu, 1, False))
+    print(Tableau.semistandard_marked_rpp(1, mu, False))
     print()
-    assert Tableau.semistandard_marked_rpp(mu, 1, False) == {
+    assert Tableau.semistandard_marked_rpp(1, mu, False) == {
         MarkedReversePlanePartition({(1, 1): -1}),
     }
 
 
 def test_semistandard():
     mu = ()
-    assert Tableau.semistandard(mu, 0) == {Tableau()}
-    assert Tableau.semistandard(mu, 1) == {Tableau()}
-    assert Tableau.semistandard(mu, 2) == {Tableau()}
+    assert Tableau.semistandard(0, mu) == {Tableau()}
+    assert Tableau.semistandard(1, mu) == {Tableau()}
+    assert Tableau.semistandard(2, mu) == {Tableau()}
 
     mu = (1,)
-    assert Tableau.semistandard(mu, 1) == {Tableau({(1, 1): 1})}
-    assert Tableau.semistandard(mu, 2) == {
+    assert Tableau.semistandard(1, mu) == {Tableau({(1, 1): 1})}
+    assert Tableau.semistandard(2, mu) == {
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): 2}),
     }
 
     mu = (1, 1)
-    assert Tableau.semistandard(mu, 2) == {
+    assert Tableau.semistandard(2, mu) == {
         Tableau({(1, 1): 1, (2, 1): 2})
     }
 
     mu = (2,)
-    assert Tableau.semistandard(mu, 2) == {
+    assert Tableau.semistandard(2, mu) == {
         Tableau({(1, 1): 1, (1, 2): 1}),
         Tableau({(1, 1): 1, (1, 2): 2}),
         Tableau({(1, 1): 2, (1, 2): 2}),
     }
 
     mu = (1,)
-    assert Tableau.semistandard(mu, 3) == {
+    assert Tableau.semistandard(3, mu) == {
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): 2}),
         Tableau({(1, 1): 3}),
@@ -387,25 +387,25 @@ def test_semistandard():
 
 def test_semistandard_setvalued():
     mu = ()
-    assert Tableau.semistandard_setvalued(mu, 0) == {Tableau()}
-    assert Tableau.semistandard_setvalued(mu, 1) == {Tableau()}
-    assert Tableau.semistandard_setvalued(mu, 2) == {Tableau()}
+    assert Tableau.semistandard_setvalued(0, mu) == {Tableau()}
+    assert Tableau.semistandard_setvalued(1, mu) == {Tableau()}
+    assert Tableau.semistandard_setvalued(2, mu) == {Tableau()}
 
     mu = (1,)
-    assert Tableau.semistandard_setvalued(mu, 1) == {Tableau({(1, 1): 1})}
-    assert Tableau.semistandard_setvalued(mu, 2) == {
+    assert Tableau.semistandard_setvalued(1, mu) == {Tableau({(1, 1): 1})}
+    assert Tableau.semistandard_setvalued(2, mu) == {
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): 2}),
         Tableau({(1, 1): (1, 2)})
     }
 
     mu = (1, 1)
-    assert Tableau.semistandard_setvalued(mu, 2) == {
+    assert Tableau.semistandard_setvalued(2, mu) == {
         Tableau({(1, 1): 1, (2, 1): 2})
     }
 
     mu = (2,)
-    assert Tableau.semistandard_setvalued(mu, 2) == {
+    assert Tableau.semistandard_setvalued(2, mu) == {
         Tableau({(1, 1): 1, (1, 2): 1}),
         Tableau({(1, 1): 1, (1, 2): 2}),
         Tableau({(1, 1): 2, (1, 2): 2}),
@@ -416,16 +416,16 @@ def test_semistandard_setvalued():
 
 def test_semistandard_marked():
     mu = ()
-    assert Tableau.semistandard_marked(mu, 0) == {Tableau()}
-    assert Tableau.semistandard_marked(mu, 1) == {Tableau()}
-    assert Tableau.semistandard_marked(mu, 2) == {Tableau()}
+    assert Tableau.semistandard_marked(0, mu) == {Tableau()}
+    assert Tableau.semistandard_marked(1, mu) == {Tableau()}
+    assert Tableau.semistandard_marked(2, mu) == {Tableau()}
 
     mu = (1,)
-    assert Tableau.semistandard_marked(mu, 1) == {
+    assert Tableau.semistandard_marked(1, mu) == {
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): -1}),
     }
-    assert Tableau.semistandard_marked(mu, 2) == {
+    assert Tableau.semistandard_marked(2, mu) == {
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): -1}),
         Tableau({(1, 1): 2}),
@@ -433,28 +433,28 @@ def test_semistandard_marked():
     }
 
     mu = (3, 1)
-    print(Tableau.semistandard_marked(mu, 1))
-    assert Tableau.semistandard_marked(mu, 1) == {
+    print(Tableau.semistandard_marked(1, mu))
+    assert Tableau.semistandard_marked(1, mu) == {
         Tableau({(1, 1): -1, (2, 1): -1, (1, 2): 1, (1, 3): 1}),
         Tableau({(1, 1): -1, (2, 1): 1, (1, 2): 1, (1, 3): 1}),
     }
     mu = (3, 2)
-    assert Tableau.semistandard_marked(mu, 1) == set()
+    assert Tableau.semistandard_marked(1, mu) == set()
 
 
 def test_semistandard_marked_setvalued():
     mu = ()
-    assert Tableau.semistandard_marked_setvalued(mu, 0) == {Tableau()}
-    assert Tableau.semistandard_marked_setvalued(mu, 1) == {Tableau()}
-    assert Tableau.semistandard_marked_setvalued(mu, 2) == {Tableau()}
+    assert Tableau.semistandard_marked_setvalued(0, mu) == {Tableau()}
+    assert Tableau.semistandard_marked_setvalued(1, mu) == {Tableau()}
+    assert Tableau.semistandard_marked_setvalued(2, mu) == {Tableau()}
 
     mu = (1,)
-    assert Tableau.semistandard_marked_setvalued(mu, 1) == {
+    assert Tableau.semistandard_marked_setvalued(1, mu) == {
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): -1}),
         Tableau({(1, 1): (-1, 1)})
     }
-    assert Tableau.semistandard_marked_setvalued(mu, 2) == {
+    assert Tableau.semistandard_marked_setvalued(2, mu) == {
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): -1}),
         Tableau({(1, 1): (-1, 1)}),
@@ -475,36 +475,36 @@ def test_semistandard_marked_setvalued():
 
 def test_semistandard_shifted_marked():
     mu = ()
-    assert Tableau.semistandard_shifted_marked(mu, 0) == {Tableau()}
-    assert Tableau.semistandard_shifted_marked(mu, 1) == {Tableau()}
-    assert Tableau.semistandard_shifted_marked(mu, 2) == {Tableau()}
+    assert Tableau.semistandard_shifted_marked(0, mu) == {Tableau()}
+    assert Tableau.semistandard_shifted_marked(1, mu) == {Tableau()}
+    assert Tableau.semistandard_shifted_marked(2, mu) == {Tableau()}
 
     mu = (1,)
 
-    assert Tableau.semistandard_shifted_marked(mu, 1) == {
+    assert Tableau.semistandard_shifted_marked(1, mu) == {
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): -1}),
     }
-    assert Tableau.semistandard_shifted_marked(mu, 1, False) == {
+    assert Tableau.semistandard_shifted_marked(1, mu, False) == {
         Tableau({(1, 1): 1}),
     }
 
-    assert Tableau.semistandard_shifted_marked(mu, 2) == {
+    assert Tableau.semistandard_shifted_marked(2, mu) == {
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): -1}),
         Tableau({(1, 1): 2}),
         Tableau({(1, 1): -2}),
     }
-    assert Tableau.semistandard_shifted_marked(mu, 2, False) == {
+    assert Tableau.semistandard_shifted_marked(2, mu, False) == {
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): 2}),
     }
 
     mu = (3, 1)
-    assert Tableau.semistandard_shifted_marked(mu, 1) == set()
-    assert Tableau.semistandard_shifted_marked(mu, 1, False) == set()
+    assert Tableau.semistandard_shifted_marked(1, mu) == set()
+    assert Tableau.semistandard_shifted_marked(1, mu, False) == set()
 
-    assert Tableau.semistandard_shifted_marked(mu, 2) == {
+    assert Tableau.semistandard_shifted_marked(2, mu) == {
         Tableau({(1, 1): 1, (2, 2): 2, (1, 2): 1, (1, 3): 1}),
         Tableau({(1, 1): 1, (2, 2): 2, (1, 2): 1, (1, 3): 2}),
         Tableau({(1, 1): 1, (2, 2): 2, (1, 2): 1, (1, 3): -2}),
@@ -522,7 +522,7 @@ def test_semistandard_shifted_marked():
         Tableau({(1, 1): -1, (2, 2): -2, (1, 2): 1, (1, 3): -2}),
         Tableau({(1, 1): -1, (2, 2): -2, (1, 2): -2, (1, 3): 2}),
     }
-    assert Tableau.semistandard_shifted_marked(mu, 2, False) == {
+    assert Tableau.semistandard_shifted_marked(2, mu, False) == {
         Tableau({(1, 1): 1, (2, 2): 2, (1, 2): 1, (1, 3): 1}),
         Tableau({(1, 1): 1, (2, 2): 2, (1, 2): 1, (1, 3): 2}),
         Tableau({(1, 1): 1, (2, 2): 2, (1, 2): 1, (1, 3): -2}),
@@ -530,36 +530,36 @@ def test_semistandard_shifted_marked():
     }
 
     mu = (3, 2)
-    assert Tableau.semistandard_shifted_marked(mu, 1) == set()
-    assert Tableau.semistandard_shifted_marked(mu, 1, False) == set()
+    assert Tableau.semistandard_shifted_marked(1, mu) == set()
+    assert Tableau.semistandard_shifted_marked(1, mu, False) == set()
 
 
-# def test_semistandard_shifted_marked_setvalued():
-#     mu = ()
-#     assert Tableau.semistandard_shifted_marked_setvalued(mu, 0) == {Tableau()}
-#     assert Tableau.semistandard_shifted_marked_setvalued(mu, 1) == {Tableau()}
-#     assert Tableau.semistandard_shifted_marked_setvalued(mu, 2) == {Tableau()}
+def test_semistandard_shifted_marked_setvalued():
+    mu = ()
+    assert Tableau.semistandard_shifted_marked_setvalued(0, mu) == {Tableau()}
+    assert Tableau.semistandard_shifted_marked_setvalued(1, mu) == {Tableau()}
+    assert Tableau.semistandard_shifted_marked_setvalued(2, mu) == {Tableau()}
 
-#     mu = (1,)
-#     assert Tableau.semistandard_shifted_marked_setvalued(mu, 1) == {
-#         Tableau({(1, 1): 1}),
-#         Tableau({(1, 1): -1}),
-#         Tableau({(1, 1): (-1, 1)})
-#     }
-#     assert Tableau.semistandard_shifted_marked_setvalued(mu, 2) == {
-#         Tableau({(1, 1): 1}),
-#         Tableau({(1, 1): -1}),
-#         Tableau({(1, 1): (-1, 1)}),
-#         Tableau({(1, 1): 2}),
-#         Tableau({(1, 1): -2}),
-#         Tableau({(1, 1): (-2, 2)}),
-#         Tableau({(1, 1): (1, 2)}),
-#         Tableau({(1, 1): (1, -2)}),
-#         Tableau({(1, 1): (1, -2, 2)}),
-#         Tableau({(1, 1): (-1, 2)}),
-#         Tableau({(1, 1): (-1, -2)}),
-#         Tableau({(1, 1): (-1, -2, 2)}),
-#         Tableau({(1, 1): (-1, 1, 2)}),
-#         Tableau({(1, 1): (-1, 1, -2)}),
-#         Tableau({(1, 1): (-1, 1, -2, 2)})
-#     }
+    mu = (1,)
+    assert Tableau.semistandard_shifted_marked_setvalued(1, mu) == {
+        Tableau({(1, 1): 1}),
+        Tableau({(1, 1): -1}),
+        Tableau({(1, 1): (-1, 1)})
+    }
+    assert Tableau.semistandard_shifted_marked_setvalued(2, mu) == {
+        Tableau({(1, 1): 1}),
+        Tableau({(1, 1): -1}),
+        Tableau({(1, 1): (-1, 1)}),
+        Tableau({(1, 1): 2}),
+        Tableau({(1, 1): -2}),
+        Tableau({(1, 1): (-2, 2)}),
+        Tableau({(1, 1): (1, 2)}),
+        Tableau({(1, 1): (1, -2)}),
+        Tableau({(1, 1): (1, -2, 2)}),
+        Tableau({(1, 1): (-1, 2)}),
+        Tableau({(1, 1): (-1, -2)}),
+        Tableau({(1, 1): (-1, -2, 2)}),
+        Tableau({(1, 1): (-1, 1, 2)}),
+        Tableau({(1, 1): (-1, 1, -2)}),
+        Tableau({(1, 1): (-1, 1, -2, 2)})
+    }

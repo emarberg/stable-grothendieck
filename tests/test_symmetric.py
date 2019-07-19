@@ -188,7 +188,7 @@ def test_slow_dual_stable_grothendieck():
     assert g == SymmetricMonomial(3, (1, 1)) + SymmetricMonomial(3, (2,))
 
     mu = (2, 1)
-    for t in Tableau.semistandard_rpp(mu, 3):
+    for t in Tableau.semistandard_rpp(3, mu):
         print(t)
     g = SymmetricPolynomial._slow_dual_stable_grothendieck(mu, 3)
     print(g)
@@ -206,7 +206,7 @@ def test_slow_dual_stable_grothendieck_pq():
     assert h == 2 * SymmetricMonomial(3, (1,))
 
     mu = (2,)
-    for t in Tableau.semistandard_marked_rpp(mu, 3, False):
+    for t in Tableau.semistandard_marked_rpp(3, mu, False):
         print(t)
     g = SymmetricPolynomial._slow_dual_stable_grothendieck_p(mu, 3)
     print(g)
@@ -215,7 +215,7 @@ def test_slow_dual_stable_grothendieck_pq():
         SymmetricPolynomial._slow_dual_stable_grothendieck((2,), 3)
 
     mu = (2, 1)
-    for t in Tableau.semistandard_marked_rpp(mu, 3):
+    for t in Tableau.semistandard_marked_rpp(3, mu):
         print(t)
     g = SymmetricPolynomial._slow_dual_stable_grothendieck_p(mu, 3)
     h = SymmetricPolynomial._slow_dual_stable_grothendieck_q(mu, 3)

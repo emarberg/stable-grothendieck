@@ -104,7 +104,7 @@ class TableauCrystalGenerator(CrystalMixin):
         assert not multisetvalued
         self.mu = mu
         self.max_entry = max_entry
-        self.tableaux = list(Tableau.semistandard_setvalued(mu, max_entry))
+        self.tableaux = list(Tableau.semistandard_setvalued(max_entry, mu))
         self._edges = None
         self._components = None
         self.multisetvalued = multisetvalued
@@ -256,7 +256,7 @@ class URTShiftedCrystalGenerator(ShiftedCrystalGenerator):
     def tableaux(self):
         if self._tableaux is None:
             self._tableaux = [
-                t for t in Tableau.semistandard_shifted_marked_setvalued(self.mu, self.rank, False)
+                t for t in Tableau.semistandard_shifted_marked_setvalued(self.rank, self.mu, diagonal_primes=False)
                 if len(t) == sum(self.mu) + self.excess
             ]
         return self._tableaux
@@ -280,7 +280,7 @@ class MRTShiftedCrystalGenerator(ShiftedCrystalGenerator):
     def tableaux(self):
         if self._tableaux is None:
             self._tableaux = [
-                t for t in Tableau.semistandard_shifted_marked_setvalued(self.mu, self.rank, False)
+                t for t in Tableau.semistandard_shifted_marked_setvalued(self.mu, self.rank, diagonal_primes=False)
                 if len(t) == sum(self.mu) + self.excess
             ]
         return self._tableaux
