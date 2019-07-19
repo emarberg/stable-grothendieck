@@ -558,17 +558,17 @@ class Tableau:
         return [(nu, Partition.skew(mu, nu, shifted=True)) for nu in ans]
 
     @classmethod
-    def count_semistandard(cls, max_entry, mu, setvalued=False):  # noqa
-        return cls._count_semistandard(max_entry, mu, setvalued)
+    def count_semistandard(cls, max_entry, mu, nu=(), setvalued=False):  # noqa
+        return cls._count_semistandard(max_entry, mu, nu, setvalued)
 
     @cached_value(COUNT_SEMISTANDARD_CACHE)
-    def _count_semistandard(cls, max_entry, mu, setvalued):  # noqa    
+    def _count_semistandard(cls, max_entry, mu, lam, setvalued):  # noqa    
         ans = defaultdict(int)
-        if mu == tuple():
+        if mu == lam:
             ans[()] = 1
-        elif max_entry > 0:
+        elif Partition.contains(mu, lam) and max_entry > 0:
             for nu, diff, corners in cls._horizontal_strips(mu):
-                for partition, count in cls._count_semistandard(max_entry - 1, nu, setvalued).items():
+                for partition, count in cls._count_semistandard(max_entry - 1, nu, lam, setvalued).items():
                     for i in range(len(corners) + 1 if setvalued else 1):
                         m = len(diff) + i
                         if m == 0:
@@ -581,22 +581,22 @@ class Tableau:
         return ans
 
     @classmethod
-    def count_semistandard_setvalued(cls, max_entry, mu):
-        return cls.count_semistandard(max_entry, mu, True)
+    def count_semistandard_setvalued(cls, max_entry, mu, nu=()):
+        return cls.count_semistandard(max_entry, mu, nu, True)
 
     @classmethod
-    def count_semistandard_marked(cls, max_entry, mu, setvalued=False):  # noqa
-        return cls._count_semistandard_marked(max_entry, mu, setvalued)
+    def count_semistandard_marked(cls, max_entry, mu, nu=(), setvalued=False):  # noqa
+        return cls._count_semistandard_marked(max_entry, mu, nu, setvalued)
 
     @cached_value(COUNT_SEMISTANDARD_MARKED_CACHE)
-    def _count_semistandard_marked(cls, max_entry, mu, setvalued):  # noqa
+    def _count_semistandard_marked(cls, max_entry, mu, lam, setvalued):  # noqa
         ans = defaultdict(int)
-        if mu == tuple():
+        if mu == lam:
             ans[()] = 1
-        elif max_entry > 0:
+        elif Partition.contains(mu, lam) and max_entry > 0:
             for nu1, diff1, corners1 in cls._horizontal_strips(mu):
                 for nu2, diff2, corners2 in cls._vertical_strips(nu1):
-                    for partition, count in cls._count_semistandard_marked(max_entry - 1, nu2, setvalued).items():
+                    for partition, count in cls._count_semistandard_marked(max_entry - 1, nu2, lam, setvalued).items():
                         for i in range(len(corners1) + 1 if setvalued else 1):
                             for j in range(len(corners2) + 1 if setvalued else 1):
                                 m = len(diff1) + len(diff2) + i + j
@@ -610,27 +610,27 @@ class Tableau:
         return ans
 
     @classmethod
-    def count_semistandard_marked_setvalued(cls, max_entry, mu):
-        return cls.count_semistandard_marked(max_entry, mu, True)
+    def count_semistandard_marked_setvalued(cls, max_entry, mu, nu=()):
+        return cls.count_semistandard_marked(max_entry, mu, nu, True)
 
     @classmethod
-    def count_semistandard_shifted_marked(cls, max_entry, mu, diagonal_primes=True, setvalued=False):  # noqa
-        return cls._count_semistandard_shifted_marked(max_entry, mu, diagonal_primes, setvalued)
+    def count_semistandard_shifted_marked(cls, max_entry, mu, nu=(), diagonal_primes=True, setvalued=False):  # noqa
+        return cls._count_semistandard_shifted_marked(max_entry, mu, nu, diagonal_primes, setvalued)
 
     @cached_value(COUNT_SEMISTANDARD_SHIFTED_MARKED_CACHE)
-    def _count_semistandard_shifted_marked(cls, max_entry, mu, diagonal_primes, setvalued):  # noqa
+    def _count_semistandard_shifted_marked(cls, max_entry, mu, lam, diagonal_primes, setvalued):  # noqa
         assert Partition.is_strict_partition(mu)
         ans = defaultdict(int)
-        if mu == tuple():
+        if mu == lam:
             ans[()] = 1
-        elif max_entry > 0:
+        elif Partition.contains(mu, lam) and max_entry > 0:
             for nu1, diff1, corners1 in cls._shifted_horizontal_strips(mu):
                 for nu2, diff2, corners2 in cls._shifted_vertical_strips(nu1):
                     if not diagonal_primes:
                         if any(i == j for (i, j) in diff2):
                             continue
                         corners2 = [(i, j) for (i, j) in corners2 if i != j]
-                    for partition, count in cls._count_semistandard_shifted_marked(max_entry - 1, nu2, diagonal_primes, setvalued).items():
+                    for partition, count in cls._count_semistandard_shifted_marked(max_entry - 1, nu2, lam, diagonal_primes, setvalued).items():
                         for i in range(len(corners1) + 1 if setvalued else 1):
                             for j in range(len(corners2) + 1 if setvalued else 1):
                                 m = len(diff1) + len(diff2) + i + j
@@ -643,32 +643,36 @@ class Tableau:
                                     ans[updated_partition] += count * nchoosek(len(corners1), i) * nchoosek(len(corners2), j)
         return ans
 
+    @classmethod
+    def count_semistandard_rpp(cls, max_entry, mu, nu=()):  # noqa
+        return cls._count_semistandard_rpp(max_entry, mu, nu)
+
     @cached_value(COUNT_SEMISTANDARD_RPP_CACHE)
-    def count_semistandard_rpp(cls, max_entry, mu):  # noqa
+    def _count_semistandard_rpp(cls, max_entry, mu, lam):  # noqa
         ans = defaultdict(int)
-        if mu == tuple():
+        if mu == lam:
             ans[()] = 1
-        elif max_entry > 0:
+        elif Partition.contains(mu, lam) and max_entry > 0:
             for nu, diff in cls._rpp_vertical_strips(mu):
                 if mu == nu:
                     continue
                 m = len({j for _, j in diff})
-                for partition, count in cls.count_semistandard_rpp(max_entry - 1, nu).items():
+                for partition, count in cls._count_semistandard_rpp(max_entry - 1, nu, lam).items():
                     if not (partition and m > partition[-1]):
                         ans[partition + (m,)] += count
         return ans
 
     @classmethod
-    def count_semistandard_marked_rpp(cls, max_entry, mu, diagonal_nonprimes=True):  # noqa
-        return cls._count_semistandard_marked_rpp(max_entry, mu, diagonal_nonprimes)
+    def count_semistandard_marked_rpp(cls, max_entry, mu, nu=(), diagonal_nonprimes=True):  # noqa
+        return cls._count_semistandard_marked_rpp(max_entry, mu, nu, diagonal_nonprimes)
 
     @cached_value(COUNT_SEMISTANDARD_MARKED_RPP_CACHE)
-    def _count_semistandard_marked_rpp(cls, max_entry, mu, diagonal_nonprimes=True):  # noqa
+    def _count_semistandard_marked_rpp(cls, max_entry, mu, lam, diagonal_nonprimes):  # noqa
         assert Partition.is_strict_partition(mu)
         ans = defaultdict(int)
-        if mu == tuple():
+        if mu == lam:
             ans[()] = 1
-        elif max_entry > 0:
+        elif Partition.contains(mu, lam) and max_entry > 0:
             for nu1, diff1 in cls._shifted_rpp_horizontal_strips(mu):
                 if not diagonal_nonprimes and any(i == j for i, j in diff1):
                     continue
@@ -676,14 +680,14 @@ class Tableau:
                     if mu == nu2:
                         continue
                     m = len({j for _, j in diff1}) + len({i for i, _ in diff2})
-                    for partition, count in cls._count_semistandard_marked_rpp(max_entry - 1, nu2, diagonal_nonprimes).items():
+                    for partition, count in cls._count_semistandard_marked_rpp(max_entry - 1, nu2, lam, diagonal_nonprimes).items():
                         if not (partition and m > partition[-1]):
                             ans[partition + (m,)] += count
         return ans
 
     @classmethod
-    def count_semistandard_shifted_marked_setvalued(cls, max_entry, mu, diagonal_primes=True):
-        return cls.count_semistandard_shifted_marked(max_entry, mu, diagonal_primes, True)
+    def count_semistandard_shifted_marked_setvalued(cls, max_entry, mu, nu=(), diagonal_primes=True):
+        return cls.count_semistandard_shifted_marked(max_entry, mu, nu, diagonal_primes, True)
 
     @classmethod
     def semistandard_rpp(cls, max_entry, mu, nu=()):  # noqa
