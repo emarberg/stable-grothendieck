@@ -15,6 +15,30 @@ def test_transpose():
     assert Partition.transpose(mu) == (9, 5, 3, 1, 1)
 
 
+def test_contains():
+    mu = (1,)
+    nu = ()
+    assert Partition.contains(mu, mu)
+    assert Partition.contains(mu, nu)
+    assert not Partition.contains(nu, mu)
+
+    mu = (3, 2, 1)
+    nu = (3, 2)
+    assert Partition.contains(mu, mu)
+    assert Partition.contains(mu, nu)
+    assert not Partition.contains(nu, mu)
+
+    mu = (3, 2, 1)
+    nu = (1, 1, 1)
+    assert Partition.contains(mu, nu)
+    assert not Partition.contains(nu, mu)
+
+    mu = (1, 1, 1, 1)
+    nu = (1, 1, 1)
+    assert Partition.contains(mu, nu)
+    assert not Partition.contains(nu, mu)
+
+
 def test_standardize():
     t = Tableau({
         (1, 1): 1, (1, 2): (-3, 2), (1, 3): (4, 5), (1, 4): (-7, -6, 7), (1, 5): (9, 10),
@@ -96,156 +120,149 @@ def test_generate_partitions():
 
 def test_horizontal_strips():
     mu = tuple()
-    assert list(Tableau._horizontal_strips(mu)) == [
+    nu = ()
+    assert list(Tableau._horizontal_strips(mu, nu)) == [
         (tuple(), set(), []),
     ]
 
     mu = (1,)
-    assert list(Tableau._horizontal_strips(mu)) == [
+    assert list(Tableau._horizontal_strips(mu, nu)) == [
         (tuple(), {(1, 1)}, []),
         ((1,), set(), [(1, 1)]),
     ]
 
     mu = (2,)
-    assert list(Tableau._horizontal_strips(mu)) == [
+    assert list(Tableau._horizontal_strips(mu, nu)) == [
         (tuple(), {(1, 1), (1, 2)}, []),
         ((1,), {(1, 2)}, [(1, 1)]),
         ((2,), set(), [(1, 2)]),
     ]
 
     mu = (1, 1)
-    assert list(Tableau._horizontal_strips(mu)) == [
+    assert list(Tableau._horizontal_strips(mu, nu)) == [
         ((1,), {(2, 1)}, []),
         ((1, 1), set(), [(2, 1)]),
     ]
 
     mu = (2, 1)
-    assert list(Tableau._horizontal_strips(mu)) == [
+    assert list(Tableau._horizontal_strips(mu, nu)) == [
         ((1,), {(1, 2), (2, 1)}, []),
         ((2,), {(2, 1)}, [(1, 2)]),
         ((1, 1), {(1, 2)}, [(2, 1)]),
         ((2, 1), set(), [(1, 2), (2, 1)]),
     ]
 
+    nu = (1, 1)
+    assert list(Tableau._horizontal_strips(mu, nu)) == [
+        ((1, 1), {(1, 2)}, []),
+        ((2, 1), set(), [(1, 2)]),
+    ]
+
 
 def test_shifted_horizontal_strips():
     mu = tuple()
-    assert list(Tableau._shifted_horizontal_strips(mu)) == [
+    nu = ()
+    assert list(Tableau._shifted_horizontal_strips(mu, nu)) == [
         (tuple(), set(), []),
     ]
 
     mu = (1,)
-    assert list(Tableau._shifted_horizontal_strips(mu)) == [
+    assert list(Tableau._shifted_horizontal_strips(mu, nu)) == [
         (tuple(), {(1, 1)}, []),
         ((1,), set(), [(1, 1)]),
     ]
 
     mu = (2,)
-    assert list(Tableau._shifted_horizontal_strips(mu)) == [
+    assert list(Tableau._shifted_horizontal_strips(mu, nu)) == [
         (tuple(), {(1, 1), (1, 2)}, []),
         ((1,), {(1, 2)}, [(1, 1)]),
         ((2,), set(), [(1, 2)]),
     ]
 
     mu = (2, 1)
-    assert list(Tableau._shifted_horizontal_strips(mu)) == [
+    assert list(Tableau._shifted_horizontal_strips(mu, nu)) == [
         ((2,), {(2, 2)}, []),
         ((2, 1), set(), [(2, 2)]),
     ]
 
     mu = (3, 1)
-    assert list(Tableau._shifted_horizontal_strips(mu)) == [
+    assert list(Tableau._shifted_horizontal_strips(mu, nu)) == [
         ((2,), {(2, 2), (1, 3)}, []),
         ((3,), {(2, 2)}, [(1, 3)]),
         ((2, 1), {(1, 3)}, [(2, 2)]),
         ((3, 1), set(), [(1, 3), (2, 2)]),
     ]
 
+    nu = (3,)
+    assert list(Tableau._shifted_horizontal_strips(mu, nu)) == [
+        ((3,), {(2, 2)}, []),
+        ((3, 1), set(), [(2, 2)]),
+    ]
+
 
 def test_shifted_vertical_strips():
-    mu = tuple()
-    assert list(Tableau._shifted_vertical_strips(mu)) == [
+    mu = ()
+    nu = ()
+    assert list(Tableau._shifted_vertical_strips(mu, nu)) == [
         (tuple(), set(), []),
     ]
 
     mu = (1,)
-    assert list(Tableau._shifted_vertical_strips(mu)) == [
+    assert list(Tableau._shifted_vertical_strips(mu, nu)) == [
         (tuple(), {(1, 1)}, []),
         ((1,), set(), [(1, 1)]),
     ]
 
     mu = (2,)
-    assert list(Tableau._shifted_vertical_strips(mu)) == [
+    assert list(Tableau._shifted_vertical_strips(mu, nu)) == [
         ((1,), {(1, 2)}, []),
         ((2,), set(), [(1, 2)]),
     ]
 
     mu = (2, 1)
-    assert list(Tableau._shifted_vertical_strips(mu)) == [
+    assert list(Tableau._shifted_vertical_strips(mu, nu)) == [
         ((1,), {(1, 2), (2, 2)}, []),
         ((2,), {(2, 2)}, [(1, 2)]),
         ((2, 1), set(), [(2, 2)]),
     ]
 
     mu = (3, 1)
-    print(list(Tableau._shifted_vertical_strips(mu)))
-    assert list(Tableau._shifted_vertical_strips(mu)) == [
+    assert list(Tableau._shifted_vertical_strips(mu, nu)) == [
         ((2,), {(2, 2), (1, 3)}, []),
         ((3,), {(2, 2)}, [(1, 3)]),
         ((2, 1), {(1, 3)}, [(2, 2)]),
         ((3, 1), set(), [(1, 3), (2, 2)]),
     ]
 
-
-def test_shifted_rpp_horizontal_strips():
-    mu = ()
-    assert Tableau._shifted_rpp_horizontal_strips(mu) == [
-        ((), set())
+    nu = (1, 1)
+    assert list(Tableau._shifted_vertical_strips(mu, nu)) == [
+        ((2, 1), {(1, 3)}, []),
+        ((3, 1), set(), [(1, 3)]),
     ]
-
-    mu = (1,)
-    assert Tableau._shifted_rpp_horizontal_strips(mu) == [
-        ((), {(1, 1)})
-    ]
-
-    mu = (2, 1)
-    assert {nu for nu, _ in Tableau._shifted_rpp_horizontal_strips(mu)} == {
-        (2,),
-        (1,),
-        (),
-    }
-
-    mu = (3, 1)
-    assert {nu for nu, _ in Tableau._shifted_rpp_horizontal_strips(mu)} == {
-        (3,),
-        (2,),
-        (1,),
-        (),
-        (2, 1),
-    }
 
 
 def test_rpp_horizontal_strips():
     mu = ()
-    assert Tableau._rpp_horizontal_strips(mu) == [
+    nu = ()
+    assert Tableau._rpp_horizontal_strips(mu, nu) == [
         ((), set())
     ]
 
     mu = (1,)
-    assert Tableau._rpp_horizontal_strips(mu) == [
+    assert Tableau._rpp_horizontal_strips(mu, nu) == [
         ((), {(1, 1)}),
         ((1,), set()),
     ]
 
     mu = (1, 1)
-    assert {nu for nu, _ in Tableau._rpp_horizontal_strips(mu)} == {
+    assert {nu for nu, _ in Tableau._rpp_horizontal_strips(mu, nu)} == {
         (),
         (1, 1),
         (1,),
     }
 
     mu = (2, 1)
-    assert {nu for nu, _ in Tableau._rpp_horizontal_strips(mu)} == {
+    assert {nu for nu, _ in Tableau._rpp_horizontal_strips(mu, nu)} == {
         (2,),
         (1, 1),
         (1,),
@@ -254,7 +271,7 @@ def test_rpp_horizontal_strips():
     }
 
     mu = (3, 1)
-    assert {nu for nu, _ in Tableau._rpp_horizontal_strips(mu)} == {
+    assert {nu for nu, _ in Tableau._rpp_horizontal_strips(mu, nu)} == {
         (3,),
         (2,),
         (1,),
@@ -265,11 +282,17 @@ def test_rpp_horizontal_strips():
     }
 
     mu = (2, 1)
-    assert {nu for nu, _ in Tableau._rpp_vertical_strips(mu)} == {
+    assert {nu for nu, _ in Tableau._rpp_vertical_strips(mu, nu)} == {
         (2,),
         (1, 1),
         (1,),
         (),
+        (2, 1),
+    }
+
+    nu = (1, 1)
+    assert {nu for nu, _ in Tableau._rpp_vertical_strips(mu, nu)} == {
+        (1, 1),
         (2, 1),
     }
 
@@ -305,7 +328,7 @@ def test_shifted_rpp_horizontal_strips():
     }
 
 
-def test_shifted_rpp_verticle_strips():
+def test_shifted_rpp_vertical_strips():
     mu = ()
     assert Tableau._shifted_rpp_vertical_strips(mu) == [
         ((), set())
@@ -366,66 +389,6 @@ def test_semistandard():
         Tableau({(1, 1): 1}),
         Tableau({(1, 1): 2}),
         Tableau({(1, 1): 3}),
-    }
-
-
-def test_skew_semistandard():
-    mu = ()
-    nu = ()
-    assert Tableau.semistandard(0, mu, nu) == {Tableau()}
-    assert Tableau.semistandard(1, mu, nu) == {Tableau()}
-    assert Tableau.semistandard(2, mu, nu) == {Tableau()}
-
-    mu = (1, 1)
-    nu = (1,)
-    assert Tableau.semistandard(2, mu, nu) == {
-        Tableau({(2, 1): 1}),
-        Tableau({(2, 1): 2})
-    }
-
-    mu = (2,)
-    nu = (1,)
-    assert Tableau.semistandard(2, mu, nu) == {
-        Tableau({(1, 2): 1}),
-        Tableau({(1, 2): 2}),
-    }
-
-    mu = (2, 1)
-    nu = (1,)
-    assert Tableau.semistandard(2, mu, nu) == {
-        Tableau({(1, 2): 1, (2, 1): 1}),
-        Tableau({(1, 2): 1, (2, 1): 2}),
-        Tableau({(1, 2): 2, (2, 1): 1}),
-        Tableau({(1, 2): 2, (2, 1): 2}),
-    }
-
-    mu = (2, 2)
-    nu = (1,)
-    assert Tableau.semistandard(3, mu, nu) == {
-        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 2}),
-        Tableau({(1, 2): 1, (2, 1): 2, (2, 2): 2}),
-        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 3}),
-        Tableau({(1, 2): 1, (2, 1): 2, (2, 2): 3}),
-        Tableau({(1, 2): 1, (2, 1): 3, (2, 2): 3}),
-        Tableau({(1, 2): 2, (2, 1): 1, (2, 2): 3}),
-        Tableau({(1, 2): 2, (2, 1): 2, (2, 2): 3}),
-        Tableau({(1, 2): 2, (2, 1): 3, (2, 2): 3}),
-    }
-
-    mu = (2, 2, 1)
-    nu = (1,)
-    assert Tableau.semistandard(3, mu, nu) == {
-        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 2, (3, 1): 3}),
-        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 2, (3, 1): 2}),
-        Tableau({(1, 2): 1, (2, 1): 2, (2, 2): 2, (3, 1): 3}),
-        #
-        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 3, (3, 1): 3}),
-        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 3, (3, 1): 2}),
-        Tableau({(1, 2): 1, (2, 1): 2, (2, 2): 3, (3, 1): 3}),
-        #
-        Tableau({(1, 2): 2, (2, 1): 1, (2, 2): 3, (3, 1): 3}),
-        Tableau({(1, 2): 2, (2, 1): 1, (2, 2): 3, (3, 1): 2}),
-        Tableau({(1, 2): 2, (2, 1): 2, (2, 2): 3, (3, 1): 3}),
     }
 
 
@@ -622,3 +585,98 @@ def test_semistandard_marked_rpp():
     assert Tableau.semistandard_marked_rpp(1, mu, diagonal_nonprimes=False) == {
         MarkedReversePlanePartition({(1, 1): -1}),
     }
+
+
+def test_skew_semistandard():
+    mu = ()
+    nu = ()
+    assert Tableau.semistandard(0, mu, nu) == {Tableau()}
+    assert Tableau.semistandard(1, mu, nu) == {Tableau()}
+    assert Tableau.semistandard(2, mu, nu) == {Tableau()}
+
+    mu = (1, 1)
+    nu = (1,)
+    assert Tableau.semistandard(2, mu, nu) == {
+        Tableau({(2, 1): 1}),
+        Tableau({(2, 1): 2})
+    }
+
+    mu = (2,)
+    nu = (1,)
+    assert Tableau.semistandard(2, mu, nu) == {
+        Tableau({(1, 2): 1}),
+        Tableau({(1, 2): 2}),
+    }
+
+    mu = (2, 1)
+    nu = (1,)
+    assert Tableau.semistandard(2, mu, nu) == {
+        Tableau({(1, 2): 1, (2, 1): 1}),
+        Tableau({(1, 2): 1, (2, 1): 2}),
+        Tableau({(1, 2): 2, (2, 1): 1}),
+        Tableau({(1, 2): 2, (2, 1): 2}),
+    }
+
+    mu = (2, 2)
+    nu = (1,)
+    assert Tableau.semistandard(3, mu, nu) == {
+        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 2}),
+        Tableau({(1, 2): 1, (2, 1): 2, (2, 2): 2}),
+        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 3}),
+        Tableau({(1, 2): 1, (2, 1): 2, (2, 2): 3}),
+        Tableau({(1, 2): 1, (2, 1): 3, (2, 2): 3}),
+        Tableau({(1, 2): 2, (2, 1): 1, (2, 2): 3}),
+        Tableau({(1, 2): 2, (2, 1): 2, (2, 2): 3}),
+        Tableau({(1, 2): 2, (2, 1): 3, (2, 2): 3}),
+    }
+
+    mu = (2, 2, 1)
+    nu = (1,)
+    assert Tableau.semistandard(3, mu, nu) == {
+        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 2, (3, 1): 3}),
+        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 2, (3, 1): 2}),
+        Tableau({(1, 2): 1, (2, 1): 2, (2, 2): 2, (3, 1): 3}),
+        #
+        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 3, (3, 1): 3}),
+        Tableau({(1, 2): 1, (2, 1): 1, (2, 2): 3, (3, 1): 2}),
+        Tableau({(1, 2): 1, (2, 1): 2, (2, 2): 3, (3, 1): 3}),
+        #
+        Tableau({(1, 2): 2, (2, 1): 1, (2, 2): 3, (3, 1): 3}),
+        Tableau({(1, 2): 2, (2, 1): 1, (2, 2): 3, (3, 1): 2}),
+        Tableau({(1, 2): 2, (2, 1): 2, (2, 2): 3, (3, 1): 3}),
+    }
+
+
+def test_skew_semistandard_setvalued():
+    n = 2
+    mu = (2,)
+    nu = (1,)
+    tabs = Tableau.semistandard_setvalued(n, mu, nu)
+    print(sorted(tabs))
+    assert tabs == {
+        Tableau({(1, 2): 1}),
+        Tableau({(1, 2): 2}),
+        Tableau({(1, 2): (1, 2)})
+    }
+
+    n = 2
+    mu = (1, 1)
+    nu = (1,)
+    tabs = Tableau.semistandard_setvalued(n, mu, nu)
+    print(sorted(tabs))
+    assert tabs == {
+        Tableau({(2, 1): 1}),
+        Tableau({(2, 1): 2}),
+        Tableau({(2, 1): (1, 2)})
+    }
+
+
+def test_skew_semistandard_marked_setvalued():
+    for n in [1, 2, 3]:
+        mu = (2, 1)
+        nu = (1,)
+        tabs = Tableau.semistandard_marked_setvalued(n, mu, nu)
+        assert len(tabs) == (2**(2 * n) - 1)**2
+
+
+

@@ -72,9 +72,11 @@ class Partition:
         return ans
 
     @classmethod
-    def contains(cls, nu, mu):
+    def contains(cls, bigger, smaller):
         """Returns true if mu subseteq nu as partitions."""
-        return all(0 <= (mu[i] if i < len(mu) else 0) <= nu[i] for i in range(len(nu)))
+        if len(smaller) > len(bigger):
+            return False
+        return all(0 <= smaller[i] <= bigger[i] for i in range(len(smaller)))
 
     @classmethod
     def all(cls, n, strict=False):
@@ -116,6 +118,11 @@ class Tableau:
                 return (v,)
 
         self.boxes = {(i, j): tuplize(i, j) for i, j in mapping}
+        self._sorting_word = tuple(
+            (2 * v if v > 0 else -1 - 2 * v)
+            for b in sorted(self.boxes) for v in self.boxes[b]
+        )
+        self._string_array = None
 
     def __eq__(self, other):
         assert type(other) == type(self)
@@ -135,10 +142,10 @@ class Tableau:
             yield i, j, self.boxes[(i, j)]
 
     def __len__(self):
-        ans = 0
-        for i, j, value in self:
-            ans += len(value)
-        return ans
+        return len(self._sorting_word)
+
+    def __lt__(self, other):
+        return len(self) < len(other) or (len(self) == len(other) and self._sorting_word < other._sorting_word)
 
     def transpose(self):
         return Tableau({(j, i): v for i, j, v in self})
@@ -346,28 +353,37 @@ class Tableau:
     def max_column(self):
         return max([j for i, j in self.boxes]) if self.boxes else 0
 
-    def _string_array(self):
-        boxes = {
-            k: ''.join([
-                str(-x) + '\'' if x < 0 else str(x) + ' '
-                for x in sorted(v, key=lambda x:(abs(x), x))
-            ]) for k, v in self.boxes.items()}
-        maximum = max([len(str(v)) for v in boxes.values()]) if self.boxes else 0
+    COLUMN_SPACING_OFFSET = 2
 
-        def pad(x):
-            return str(x) + (maximum - len(str(x))) * ' '
+    @property
+    def string_array(self):
+        if self._string_array is None:
+            boxes = {
+                k: ''.join([
+                    str(-x) + '\'' if x < 0 else str(x)
+                    for x in sorted(v, key=lambda x:(abs(x), x))
+                ]) for k, v in self.boxes.items()}
 
-        array = []
-        for i in range(1, self.max_row() + 1):
-            row = []
-            for j in range(1, self.max_column() + 1):
-                row += [pad(boxes.get((i, j), ''))]
-            array += [row]
-        return array
+            def maximum(j):
+                column = [len(str(boxes[b])) for b in boxes if b[1] == j]
+                return max(column) if column else 0
+
+            def pad(x, j):
+                return str(x) + (self.COLUMN_SPACING_OFFSET + maximum(j) - len(str(x))) * ' '
+
+            array = []
+            for i in range(1, self.max_row() + 1):
+                row = []
+                for j in range(1, self.max_column() + 1):
+                    row += [pad(boxes.get((i, j), ''), j)]
+                array += [row]
+            self._string_array = array
+        return self._string_array
 
     def __repr__(self):
-        array = self._string_array()
-        return '\n' + '\n'.join([' '.join(line) for line in reversed(array)]) + '\n'
+        # array = self.string_array  # english
+        array = reversed(self.string_array)  # french
+        return '\n\n' + '\n'.join([' '.join(line) for line in array]) + '\n\n'
 
     def weight(self, n):
         ans = n * [0]
@@ -377,8 +393,15 @@ class Tableau:
         return tuple(ans)
 
     @cached_value(HORIZONTAL_STRIPS_CACHE)
-    def _horizontal_strips(cls, mu):  # noqa
-        core = tuple(mu[i + 1] if i + 1 < len(mu) else 0 for i in range(len(mu)))
+    def _horizontal_strips(cls, mu, lam):  # noqa
+        if not Partition.contains(mu, lam):
+            return []
+
+        core = [mu[i + 1] if i + 1 < len(mu) else 0 for i in range(len(mu))]
+        for i in range(len(lam)):
+            core[i] = max(core[i], lam[i])
+        core = tuple(core)
+
         ans = []
         level = {core}
         while level:
@@ -396,9 +419,10 @@ class Tableau:
         return ans
 
     @classmethod
-    def _vertical_strips(cls, mu):
+    def _vertical_strips(cls, mu, lam):
         ans = []
-        for nu, diff, corners in cls._horizontal_strips(Partition.transpose(mu)):
+        strips = cls._horizontal_strips(Partition.transpose(mu), Partition.transpose(lam))
+        for nu, diff, corners in strips:
             nu = Partition.transpose(nu)
             diff = {(j, i) for (i, j) in diff}
             corners = [(j, i) for (i, j) in corners]
@@ -406,9 +430,16 @@ class Tableau:
         return ans
 
     @cached_value(SHIFTED_HORIZONTAL_STRIPS_CACHE)
-    def _shifted_horizontal_strips(cls, mu):  # noqa
+    def _shifted_horizontal_strips(cls, mu, lam):  # noqa
         assert Partition.is_strict_partition(mu)
-        core = tuple(mu[i + 1] + 1 if i + 1 < len(mu) else 0 for i in range(len(mu)))
+        if not Partition.contains(mu, lam):
+            return []
+
+        core = [mu[i + 1] + 1 if i + 1 < len(mu) else 0 for i in range(len(mu))]
+        for i in range(len(lam)):
+            core[i] = max(core[i], lam[i])
+        core = tuple(core)
+
         ans = []
         level = {core}
         while level:
@@ -426,9 +457,16 @@ class Tableau:
         return ans
 
     @cached_value(SHIFTED_VERTICAL_STRIPS_CACHE)
-    def _shifted_vertical_strips(cls, mu):  # noqa
+    def _shifted_vertical_strips(cls, mu, lam):  # noqa
         assert Partition.is_strict_partition(mu)
-        core = tuple(a - 1 for a in mu)
+        if not Partition.contains(mu, lam):
+            return []
+
+        core = [a - 1 for a in mu]
+        for i in range(len(lam)):
+            core[i] = max(core[i], lam[i])
+        core = tuple(core)
+
         ans = []
         level = {core}
         while level:
@@ -449,16 +487,20 @@ class Tableau:
         return ans
 
     @classmethod
-    def _rpp_vertical_strips(cls, mu):  # noqa
+    def _rpp_vertical_strips(cls, mu, lam):  # noqa
+        strips = cls._rpp_horizontal_strips(Partition.transpose(mu), Partition.transpose(lam))
         return [
             (Partition.transpose(nu), {(j, i) for i, j in diff})
-            for nu, diff in cls._rpp_horizontal_strips(Partition.transpose(mu))
+            for nu, diff in strips
         ]
 
     @cached_value(RPP_HORIZONTAL_STRIPS_CACHE)
-    def _rpp_horizontal_strips(cls, mu):  # noqa
-        if mu == ():
+    def _rpp_horizontal_strips(cls, mu, lam):  # noqa
+        if mu == lam:
             return [(mu, set())]
+
+        if not Partition.contains(mu, lam):
+            return []
 
         def remove_box(nu, i):
             if i < len(nu) and nu[i] > 0:
@@ -466,7 +508,8 @@ class Tableau:
                 while nu and nu[-1] == 0:
                     nu = nu[:-1]
                 if all(nu[j] >= nu[j + 1] for j in range(len(nu) - 1)):
-                    yield nu
+                    if Partition.contains(nu, lam):
+                        yield nu
 
         def remove_all_boxes(nu, i):
             queue = [nu]
@@ -567,7 +610,7 @@ class Tableau:
         if mu == lam:
             ans[()] = 1
         elif Partition.contains(mu, lam) and max_entry > 0:
-            for nu, diff, corners in cls._horizontal_strips(mu):
+            for nu, diff, corners in cls._horizontal_strips(mu, lam):
                 for partition, count in cls._count_semistandard(max_entry - 1, nu, lam, setvalued).items():
                     for i in range(len(corners) + 1 if setvalued else 1):
                         m = len(diff) + i
@@ -594,8 +637,8 @@ class Tableau:
         if mu == lam:
             ans[()] = 1
         elif Partition.contains(mu, lam) and max_entry > 0:
-            for nu1, diff1, corners1 in cls._horizontal_strips(mu):
-                for nu2, diff2, corners2 in cls._vertical_strips(nu1):
+            for nu1, diff1, corners1 in cls._horizontal_strips(mu, lam):
+                for nu2, diff2, corners2 in cls._vertical_strips(nu1, lam):
                     for partition, count in cls._count_semistandard_marked(max_entry - 1, nu2, lam, setvalued).items():
                         for i in range(len(corners1) + 1 if setvalued else 1):
                             for j in range(len(corners2) + 1 if setvalued else 1):
@@ -624,8 +667,8 @@ class Tableau:
         if mu == lam:
             ans[()] = 1
         elif Partition.contains(mu, lam) and max_entry > 0:
-            for nu1, diff1, corners1 in cls._shifted_horizontal_strips(mu):
-                for nu2, diff2, corners2 in cls._shifted_vertical_strips(nu1):
+            for nu1, diff1, corners1 in cls._shifted_horizontal_strips(mu, lam):
+                for nu2, diff2, corners2 in cls._shifted_vertical_strips(nu1, lam):
                     if not diagonal_primes:
                         if any(i == j for (i, j) in diff2):
                             continue
@@ -653,7 +696,7 @@ class Tableau:
         if mu == lam:
             ans[()] = 1
         elif Partition.contains(mu, lam) and max_entry > 0:
-            for nu, diff in cls._rpp_vertical_strips(mu):
+            for nu, diff in cls._rpp_vertical_strips(mu, lam):
                 if mu == nu:
                     continue
                 m = len({j for _, j in diff})
@@ -699,7 +742,7 @@ class Tableau:
         if mu == lam:
             ans = {ReversePlanePartition()}
         elif Partition.contains(mu, lam) and max_entry > 0:
-            for nu, diff in cls._rpp_vertical_strips(mu):
+            for nu, diff in cls._rpp_vertical_strips(mu, lam):
                 for tab in cls._semistandard_rpp(max_entry - 1, nu, lam):
                     for (i, j) in diff:
                         tab = tab.add(i, j, max_entry)
@@ -742,7 +785,7 @@ class Tableau:
         if mu == lam:
             ans = {Tableau()}
         elif Partition.contains(mu, lam) and max_entry > 0:
-            for nu, diff, corners in cls._horizontal_strips(mu):
+            for nu, diff, corners in cls._horizontal_strips(mu, lam):
                     for aug in cls._subsets(diff, corners, setvalued):
                         for tab in cls._semistandard(max_entry - 1, nu, lam, setvalued):
                             for (i, j) in aug:
@@ -764,8 +807,8 @@ class Tableau:
         if mu == lam:
             ans = {Tableau()}
         elif Partition.contains(mu, lam) and max_entry > 0:
-            for nu1, diff1, corners1 in cls._horizontal_strips(mu):
-                for nu2, diff2, corners2 in cls._vertical_strips(nu1):
+            for nu1, diff1, corners1 in cls._horizontal_strips(mu, lam):
+                for nu2, diff2, corners2 in cls._vertical_strips(nu1, lam):
                     for aug1 in cls._subsets(diff1, corners1, setvalued):
                         for aug2 in cls._subsets(diff2, corners2, setvalued):
                             for tab in cls._semistandard_marked(max_entry - 1, nu2, lam, setvalued):
@@ -795,8 +838,8 @@ class Tableau:
         if mu == lam:
             ans = {Tableau()}
         elif Partition.contains(mu, lam) and max_entry > 0:
-            for nu1, diff1, corners1 in cls._shifted_horizontal_strips(mu):
-                for nu2, diff2, corners2 in cls._shifted_vertical_strips(nu1):
+            for nu1, diff1, corners1 in cls._shifted_horizontal_strips(mu, lam):
+                for nu2, diff2, corners2 in cls._shifted_vertical_strips(nu1, lam):
                     if not diagonal_primes:
                         if any(i == j for (i, j) in diff2):
                             continue

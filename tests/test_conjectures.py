@@ -6,7 +6,7 @@ import pytest
 
 
 @pytest.mark.slow
-def test_gq_gp_expansion():
+def test_GQ_to_GP_expansion():
     def is_binary_power(i):
         return len(list(filter(lambda x: x == '1', bin(i)))) == 1
 
@@ -33,7 +33,7 @@ def test_gq_gp_expansion():
         print()
         n = len(mu)
         q = GQ(mu, n)
-        expansion = SymmetricPolynomial.gp_expansion(q)
+        expansion = SymmetricPolynomial.GP_expansion(q)
         normalized = Vector({
             tuple(nu[i] - mu[i] for i in range(len(mu))):
             c * sgn(mu, nu) * (-1)**(sum(nu) - sum(mu)) / 2**(len(mu) - sum(nu) + sum(mu))

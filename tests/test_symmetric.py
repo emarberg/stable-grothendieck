@@ -283,96 +283,170 @@ def test_decompose():
 @pytest.mark.slow
 def test_symmetric_functions():
     nn = 6
-    for mu in itertools.chain(*[Partition.generate(n + 1) for n in range(nn)]):
-        for n in range(nn):
-            print(n, mu)
-            print()
+    for mu in Partition.all(nn):
+        for nu in Partition.all(nn, strict=True):
+            for n in range(nn):
+                print(n, mu, nu)
+                print()
 
-            f = SymmetricPolynomial.schur(n, mu)
-            g = SymmetricPolynomial.stable_grothendieck(n, mu)
-            h = SymmetricPolynomial.dual_stable_grothendieck(n, mu)
+                f = SymmetricPolynomial.schur(n, mu, nu)
+                g = SymmetricPolynomial.stable_grothendieck(n, mu, nu)
+                h = SymmetricPolynomial.dual_stable_grothendieck(n, mu, nu)
 
-            fs = SymmetricPolynomial._slow_schur(n, mu)
-            gs = SymmetricPolynomial._slow_stable_grothendieck(n, mu)
-            hs = SymmetricPolynomial._slow_dual_stable_grothendieck(n, mu)
+                fs = SymmetricPolynomial._slow_schur(n, mu, nu)
+                gs = SymmetricPolynomial._slow_stable_grothendieck(n, mu, nu)
+                hs = SymmetricPolynomial._slow_dual_stable_grothendieck(n, mu, nu)
 
-            print(f)
-            print(fs)
-            print()
-            print(g)
-            print(gs)
-            print()
-            print(h)
-            print(hs)
-            print()
-            print()
+                if f != fs:
+                    print(f)
+                    print(fs)
+                    print()
+                if g != gs:
+                    print(g)
+                    print(gs)
+                    print()
+                if h != hs:
+                    print(h)
+                    print(hs)
+                    print()
+                    print()
 
-            assert f == fs
-            assert g == gs
-            assert h == hs
+                assert f == fs
+                assert g == gs
+                assert h == hs
 
-            h = SymmetricPolynomial.schur_s(n, mu)
-            k = SymmetricPolynomial.stable_grothendieck_s(n, mu)
-            assert g.lowest_degree_terms() == f
-            assert k.lowest_degree_terms() == h
+                hh = SymmetricPolynomial.schur_s(n, mu, nu)
+                kk = SymmetricPolynomial.stable_grothendieck_s(n, mu, nu)
+
+                if mu == nu:
+                    assert f == 1
+                    assert g == 1
+                    assert h == 1
+                    assert fs == 1
+                    assert gs == 1
+                    assert hs == 1
+                    assert hh == 1
+                    assert kk == 1
+
+                if not Partition.contains(mu, nu):
+                    assert f == 0
+                    assert g == 0
+                    assert h == 0
+                    assert fs == 0
+                    assert gs == 0
+                    assert hs == 0
+                    assert hh == 0
+                    assert kk == 0
+
+                print(f)
+                print(g)
+                print()
+                print(hh)
+                print(kk)
+                print()
+                assert g.lowest_degree_terms() == f
+                assert kk.lowest_degree_terms() == hh
 
 
 @pytest.mark.slow
 def test_strict_symmetric_functions():
     nn = 5
-    for mu in itertools.chain(*[Partition.generate(n + 1, strict=True) for n in range(nn)]):
-        for n in range(nn):
-            print(n, mu)
-            print()
+    for mu in Partition.all(nn, strict=True):
+        for nu in Partition.all(nn, strict=True):
+            for n in range(nn):
+                print(n, mu, nu)
+                print()
 
-            # Schur-P and GP
+                # Schur-P and GP
 
-            f = SymmetricPolynomial.schur_p(n, mu)
-            g = SymmetricPolynomial.stable_grothendieck_p(n, mu)
-            h = SymmetricPolynomial.dual_stable_grothendieck_p(n, mu)
+                f = SymmetricPolynomial.schur_p(n, mu, nu)
+                g = SymmetricPolynomial.stable_grothendieck_p(n, mu, nu)
+                h = SymmetricPolynomial.dual_stable_grothendieck_p(n, mu, nu)
 
-            fs = SymmetricPolynomial._slow_schur_p(n, mu)
-            gs = SymmetricPolynomial._slow_stable_grothendieck_p(n, mu)
-            hs = SymmetricPolynomial._slow_dual_stable_grothendieck_p(n, mu)
+                fs = SymmetricPolynomial._slow_schur_p(n, mu, nu)
+                gs = SymmetricPolynomial._slow_stable_grothendieck_p(n, mu, nu)
+                hs = SymmetricPolynomial._slow_dual_stable_grothendieck_p(n, mu, nu)
 
-            print(f)
-            print(fs)
-            print()
-            print(g)
-            print(gs)
-            print()
-            print(h)
-            print(hs)
-            print()
-            print()
-            print()
+                if f != fs:
+                    print(f)
+                    print(fs)
+                    print()
 
-            assert f == fs
-            assert g == gs
-            assert h == hs
+                if g != gs:
+                    print(g)
+                    print(gs)
+                    print()
 
-            # Schur-Q and GQ
+                if h != hs:
+                    print(h)
+                    print(hs)
+                    print()
+                    print()
+                    print()
 
-            f = SymmetricPolynomial.schur_q(n, mu)
-            g = SymmetricPolynomial.stable_grothendieck_q(n, mu)
-            h = SymmetricPolynomial.dual_stable_grothendieck_q(n, mu)
+                assert f == fs
+                assert g == gs
+                assert h == hs
 
-            fs = SymmetricPolynomial._slow_schur_q(n, mu)
-            gs = SymmetricPolynomial._slow_stable_grothendieck_q(n, mu)
-            hs = SymmetricPolynomial._slow_dual_stable_grothendieck_q(n, mu)
+                if mu == nu:
+                    assert f == 1
+                    assert g == 1
+                    assert h == 1
+                    assert fs == 1
+                    assert gs == 1
+                    assert hs == 1
 
-            print(f)
-            print(fs)
-            print()
-            print(g)
-            print(gs)
-            print()
-            print(h)
-            print(hs)
-            print()
-            print()
-            print()
+                if not Partition.contains(mu, nu):
+                    assert f == 0
+                    assert g == 0
+                    assert h == 0
+                    assert fs == 0
+                    assert gs == 0
+                    assert hs == 0
 
-            assert f == fs
-            assert g == gs
-            assert h == hs
+                # Schur-Q and GQ
+
+                f = SymmetricPolynomial.schur_q(n, mu, nu)
+                g = SymmetricPolynomial.stable_grothendieck_q(n, mu, nu)
+                h = SymmetricPolynomial.dual_stable_grothendieck_q(n, mu, nu)
+
+                fs = SymmetricPolynomial._slow_schur_q(n, mu, nu)
+                gs = SymmetricPolynomial._slow_stable_grothendieck_q(n, mu, nu)
+                hs = SymmetricPolynomial._slow_dual_stable_grothendieck_q(n, mu, nu)
+
+                if f != fs:
+                    print(f)
+                    print(fs)
+                    print()
+
+                if g != gs:
+                    print(g)
+                    print(gs)
+                    print()
+
+                if h != hs:
+                    print(h)
+                    print(hs)
+                    print()
+                    print()
+                    print()
+
+                assert f == fs
+                assert g == gs
+                assert h == hs
+
+                if mu == nu:
+                    assert f == 1
+                    assert g == 1
+                    assert h == 1
+                    assert fs == 1
+                    assert gs == 1
+                    assert hs == 1
+
+                if not Partition.contains(mu, nu):
+                    assert f == 0
+                    assert g == 0
+                    assert h == 0
+                    assert fs == 0
+                    assert gs == 0
+                    assert hs == 0

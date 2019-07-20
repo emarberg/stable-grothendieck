@@ -169,6 +169,16 @@ class SymmetricMonomial:
 
 class SymmetricPolynomial(Vector):
 
+    def __eq__(self, other):
+        if type(other) == int:
+            if other == 0:
+                return len(self.dictionary) == 0
+            if len(self.dictionary) != 1:
+                return False
+            mon, coeff = list(self.dictionary.items())[0]
+            return len(mon.mu) == 0 and coeff == other
+        return len((self - other).dictionary) == 0
+
     def serialize(self):
         return {key.serialize(): value for key, value in self.items()}
 
@@ -278,7 +288,7 @@ class SymmetricPolynomial(Vector):
     @cached_value(STABLE_GROTHENDIECK_S_CACHE)
     def _stable_grothendieck_s(cls, num_variables, mu, nu, degree_bound):  # noqa
         tableaux = Tableau.count_semistandard_marked_setvalued(num_variables, mu, nu)
-        return (-1)**sum(mu) * cls._vectorize(num_variables, tableaux, True, degree_bound)
+        return (-1)**(sum(mu) - sum(nu)) * cls._vectorize(num_variables, tableaux, True, degree_bound)
 
     @classmethod
     def stable_grothendieck_q(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa
@@ -287,7 +297,7 @@ class SymmetricPolynomial(Vector):
     @cached_value(STABLE_GROTHENDIECK_Q_CACHE)
     def _stable_grothendieck_q(cls, num_variables, mu, nu, degree_bound):  # noqa
         tableaux = Tableau.count_semistandard_shifted_marked_setvalued(num_variables, mu, nu)
-        return (-1)**sum(mu) * cls._vectorize(num_variables, tableaux, True, degree_bound)
+        return (-1)**(sum(mu) - sum(nu)) * cls._vectorize(num_variables, tableaux, True, degree_bound)
 
     @classmethod
     def stable_grothendieck_p(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa
@@ -296,7 +306,7 @@ class SymmetricPolynomial(Vector):
     @cached_value(STABLE_GROTHENDIECK_P_CACHE)
     def _stable_grothendieck_p(cls, num_variables, mu, nu, degree_bound):  # noqa
         tableaux = Tableau.count_semistandard_shifted_marked_setvalued(num_variables, mu, nu, diagonal_primes=False)
-        return (-1)**sum(mu) * cls._vectorize(num_variables, tableaux, True, degree_bound)
+        return (-1)**(sum(mu) - sum(nu)) * cls._vectorize(num_variables, tableaux, True, degree_bound)
 
     @classmethod
     def stable_grothendieck(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa
@@ -305,7 +315,7 @@ class SymmetricPolynomial(Vector):
     @cached_value(STABLE_GROTHENDIECK_CACHE)
     def _stable_grothendieck(cls, num_variables, mu, nu, degree_bound):  # noqa
         tableaux = Tableau.count_semistandard_setvalued(num_variables, mu, nu)
-        return (-1)**sum(mu) * cls._vectorize(num_variables, tableaux, True, degree_bound)
+        return (-1)**(sum(mu) - sum(nu)) * cls._vectorize(num_variables, tableaux, True, degree_bound)
 
     @classmethod
     def dual_stable_grothendieck(cls, num_variables, mu, nu=()):  # noqa
@@ -371,7 +381,7 @@ class SymmetricPolynomial(Vector):
             return Vector()
 
     @classmethod
-    def gp_expansion(cls, f):
+    def GP_expansion(cls, f):  # noqa
         if f:
             t = max(f.lowest_degree_terms())
             n = t.n
@@ -418,7 +428,7 @@ class SymmetricPolynomial(Vector):
 
     @classmethod
     def _slow_stable_grothendieck_s(cls, num_variables, mu, nu=()):
-        return (-1)**sum(mu) * cls._slow_vectorize(
+        return (-1)**(sum(mu) - sum(nu)) * cls._slow_vectorize(
             num_variables,
             Tableau.semistandard_marked_setvalued(num_variables, mu, nu),
             True
@@ -426,7 +436,7 @@ class SymmetricPolynomial(Vector):
 
     @classmethod
     def _slow_stable_grothendieck_q(cls, num_variables, mu, nu=()):
-        return (-1)**sum(mu) * cls._slow_vectorize(
+        return (-1)**(sum(mu) - sum(nu)) * cls._slow_vectorize(
             num_variables,
             Tableau.semistandard_shifted_marked_setvalued(num_variables, mu, nu),
             True
@@ -434,7 +444,7 @@ class SymmetricPolynomial(Vector):
 
     @classmethod
     def _slow_stable_grothendieck_p(cls, num_variables, mu, nu=()):
-        return (-1)**sum(mu) * cls._slow_vectorize(
+        return (-1)**(sum(mu) - sum(nu)) * cls._slow_vectorize(
             num_variables,
             Tableau.semistandard_shifted_marked_setvalued(num_variables, mu, nu, diagonal_primes=False),
             True
@@ -442,7 +452,7 @@ class SymmetricPolynomial(Vector):
 
     @classmethod
     def _slow_stable_grothendieck(cls, num_variables, mu, nu=()):
-        return (-1)**sum(mu) * cls._slow_vectorize(
+        return (-1)**(sum(mu) - sum(nu)) * cls._slow_vectorize(
             num_variables,
             Tableau.semistandard_setvalued(num_variables, mu, nu),
             True
