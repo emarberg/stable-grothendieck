@@ -387,7 +387,21 @@ class SymmetricPolynomial(Vector):
             n = t.n
             c = f[t]
             mu = t.index()
-            ans = cls.gp_expansion(f - c * cls.stable_grothendieck_p(n, mu))
+            ans = cls.GP_expansion(f - c * cls.stable_grothendieck_p(n, mu))
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
+    def GQ_expansion(cls, f):  # noqa
+        if f:
+            t = max(f.lowest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            assert c % 2**len(mu) == 0
+            c = c // 2**len(mu)
+            ans = cls.GQ_expansion(f - c * cls.stable_grothendieck_q(n, mu))
             return ans + Vector({mu: c})
         else:
             return Vector()

@@ -1,4 +1,4 @@
-from utils import GQ, GS
+from utils import G, GP, GQ, GS
 from symmetric import SymmetricPolynomial
 from tableaux import Partition
 from vectors import Vector
@@ -6,12 +6,72 @@ import pytest
 
 
 @pytest.mark.slow
-def test_GQ_to_GP_expansion():
+def test_staircase_grothendieck_GP_positivity(): # noqa
+    r = 6
+    for k in range(r):
+        delta = tuple(k - i for i in range(k))
+        for nu in Partition.all(sum(delta)):
+            if not Partition.contains(delta, nu):
+                continue
+            n = len(delta)
+            f = G(n, delta, nu)
+            expansion = SymmetricPolynomial.GP_expansion(f)
+            normalized = Vector({
+                lam: c * (-1)**(sum(lam) - sum(delta) + sum(nu))
+                for lam, c in expansion.items()
+            })
+            print('G_{%s/%s}(x_1,...,x_%s) =' % (delta, nu, n), normalized)
+            print()
+            assert all(c > 0 for c in normalized.values())
+
+
+@pytest.mark.slow
+def test_skew_GQ_positivity(): # noqa
+    k = 15
+    for mu in Partition.all(k, strict=True):
+        for nu in Partition.all(k, strict=True):
+            if not Partition.contains(mu, nu):
+                continue
+            n = len(mu)
+            f = GQ(n, mu, nu)
+            expansion = SymmetricPolynomial.GQ_expansion(f)
+            normalized = Vector({
+                lam: c * (-1)**(sum(lam) - sum(mu) + sum(nu))
+                for lam, c in expansion.items()
+            })
+            print('GQ_{%s/%s}(x_1,...,x_%s) =' % (mu, nu, n), normalized)
+            print()
+            assert all(c > 0 for c in normalized.values())
+
+
+@pytest.mark.slow
+def test_skew_GP_positivity(): # noqa
+    k = 15
+    for mu in Partition.all(k, strict=True):
+        for nu in Partition.all(k, strict=True):
+            if not Partition.contains(mu, nu):
+                continue
+            n = len(mu)
+            f = GP(n, mu, nu)
+            expansion = SymmetricPolynomial.GP_expansion(f)
+            normalized = Vector({
+                lam: c * (-1)**(sum(lam) - sum(mu) + sum(nu))
+                for lam, c in expansion.items()
+            })
+            print('GP_{%s/%s}(x_1,...,x_%s) =' % (mu, nu, n), normalized)
+            print()
+            assert all(c > 0 for c in normalized.values())
+
+
+@pytest.mark.slow
+def test_GQ_to_GP_expansion(): # noqa
     def is_binary_power(i):
         return len(list(filter(lambda x: x == '1', bin(i)))) == 1
 
     def sgn(mu, nu):
-        boxes = sorted({(i + 1, i + j) for i in range(len(mu)) for j in range(mu[i] + 1, nu[i] + 1)})
+        boxes = sorted({
+            (i + 1, i + j) for i in range(len(mu)) for j in range(mu[i] + 1, nu[i] + 1)
+        })
         sgn = 1
         for i in range(len(boxes)):
             _, j = boxes[i]
