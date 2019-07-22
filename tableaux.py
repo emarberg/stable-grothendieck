@@ -37,6 +37,16 @@ def nchoosek(m, k):
 class Partition:
 
     @classmethod
+    def complement(cls, n, mu):
+        assert all(mu[i] <= n - i for i in range(len(mu)))
+        dictionary = defaultdict(int)
+        for i in range(n):
+            start = i + (mu[i] if i < len(mu) else 0) + 1
+            for j in range(start, n + 1):
+                dictionary[j] += 1
+        return Partition.sort(dictionary.values(), trim=True)
+
+    @classmethod
     def printable(cls, mu, shifted=False):
         s = []
         for i, a in enumerate(mu):

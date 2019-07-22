@@ -20,7 +20,7 @@ def test_staircase_grothendieck_GP_positivity(): # noqa
                 lam: c * (-1)**(sum(lam) - sum(delta) + sum(nu))
                 for lam, c in expansion.items()
             })
-            print('G_{%s/%s}(x_1,...,x_%s) =' % (delta, nu, n), normalized)
+            print('G_{%s/%s}(x_%s) =' % (delta, nu, n), normalized)
             print()
             assert all(c > 0 for c in normalized.values())
 
@@ -39,7 +39,7 @@ def test_skew_GQ_positivity(): # noqa
                 lam: c * (-1)**(sum(lam) - sum(mu) + sum(nu))
                 for lam, c in expansion.items()
             })
-            print('GQ_{%s/%s}(x_1,...,x_%s) =' % (mu, nu, n), normalized)
+            print('GQ_{%s/%s}(x_%s) =' % (mu, nu, n), normalized)
             print()
             assert all(c > 0 for c in normalized.values())
 
@@ -58,7 +58,7 @@ def test_skew_GP_positivity(): # noqa
                 lam: c * (-1)**(sum(lam) - sum(mu) + sum(nu))
                 for lam, c in expansion.items()
             })
-            print('GP_{%s/%s}(x_1,...,x_%s) =' % (mu, nu, n), normalized)
+            print('GP_{%s/%s}(x_%s) =' % (mu, nu, n), normalized)
             print()
             assert all(c > 0 for c in normalized.values())
 

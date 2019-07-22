@@ -15,6 +15,16 @@ def test_transpose():
     assert Partition.transpose(mu) == (9, 5, 3, 1, 1)
 
 
+def test_complement():
+    nu = ()
+    assert Partition.complement(0, nu) == ()
+    assert Partition.complement(1, nu) == (1,)
+    assert Partition.complement(2, nu) == (2, 1)
+
+    nu = (6, 4, 2, 1)
+    assert Partition.complement(6, nu) == (5, 3)
+
+
 def test_contains():
     mu = (1,)
     nu = ()
