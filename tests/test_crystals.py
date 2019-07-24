@@ -4,7 +4,8 @@ from crystals import (
     ShiftedCrystalGenerator,
     OrthogonalSetvaluedShiftedCrystalGenerator,
     URTShiftedCrystalGenerator,
-    MRTShiftedCrystalGenerator
+    MRTShiftedCrystalGenerator,
+    MRT_Symplectic_ShiftedCrystalGenerator
 )
 from permutations import Permutation
 from tableaux import Partition
@@ -51,16 +52,23 @@ def test_shifted_crystal_generate():
 
 @pytest.mark.slow
 def test_urt_crystal():
-    for mu in [(2,), (2, 1), (3, 1), (3,)]:
+    for mu in Partition.all(10, max_part=4, strict=True):
         for excess in range(3):
             URTShiftedCrystalGenerator(mu, rank=3, excess=excess).generate()
 
 
 @pytest.mark.slow
 def test_mrt_crystal():
-    for mu in [(2,), (2, 1), (3, 1), (3,)]:
+    for mu in Partition.all(10, max_part=4, strict=True):
         for excess in range(3):
             MRTShiftedCrystalGenerator(mu, rank=3, excess=excess).generate()
+
+
+# @pytest.mark.slow
+def test_mrt_sp_crystal():
+    for mu in Partition.all(10, max_part=4, strict=True):
+        for excess in range(3):
+            MRT_Symplectic_ShiftedCrystalGenerator(mu, rank=3, excess=excess).generate()
 
 
 @pytest.mark.slow

@@ -89,9 +89,9 @@ class Partition:
         return all(0 <= smaller[i] <= bigger[i] for i in range(len(smaller)))
 
     @classmethod
-    def all(cls, n, strict=False):
+    def all(cls, n, max_part=None, strict=False):
         for i in range(n + 1):
-            for mu in cls.generate(i, strict=strict):
+            for mu in cls.generate(i, max_part=max_part, strict=strict):
                 yield mu
 
     @classmethod

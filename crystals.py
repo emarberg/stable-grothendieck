@@ -264,12 +264,14 @@ class URTShiftedCrystalGenerator(ShiftedCrystalGenerator):
 
 class MRTShiftedCrystalGenerator(ShiftedCrystalGenerator):
 
+    _SYMPLECTIC = False
+
     @property
     def SUBDIRECTORY(self):
         return ('multisets/' if self.multisetvalued else 'sets/') + ('mrt_sp/' if self.is_symplectic else 'mrt/')
 
     def __init__(self, mu, rank, excess):
-        super(MRTShiftedCrystalGenerator, self).__init__(mu, rank, excess, False, True)
+        super(MRTShiftedCrystalGenerator, self).__init__(mu, rank, excess, False, self._SYMPLECTIC)
         t = Tableau()
         for i in range(len(mu)):
             for j in range(mu[i]):
@@ -280,10 +282,15 @@ class MRTShiftedCrystalGenerator(ShiftedCrystalGenerator):
     def tableaux(self):
         if self._tableaux is None:
             self._tableaux = [
-                t for t in Tableau.semistandard_shifted_marked_setvalued(self.mu, self.rank, diagonal_primes=False)
+                t for t in Tableau.semistandard_shifted_marked_setvalued(self.rank, self.mu, diagonal_primes=False)
                 if len(t) == sum(self.mu) + self.excess
             ]
         return self._tableaux
+
+
+class MRT_Symplectic_ShiftedCrystalGenerator(MRTShiftedCrystalGenerator): # noqa
+
+    _SYMPLECTIC = True
 
 
 class WordCrystalGenerator(CrystalMixin):
