@@ -60,14 +60,14 @@ def test_urt_crystal():
 @pytest.mark.slow
 def test_mrt_crystal():
     for mu in Partition.all(10, max_part=4, strict=True):
-        for excess in range(3):
+        for excess in range(5):
             MRTShiftedCrystalGenerator(mu, rank=3, excess=excess).generate()
 
 
-# @pytest.mark.slow
+@pytest.mark.slow
 def test_mrt_sp_crystal():
     for mu in Partition.all(10, max_part=4, strict=True):
-        for excess in range(3):
+        for excess in range(5):
             MRT_Symplectic_ShiftedCrystalGenerator(mu, rank=3, excess=excess).generate()
 
 
