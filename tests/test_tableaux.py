@@ -689,4 +689,10 @@ def test_skew_semistandard_marked_setvalued():
         assert len(tabs) == (2**(2 * n) - 1)**2
 
 
-
+def test_descents():
+    t = Tableau({
+        (1, 1): 1, (1, 2): -2, (1, 3): 3, (1, 4): -4, (1, 5): 5, (1, 6): -10,
+        (2, 2): 6, (2, 3): -7, (2, 4): -9, (2, 5): -12,
+        (3, 3): 8, (3, 4): -11,
+    })
+    assert t.descent_set() == {1, 3, 5, 6, 8, 9, 11}

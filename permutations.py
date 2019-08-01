@@ -2,7 +2,7 @@ import itertools
 from symmetric import SymmetricPolynomial, SymmetricMonomial
 from words import Word
 from vectors import Vector
-from tableaux import Partition
+from tableaux import Partition, Tableau
 from collections import defaultdict
 
 HECKE_CACHE = defaultdict(list)
@@ -78,6 +78,21 @@ class Permutation:
             if len(c) > 1:
                 s += '(' + ' '.join([str(x) for x in c]) + ')'
         return s
+
+    @classmethod
+    def from_word(cls, word):
+        ans = Permutation()
+        for i in word:
+            ans *= Permutation.s_i(i)
+        return ans
+
+    @classmethod
+    def from_involution_word(cls, word):
+        ans = Permutation()
+        for i in word:
+            s = Permutation.s_i(i)
+            ans = s % ans % s
+        return ans
 
     @classmethod
     def all(cls, n, signed=False):
@@ -241,6 +256,9 @@ class Permutation:
             return None
         return tuple(n - a for a in phi)
 
+    def is_inv_grassmannian(self):
+        return self.get_inv_grassmannian(*self.involution_shape()) == self
+
     def is_fpf_grassmannian(self):
         if not self.is_unsigned() and self.is_fpf_involution():
             return False
@@ -257,6 +275,54 @@ class Permutation:
 
     def is_unsigned(self):
         return all(i > 0 for i in self.oneline)
+
+    @classmethod
+    def involution_little_push(cls, word, i):
+        new = word[:i] + (word[i] + 1,) + word[i + 1:]
+        v = cls.from_involution_word(word[:i] + word[i + 1:])
+        w = cls.from_involution_word(new)
+        if w.involution_length == len(new):
+            return new, None
+        for j in range(len(new)):
+            if i != j and v == cls.from_involution_word(new[:j] + new[j + 1:]):
+                return new, j
+        raise Exception
+
+    @classmethod
+    def involution_little_bump(cls, word, j, k):
+        t = cls.transposition(j, k)
+        w = cls.from_word(word)
+        subatoms = [t * x for x in w.get_atoms() if len(t * x) == len(x) - 1]
+        assert len(subatoms) > 0
+        y = subatoms[0].inverse() % subatoms[0]
+        for i in range(len(word)):
+            if y == cls.from_involution_word(word[:i] + word[i + 1:]):
+                while i is not None:
+                    word, i = cls.involution_little_push(word, i)
+                return word
+
+    @classmethod
+    def little_push(cls, word, i):
+        new = word[:i] + (word[i] + 1,) + word[i + 1:]
+        v = cls.from_word(word[:i] + word[i + 1:])
+        w = cls.from_word(new)
+        if len(w) == len(new):
+            return new, None
+        for j in range(len(new)):
+            if i != j and v == cls.from_word(new[:j] + new[j + 1:]):
+                return new, j
+        raise Exception
+
+    @classmethod
+    def little_bump(cls, word, j, k):
+        t = cls.transposition(j, k)
+        w = cls.from_word(word)
+        assert len(t * w) == len(w) - 1
+        for i in range(len(word)):
+            if t * w == cls.from_word(word[:i] + word[i + 1:]):
+                while i is not None:
+                    word, i = cls.little_push(word, i)
+                return word
 
     @classmethod
     def hecke_words(cls, n, length_bound=None, ascent_bound=None):
@@ -595,6 +661,8 @@ class Permutation:
             return self
 
     def __mul__(self, other):
+        if type(other) == Tableau:
+            return Tableau({(i, j): tuple(self(v) for v in value) for i, j, value in other})
         assert type(other) == Permutation
         newline = [self(other(i)) for i in range(1, max(self.rank, other.rank) + 1)]
         return Permutation(*newline)
@@ -639,7 +707,10 @@ class Permutation:
             return max(descents)
 
     @classmethod
-    def reflection_s(cls, i, j):
+    def reflection_s(cls, i, j=None):
+        if j is None:
+            j = i
+        assert i <= j
         caller = list(range(1, j + 1))
         caller[i - 1] = -j
         caller[j - 1] = -i
@@ -651,7 +722,7 @@ class Permutation:
 
     @classmethod
     def reflection_t(cls, i, j):
-        assert i != j
+        assert i < j
         caller = list(range(1, j + 1))
         caller[i - 1] = j
         caller[j - 1] = i
@@ -679,7 +750,7 @@ class Permutation:
 
     def get_min_atom(self):
         assert self == self.inverse()
-        return Permutation(*self._min_inv_atom_oneline())
+        return Permutation(*self._min_inv_atom_oneline()).inverse()
 
     def get_atoms(self):
         assert self == self.inverse()

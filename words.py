@@ -69,6 +69,10 @@ class Word:
         return ans
 
     @classmethod
+    def descent_set(cls, v):
+        return set(i + 1 for i in range(len(v) - 1) if v[i] > v[i + 1])
+
+    @classmethod
     def ascents(cls, v):
         return len([i for i in range(len(v) - 1) if v[i] <= v[i + 1]])
 

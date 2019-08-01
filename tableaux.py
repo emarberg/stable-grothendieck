@@ -172,11 +172,22 @@ class Tableau:
         return ans
 
     def is_semistandard(self):
+        def dbl(v):
+            return (2 * v) if v > 0 else (-1 - 2 * v)
+
         for i, j, values in self:
-            if (i, j + 1) in self and max(values) > min(self.get(i, j + 1, unpack=False)):
+            if min(values) < 0 and i == j:
                 return False
+
+            maxval = max({dbl(v) for v in values})
+            if (i, j + 1) in self:
+                minval = min({dbl(v) for v in self.get(i, j + 1, unpack=False)})
+                if minval < maxval or (maxval == minval and minval % 2 != 0):
+                    return False
             if (i + 1, j) in self and max(values) >= min(self.get(i + 1, j, unpack=False)):
-                return False
+                minval = min({dbl(v) for v in self.get(i + 1, j, unpack=False)})
+                if minval < maxval or (maxval == minval and minval % 2 == 0):
+                    return False
         return True
 
     def crystal_reading_word(self):
@@ -401,6 +412,28 @@ class Tableau:
             for x in v:
                 ans[abs(x) - 1] += 1
         return tuple(ans)
+
+    def descent_set(self):
+        ans = set()
+        rows = {}
+        cols = {}
+        for i, j, values in self:
+            for v in values:
+                assert abs(v) not in rows and abs(v) not in cols
+                if v > 0:
+                    rows[v] = i
+                else:
+                    cols[-v] = j
+        n = len(rows) + len(cols)
+        assert set(rows) | set(cols) == set(range(1, n + 1))
+        for i in range(1, n):
+            if i in rows and i + 1 in cols:
+                ans.add(i)
+            elif i in rows and i + 1 in rows and rows[i + 1] > rows[i]:
+                ans.add(i)
+            elif i in cols and i + 1 in cols and cols[i + 1] > cols[i]:
+                ans.add(i)
+        return ans
 
     @cached_value(HORIZONTAL_STRIPS_CACHE)
     def _horizontal_strips(cls, mu, lam):  # noqa

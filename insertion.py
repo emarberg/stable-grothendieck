@@ -1,4 +1,9 @@
+from cached import cached_value
 from tableaux import Tableau
+
+HECKE_CACHE = {}
+ORTHOGONAL_HECKE_CACHE = {}
+SYMPLECTIC_HECKE_CACHE = {}
 
 
 class InsertionAlgorithm:
@@ -27,8 +32,8 @@ class InsertionAlgorithm:
                 record[abs(v) - 1] = abs(recording_tableau.get(i, j, unpack=False)[k])
         return standard_tableau, tuple(record)
 
-    @classmethod
-    def hecke(cls, word, record=None, multisetvalued=True):
+    @cached_value(HECKE_CACHE)
+    def hecke(cls, word, record=None, multisetvalued=True):  # noqa
         record = cls._check_record(word, record, multisetvalued)
         insertion_tableau, recording_tableau = HState.insertion_tableaux(*word)
         if not multisetvalued:
@@ -36,14 +41,14 @@ class InsertionAlgorithm:
             recording_tableau = recording_tableau.transpose()
         return insertion_tableau, recording_tableau.apply(lambda x: record[x])
 
-    @classmethod
-    def orthogonal_hecke(cls, word, record=None, multisetvalued=True):
+    @cached_value(ORTHOGONAL_HECKE_CACHE)
+    def orthogonal_hecke(cls, word, record=None, multisetvalued=True):  # noqa
         evenword = tuple(2 * i for i in word)
         insertion_tableau, recording_tableau = cls.symplectic_hecke(evenword, record, multisetvalued)
         return insertion_tableau.halve(), recording_tableau
 
-    @classmethod
-    def symplectic_hecke(cls, word, record=None, multisetvalued=True):
+    @cached_value(SYMPLECTIC_HECKE_CACHE)
+    def symplectic_hecke(cls, word, record=None, multisetvalued=True):  # noqa
         record = cls._check_record(word, record, multisetvalued)
         insertion_tableau, recording_tableau = FState.insertion_tableaux(*word)
         if not multisetvalued:
