@@ -87,12 +87,17 @@ class Permutation:
         return ans
 
     @classmethod
-    def from_involution_word(cls, word):
-        ans = Permutation()
+    def from_involution_word(cls, word, strict=True):
+        w = cls.identity()
         for i in word:
             s = Permutation.s_i(i)
-            ans = s % ans % s
-        return ans
+            if i in w.right_descent_set and strict:
+                return None
+            elif s * w == w * s:
+                w = w * s
+            else:
+                w = s * w * s
+        return w
 
     @classmethod
     def all(cls, n, signed=False):
@@ -279,24 +284,26 @@ class Permutation:
     @classmethod
     def involution_little_push(cls, word, i):
         new = word[:i] + (word[i] + 1,) + word[i + 1:]
-        v = cls.from_involution_word(word[:i] + word[i + 1:])
-        w = cls.from_involution_word(new)
+        v = cls.from_involution_word(word[:i] + word[i + 1:], strict=False)
+        w = cls.from_involution_word(new, strict=False)
         if w.involution_length == len(new):
             return new, None
         for j in range(len(new)):
-            if i != j and v == cls.from_involution_word(new[:j] + new[j + 1:]):
+            if i != j and v == cls.from_involution_word(new[:j] + new[j + 1:], strict=False):
                 return new, j
         raise Exception
 
     @classmethod
     def involution_little_bump(cls, word, j, k):
         t = cls.transposition(j, k)
-        w = cls.from_word(word)
-        subatoms = [t * x for x in w.get_atoms() if len(t * x) == len(x) - 1]
+        w = cls.from_involution_word(word, strict=False)
+        assert w.involution_length == len(word)
+        subatoms = [x * t for x in w.get_atoms() if len(x * t) == len(x) - 1]
+        subatoms = [x for x in subatoms if (x.inverse() % x).involution_length == len(x)]
         assert len(subatoms) > 0
         y = subatoms[0].inverse() % subatoms[0]
         for i in range(len(word)):
-            if y == cls.from_involution_word(word[:i] + word[i + 1:]):
+            if y == cls.from_involution_word(word[:i] + word[i + 1:], strict=False):
                 while i is not None:
                     word, i = cls.involution_little_push(word, i)
                 return word
@@ -317,9 +324,10 @@ class Permutation:
     def little_bump(cls, word, j, k):
         t = cls.transposition(j, k)
         w = cls.from_word(word)
-        assert len(t * w) == len(w) - 1
+        assert len(w) == len(word)
+        assert len(w * t) == len(w) - 1
         for i in range(len(word)):
-            if t * w == cls.from_word(word[:i] + word[i + 1:]):
+            if w * t == cls.from_word(word[:i] + word[i + 1:]):
                 while i is not None:
                     word, i = cls.little_push(word, i)
                 return word
@@ -758,20 +766,6 @@ class Permutation:
         if w not in atoms_b_cache:
             atoms_b_cache[w] = list(w._get_atoms())
         return atoms_b_cache[w]
-
-    @classmethod
-    def from_involution_word(cls, word, strict=True):
-        w = cls.identity()
-        for i in word:
-            s = Permutation.s_i(i)
-            if i in w.right_descent_set:
-                if strict:
-                    return None
-            elif s * w == w * s:
-                w = w * s
-            else:
-                w = s * w * s
-        return w
 
     def _get_atoms(self):
         def involution(oneline):

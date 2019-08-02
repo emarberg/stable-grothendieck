@@ -22,7 +22,7 @@ def test_push():
 def test_bump():
     word = (1, 3, 4, 3, 2, 3, 1)
     end = (1, 3, 5, 4, 2, 3, 2)
-    j, k = 2, 5
+    j, k = 1, 2
     assert Permutation.little_bump(word, j, k) == end
 
 
@@ -82,12 +82,46 @@ def get_bruhat_covers(w):
     for j in range(1, n + 1):
         for k in range(j + 1, n + 1):
             t = Permutation.transposition(j, k)
-            if len(t * w) == len(w) - 1:
+            if len(w * t) == len(w) - 1:
                 yield j, k
 
 
+def get_inv_bruhat_covers(w):
+    n = w.rank
+    for j in range(1, n + 1):
+        for k in range(j + 1, n + 1):
+            t = Permutation.transposition(j, k)
+            subatoms = [x * t for x in w.get_atoms() if len(x * t) == len(x) - 1]
+            subatoms = [x for x in subatoms if (x.inverse() % x).involution_length == len(x)]
+            if subatoms:
+                yield j, k
+
+
+def adjacent_unmatched_primes(q, k):
+    if k in q.values() and -k - 1 in q.values():
+        (x1, y1) = q.find(k)[0]
+        (x2, y2) = q.find(-k - 1)[0]
+        return x1 == x2 or y1 == y2
+    elif -k in q.values() and k + 1 in q.values():
+        (x1, y1) = q.find(-k)[0]
+        (x2, y2) = q.find(k + 1)[0]
+        return x1 == x2 or y1 == y2
+    elif k in q.values() and k + 1 in q.values():
+        (x1, y1) = q.find(k)[0]
+        (x2, y2) = q.find(k + 1)[0]
+        return x1 == x2 and x1 == y1
+    return False
+
+
+def on_diagonal(q, k):
+    if k in q.values():
+        i, j = q.find(k)[0]
+        return i == j
+    return False
+
+
 def test_ck_moves():
-    for w in Permutation.all(3):
+    for w in Permutation.all(4):
         covers = list(get_bruhat_covers(w))
 
         for word in w.get_reduced_words():
@@ -95,7 +129,7 @@ def test_ck_moves():
             p, q = InsertionAlgorithm.hecke(word)
             for i, other in get_ck_type_one(word):
                 pp, qq = InsertionAlgorithm.hecke(other)
-                print('  type I:', word, '<->', other, 'at i =', i)
+                print('  type I:', word, '<->', other, 'at i =', i + 1)
                 print(q)
                 print(qq)
                 assert p == pp
@@ -105,7 +139,7 @@ def test_ck_moves():
 
             for i, other in get_ck_type_three(word):
                 pp, qq = InsertionAlgorithm.hecke(other)
-                print('type III:', word, '<->', other, 'at i =', i)
+                print('type III:', word, '<->', other, 'at i =', i + 1)
                 print(q)
                 print(qq)
                 assert p == pp
@@ -115,7 +149,7 @@ def test_ck_moves():
 
             for i, other in get_ck_type_two(word):
                 pp, qq = InsertionAlgorithm.hecke(other)
-                print(' type II:', word, '<->', other, 'at i =', i)
+                print(' type II:', word, '<->', other, 'at i =', i + 1)
                 print(q)
                 print(qq)
                 assert p == pp
@@ -129,26 +163,32 @@ def test_ck_moves():
                 p, q = InsertionAlgorithm.hecke(bumped)
                 label = 'bump(%s, %s, %s) =' % (str(word), j, k)
 
+                moves = []
                 for i, other in get_ck_type_one(bumped):
                     pp, qq = InsertionAlgorithm.hecke(other)
-                    print('  type I:', label, bumped, '<->', other, 'at i =', i)
+                    print('  type I:', label, bumped, '<->', other, 'at i =', i + 1)
                     print(q)
                     print(qq)
                     assert i in alphas and q == alphas[i] * qq
+                    moves.append(i)
 
                 for i, other in get_ck_type_three(bumped):
                     pp, qq = InsertionAlgorithm.hecke(other)
-                    print('type III:', label, bumped, '<->', other, 'at i =', i)
+                    print('type III:', label, bumped, '<->', other, 'at i =', i + 1)
                     print(q)
                     print(qq)
                     assert i in alphas and q == alphas[i] * qq
+                    moves.append(i)
 
                 for i, other in get_ck_type_two(bumped):
                     pp, qq = InsertionAlgorithm.hecke(other)
-                    print(' type II:', label, bumped, '<->', other, 'at i =', i)
+                    print(' type II:', label, bumped, '<->', other, 'at i =', i + 1)
                     print(q)
                     print(qq)
                     assert i in alphas and q == alphas[i] * qq
+                    moves.append(i)
+
+                assert sorted(moves) == sorted(alphas)
 
 
 def test_unique_transposition():
@@ -176,23 +216,7 @@ def test_unique_transposition():
 
 
 def test_unique_transposition_invol():
-
-    def adjacent_unmatched_primes(q, k):
-        if k in q.values() and -k - 1 in q.values():
-            (x1, y1) = q.find(k)[0]
-            (x2, y2) = q.find(-k - 1)[0]
-            return x1 == x2 or y1 == y2
-        elif -k in q.values() and k + 1 in q.values():
-            (x1, y1) = q.find(-k)[0]
-            (x2, y2) = q.find(k + 1)[0]
-            return x1 == x2 or y1 == y2
-        elif k in q.values() and k + 1 in q.values():
-            (x1, y1) = q.find(k)[0]
-            (x2, y2) = q.find(k + 1)[0]
-            return x1 == x2 and x1 == y1
-        return False
-
-    for w in Permutation.involutions(7):
+    for w in Permutation.involutions(5):
         for word in w.get_involution_words():
             p, q = InsertionAlgorithm.orthogonal_hecke(word)
             for i, other in get_inv_ck_moves(word):
@@ -211,35 +235,17 @@ def test_unique_transposition_invol():
 
                     pi = []
                     if adjacent_unmatched_primes(q, i + 1):
-                        if i + 1 in q.values() and q.find(i + 1)[0][0] == q.find(i + 1)[0][1]:
-                            pi += [g]
-                        else:
-                            pi += [f * g]
+                        pi += [g] if on_diagonal(q, i + 1) else [f * g]
                     else:
                         pi.append(s)
                     if adjacent_unmatched_primes(q, i + 2):
-                        if i + 2 in q.values() and q.find(i + 2)[0][0] == q.find(i + 2)[0][1]:
-                            pi += [h]
-                        else:
-                            pi += [g * h]
+                        pi += [h] if on_diagonal(q, i + 2) else [g * h]
                     else:
                         pi.append(t)
 
                 a = set(x for x in pi if qq == x * q)
-                # if any(min(z.oneline) < 0 for z in a) and len(pi) > 1:
-                #     z = list(a)[0]
-                #     k, l = tuple(m for m in range(1, z.rank + 1) if z(m) < 0)
-                #     assert (k in q.values() and -l in q.values()) or (-k in q.values() and l in q.values())
-                #     if k in q.values() and -l in q.values():
-                #         (x1, y1) = q.find(k)[0]
-                #         (x2, y2) = q.find(-l)[0]
-                #         assert x1 == x2 or y1 == y2
-                #     else:
-                #         (x1, y1) = q.find(-k)[0]
-                #         (x2, y2) = q.find(l)[0]
-                #         assert x1 == x2 or y1 == y2
-
                 b = set(x for x in pi if qq.descent_set() == (x * q).descent_set() and (x * q).is_semistandard())
+
                 if len(b) != 1:
                     print(pi)
                     print(word, '<->', other, 'at i =', i + 1)
@@ -251,8 +257,117 @@ def test_unique_transposition_invol():
 
                 assert a == b
                 assert len(b) == 1
-    print('success')
-    assert False
+
+
+def test_inv_ck_moves():
+    for w in Permutation.involutions(6):
+        covers = list(get_inv_bruhat_covers(w))
+
+        for word in w.get_involution_words():
+            alphas = {}
+            p, q = InsertionAlgorithm.orthogonal_hecke(word)
+            for i, other in get_ck_type_one(word):
+                pp, qq = InsertionAlgorithm.orthogonal_hecke(other)
+                print('  type I:', word, '<->', other, 'at i =', i + 1)
+                print(q)
+                print(qq)
+                assert p == pp
+                if adjacent_unmatched_primes(q, i + 2):
+                    s = Permutation.reflection_s(i + 2) * Permutation.reflection_s(i + 3)
+                else:
+                    s = Permutation.s_i(i + 2)
+                assert q == s * qq
+                alphas[i] = s
+
+            for i, other in get_ck_type_three(word):
+                pp, qq = InsertionAlgorithm.orthogonal_hecke(other)
+                print('type III:', word, '<->', other, 'at i =', i + 1)
+                print(q)
+                print(qq)
+                assert p == pp
+                if adjacent_unmatched_primes(q, i + 2):
+                    s = Permutation.reflection_s(i + 2) * Permutation.reflection_s(i + 3)
+                else:
+                    s = Permutation.s_i(i + 2)
+                assert q == s * qq
+                alphas[i] = s
+
+            for i, other in get_ck_type_two(word):
+                pp, qq = InsertionAlgorithm.orthogonal_hecke(other)
+                print(' type II:', word, '<->', other, 'at i =', i + 1)
+                print(q)
+                print(qq)
+                assert p == pp
+                if adjacent_unmatched_primes(q, i + 2):
+                    s = Permutation.reflection_s(i + 2) * Permutation.reflection_s(i + 3)
+                else:
+                    s = Permutation.s_i(i + 2)
+                if adjacent_unmatched_primes(q, i + 1):
+                    if on_diagonal(q, i + 1):
+                        t = Permutation.reflection_s(i + 2)
+                    else:
+                        t = Permutation.reflection_s(i + 1) * Permutation.reflection_s(i + 2)
+                else:
+                    t = Permutation.s_i(i + 1)
+                assert q == s * qq or q == t * qq
+                alphas[i] = s if q == s * qq else t
+
+            for i, other in get_ck_type_inv(word):
+                pp, qq = InsertionAlgorithm.orthogonal_hecke(other)
+                print(' type IV:', word, '<->', other, 'at i =', i + 1)
+                print(q)
+                print(qq)
+                assert p == pp
+                r = Permutation(1, -2)
+                assert q == r * qq
+
+            for j, k in covers:
+                bumped = Permutation.involution_little_bump(word, j, k)
+                p, q = InsertionAlgorithm.orthogonal_hecke(bumped)
+                label = 'ibump(%s, %s, %s) =' % (str(word), j, k)
+
+                moves = []
+                for i, other in get_ck_type_one(bumped):
+                    pp, qq = InsertionAlgorithm.orthogonal_hecke(other)
+                    print('  type I:', label, bumped, '<->', other, 'at i =', i + 1)
+                    print(q)
+                    print(qq)
+                    print('s =', alphas[i])
+                    print()
+                    assert i in alphas and q == alphas[i] * qq
+                    moves.append(i)
+
+                for i, other in get_ck_type_three(bumped):
+                    pp, qq = InsertionAlgorithm.orthogonal_hecke(other)
+                    print('type III:', label, bumped, '<->', other, 'at i =', i + 1)
+                    print(q)
+                    print(qq)
+                    print('s =', alphas[i])
+                    print()
+                    assert i in alphas and q == alphas[i] * qq
+                    moves.append(i)
+
+                for i, other in get_ck_type_two(bumped):
+                    pp, qq = InsertionAlgorithm.orthogonal_hecke(other)
+                    print(' type II:', label, bumped, '<->', other, 'at i =', i + 1)
+                    print(q)
+                    print(qq)
+                    print('s =', alphas[i])
+                    print()
+                    assert i in alphas and q == alphas[i] * qq
+                    moves.append(i)
+
+                for i, other in get_ck_type_inv(bumped):
+                    pp, qq = InsertionAlgorithm.orthogonal_hecke(other)
+                    print(' type IV:', label, bumped, '<->', other, 'at i =', i + 1)
+                    print(q)
+                    print(qq)
+                    s = Permutation(1, -2)
+                    print('s =', s)
+                    print()
+                    assert q == s * qq
+
+                assert sorted(moves) == sorted(alphas)
 
 
 def test_ck_moves_type_two():
