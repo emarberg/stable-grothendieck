@@ -1,52 +1,4 @@
-from tableaux import Tableau, Partition, MarkedReversePlanePartition
-
-
-def test_transpose():
-    mu = ()
-    assert Partition.transpose(mu) == mu
-
-    mu = (1,)
-    assert Partition.transpose(mu) == mu
-
-    mu = (2,)
-    assert Partition.transpose(mu) == (1, 1)
-
-    mu = (5, 3, 3, 2, 2, 1, 1, 1, 1)
-    assert Partition.transpose(mu) == (9, 5, 3, 1, 1)
-
-
-def test_complement():
-    nu = ()
-    assert Partition.complement(0, nu) == ()
-    assert Partition.complement(1, nu) == (1,)
-    assert Partition.complement(2, nu) == (2, 1)
-
-    nu = (6, 4, 2, 1)
-    assert Partition.complement(6, nu) == (5, 3)
-
-
-def test_contains():
-    mu = (1,)
-    nu = ()
-    assert Partition.contains(mu, mu)
-    assert Partition.contains(mu, nu)
-    assert not Partition.contains(nu, mu)
-
-    mu = (3, 2, 1)
-    nu = (3, 2)
-    assert Partition.contains(mu, mu)
-    assert Partition.contains(mu, nu)
-    assert not Partition.contains(nu, mu)
-
-    mu = (3, 2, 1)
-    nu = (1, 1, 1)
-    assert Partition.contains(mu, nu)
-    assert not Partition.contains(nu, mu)
-
-    mu = (1, 1, 1, 1)
-    nu = (1, 1, 1)
-    assert Partition.contains(mu, nu)
-    assert not Partition.contains(nu, mu)
+from tableaux import Tableau, MarkedReversePlanePartition
 
 
 def test_standardize():
@@ -118,14 +70,6 @@ def test_crystal_operators():
     assert t.f_crystal_operator(2, multisetvalued=False) == u
     assert t.e_crystal_operator(2, multisetvalued=False) is None
     assert u.e_crystal_operator(2, multisetvalued=False) == t
-
-
-def test_generate_partitions():
-    assert set(Partition.generate(0)) == {()}
-    assert set(Partition.generate(1)) == {(1,)}
-    assert set(Partition.generate(2)) == {(1, 1), (2,)}
-    assert set(Partition.generate(3)) == {(1, 1, 1), (2, 1), (3,)}
-    assert set(Partition.generate(4)) == {(1, 1, 1, 1), (2, 1, 1), (2, 2), (3, 1), (4,)}
 
 
 def test_horizontal_strips():

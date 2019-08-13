@@ -207,19 +207,6 @@ def test_involutions():
     }
 
 
-def test_grassmannian():
-    w = Permutation.get_inv_grassmannian(4, 3, 1)
-    t = Permutation.transposition
-    assert w == t(1, 5) * t(2, 6) * t(4, 7)
-    assert w.involution_shape() == (4, 3, 1)
-
-    w = Permutation.get_fpf_grassmannian(4, 3, 1)
-    t = Permutation.transposition
-    print(w)
-    assert w == t(1, 6) * t(2, 7) * t(4, 8) * t(3, 5)
-    assert w.fpf_involution_shape() == (4, 3, 1)
-
-
 def test_atoms():
     y = Permutation(3, 4, 1, 2, 7, 9, 5, 10, 6, 8, 12, 11)
     assert y.get_min_atom() in y.get_atoms()

@@ -48,10 +48,10 @@ class Permutation:
         return self._rank
 
     def __repr__(self):
-        if self.is_unsigned():
-            return self.cycle_repr()
-        else:
-            return ' '.join([str(i) for i in self.oneline])
+        # if self.is_unsigned():
+        #    return self.cycle_repr()
+        # else:
+        return (',' if self.rank > 9 else '').join([str(i) for i in self.oneline])
 
     @property
     def cycles(self):
@@ -95,6 +95,23 @@ class Permutation:
                 return None
             elif s * w == w * s:
                 w = w * s
+            else:
+                w = s * w * s
+        return w
+
+    @classmethod
+    def from_fpf_involution_word(cls, word, strict=True):
+        n = 0 if word else max(word)
+        n = n if n % 2 == 0 else n + 1
+        w = cls.identity()
+        for i in range(1, n, 2):
+            w *= cls.s_i(i)
+        for i in word:
+            s = Permutation.s_i(i)
+            if i in w.right_descent_set and strict:
+                return None
+            elif s * w == w * s and strict:
+                return None
             else:
                 w = s * w * s
         return w
@@ -217,7 +234,8 @@ class Permutation:
         return code
 
     def shape(self):
-        return Partition.sort(self.inverse().code(), trim=True)
+        mu = Partition.sort(self.inverse().code(), trim=True)
+        return Partition.transpose(mu)
 
     def involution_shape(self):
         assert self.is_involution()
@@ -225,8 +243,35 @@ class Permutation:
         return Partition.transpose(mu)
 
     @classmethod
+    def grassmannians(cls, rank):
+        delta = tuple(range(rank - 1, 0, -1))
+        for mu in Partition.subpartitions(delta):
+            yield cls.get_grassmannian(*mu)
+
+    @classmethod
+    def inv_grassmannians(cls, rank):
+        delta = tuple(range(rank - 1, 0, -2))
+        for mu in Partition.subpartitions(delta, strict=True):
+            yield cls.get_inv_grassmannian(*mu)
+
+    @classmethod
+    def fpf_grassmannians(cls, rank):
+        assert rank % 2 == 0
+        delta = tuple(range(rank - 2, 0, -2))
+        for mu in Partition.subpartitions(delta, strict=True):
+            yield cls.get_fpf_grassmannian(*mu)
+
+    @classmethod
+    def get_grassmannian(cls, *mu):
+        oneline = tuple(i + 1 + a for i, a in enumerate(sorted(mu)))
+        if oneline:
+            missing = set(range(1, oneline[-1] + 1)) - set(oneline)
+            oneline += tuple(sorted(missing))
+        return Permutation(*oneline)
+
+    @classmethod
     def get_inv_grassmannian(cls, *mu):
-        assert all(mu[i - 1] > mu[i] for i in range(1, len(mu)))
+        assert Partition.is_strict_partition(mu)
         ans = Permutation()
         for i in range(len(mu)):
             ans *= Permutation.transposition(1 + mu[0] - mu[i], i + 1 + mu[0])
@@ -234,7 +279,7 @@ class Permutation:
 
     @classmethod
     def get_fpf_grassmannian(cls, *mu):
-        assert all(mu[i - 1] > mu[i] for i in range(1, len(mu)))
+        assert Partition.is_strict_partition(mu)
         ans = Permutation()
         for i in range(len(mu)):
             ans *= Permutation.transposition(1 + mu[0] - mu[i], i + 2 + mu[0])
@@ -260,6 +305,9 @@ class Permutation:
         if phi[-1] >= n + 1 or top != [n + i + 1 for i in range(r)]:
             return None
         return tuple(n - a for a in phi)
+
+    def is_grassmannian(self):
+        return self.get_grassmannian(*self.shape()) == self
 
     def is_inv_grassmannian(self):
         return self.get_inv_grassmannian(*self.involution_shape()) == self
@@ -833,3 +881,124 @@ class Permutation:
                     for a in (s * w).get_atoms_d():
                         yield a * s
 
+    def bruhat_covers(self):
+        word = self.get_reduced_word()
+        for i in range(len(word)):
+            w = Permutation.from_word(word[:i] + word[i + 1:])
+            if len(w) == len(self) - 1:
+                yield w
+
+    def involution_bruhat_covers(self):
+        assert self.is_involution()
+        word = self.get_involution_word()
+        for i in range(len(word)):
+            w = Permutation.from_involution_word(word[:i] + word[i + 1:])
+            if w.involution_length == self.involution_length - 1:
+                yield w
+
+    def fpf_involution_bruhat_covers(self):
+        assert self.is_fpf_involution()
+        word = self.get_fpf_involution_word()
+        for i in range(len(word)):
+            w = Permutation.from_fpf_involution_word(word[:i] + word[i + 1:])
+            if w.fpf_involution_length == self.fpf_involution_length - 1:
+                yield w
+
+    def tau(self, i, j):
+        n = self.rank
+        assert 1 <= i < j
+
+        def t(k, l):
+            if k == l:
+                return Permutation()
+            elif k > l:
+                return Permutation.transposition(l, k)
+            else:
+                return Permutation.transposition(k, l)
+
+        y = self
+        z = y * t(i, y(i)) if i == y(j) else y * t(i, y(i)) * t(j, y(j))
+
+        if y(i) <= i < j < y(j) or y(i) < i < j <= y(j) or j < y(i) < y(j) or y(i) < y(j) < i:
+            s = t(i, j)
+            return s * y * s
+
+        elif y(i) == i < y(j) < j:
+            s = t(i, y(j))
+            return s * y * s
+
+        elif i < y(i) < j == y(j):
+            s = t(y(i), j)
+            return s * y * s
+
+        elif i < y(j) < y(i) < j:
+            s = t(i, y(j))
+            return s * y * s
+
+        elif i < y(i) < y(j) < j:
+            return t(i, j) * z
+
+        elif i < y(i) < j < y(j):
+            return t(i, y(j)) * z
+
+        elif y(i) < i < y(j) < j:
+            return t(y(i), j) * z
+
+        elif i == y(i) < j == y(j):
+            return t(i, j) * y
+
+        return y
+
+    def upper_transitions(self, r):
+        """Yields j > r such that self * self.transposition(r, j) covers self in Bruhat order."""
+        n = self.rank
+        for i in range(r + 1, n + 1):
+            t = Permutation.transposition(r, i)
+            if (t * self * t).length == self.length + 1:
+                yield i
+
+    def lower_transitions(self, r):
+        """Yields i < r such that self * self.transposition(i, r) covers self in Bruhat order."""
+        for i in range(1, r):
+            t = Permutation.transposition(i, r)
+            if (t * self * t).length == self.length + 1:
+                yield i
+
+    def upper_involution_transitions(self, r):
+        """Yields j > r such that self.tau(r, j) covers self in Bruhat order."""
+        assert self.is_involution()
+        n = self.rank
+        for i in range(r + 1, n + 1):
+            if self.tau(r, i).involution_length == self.involution_length + 1:
+                yield i
+
+    def lower_involution_transitions(self, r):
+        """Yields i < r such that self.tau(i, r) covers self in Bruhat order."""
+        assert self.is_involution()
+        for i in range(1, r):
+            if self.tau(i, r).involution_length == self.involution_length + 1:
+                yield i
+
+    def upper_fpf_involution_transitions(self, r):
+        """
+        Yields j > r such that self.transposition(r, j) * self * self.transposition(r, j)
+        covers self in Bruhat order.
+        """
+        assert self.is_fpf_involution()
+        n = self.rank
+        y = self * Permutation.s_i(n + 1)
+        for j in range(r + 1, n + 3):
+            t = Permutation.transposition(r, j)
+            if (t * y * t).fpf_involution_length == y.fpf_involution_length + 1:
+                yield j
+
+    def lower_fpf_involution_transitions(self, r):
+        """
+        Yields i < r such that self.transposition(i, r) * self * self.transposition(i, r)
+        covers self in Bruhat order.
+        """
+        assert self.is_fpf_involution()
+        for j in range(1, r):
+            t = Permutation.transposition(j, r)
+            if (t * self * t).fpf_involution_length == self.fpf_involution_length + 1:
+                yield j

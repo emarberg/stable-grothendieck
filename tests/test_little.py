@@ -260,7 +260,7 @@ def test_unique_transposition_invol():
 
 
 def test_inv_ck_moves():
-    for w in Permutation.involutions(6):
+    for w in Permutation.involutions(4):
         covers = list(get_inv_bruhat_covers(w))
 
         for word in w.get_involution_words():

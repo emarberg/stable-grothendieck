@@ -32,7 +32,8 @@ class InsertionAlgorithm:
                 record[abs(v) - 1] = abs(recording_tableau.get(i, j, unpack=False)[k])
         return standard_tableau, tuple(record)
 
-    @cached_value(HECKE_CACHE)
+    # @cached_value(HECKE_CACHE)
+    @classmethod
     def hecke(cls, word, record=None, multisetvalued=True):  # noqa
         record = cls._check_record(word, record, multisetvalued)
         insertion_tableau, recording_tableau = HState.insertion_tableaux(*word)
@@ -41,13 +42,15 @@ class InsertionAlgorithm:
             recording_tableau = recording_tableau.transpose()
         return insertion_tableau, recording_tableau.apply(lambda x: record[x])
 
-    @cached_value(ORTHOGONAL_HECKE_CACHE)
+    # @cached_value(ORTHOGONAL_HECKE_CACHE)
+    @classmethod
     def orthogonal_hecke(cls, word, record=None, multisetvalued=True):  # noqa
         evenword = tuple(2 * i for i in word)
         insertion_tableau, recording_tableau = cls.symplectic_hecke(evenword, record, multisetvalued)
         return insertion_tableau.halve(), recording_tableau
 
-    @cached_value(SYMPLECTIC_HECKE_CACHE)
+    # @cached_value(SYMPLECTIC_HECKE_CACHE)
+    @classmethod
     def symplectic_hecke(cls, word, record=None, multisetvalued=True):  # noqa
         record = cls._check_record(word, record, multisetvalued)
         insertion_tableau, recording_tableau = FState.insertion_tableaux(*word)
