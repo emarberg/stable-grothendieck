@@ -83,6 +83,7 @@ def test_word_crystal_generate():
     WordCrystalGenerator((3, 2, 1), 5, 5, True).generate()
 
 
+@pytest.mark.slow
 def test_tableau_crystal_generate():
     TableauCrystalGenerator((2,), 3).generate()
 

@@ -234,8 +234,7 @@ class Permutation:
         return code
 
     def shape(self):
-        mu = Partition.sort(self.inverse().code(), trim=True)
-        return Partition.transpose(mu)
+        return Partition.sort(self.inverse().code(), trim=True)
 
     def involution_shape(self):
         assert self.is_involution()
@@ -267,7 +266,7 @@ class Permutation:
         if oneline:
             missing = set(range(1, oneline[-1] + 1)) - set(oneline)
             oneline += tuple(sorted(missing))
-        return Permutation(*oneline)
+        return Permutation(*oneline).inverse()
 
     @classmethod
     def get_inv_grassmannian(cls, *mu):

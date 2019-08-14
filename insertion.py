@@ -5,6 +5,8 @@ HECKE_CACHE = {}
 ORTHOGONAL_HECKE_CACHE = {}
 SYMPLECTIC_HECKE_CACHE = {}
 
+HSTATE_CACHE = {}
+
 
 class InsertionAlgorithm:
 
@@ -193,14 +195,23 @@ class HState(InsertionState):
     def insertion_tableaux(cls, *args, **kwargs):
         if len(args) == 1 and type(args[0]) != int:
             args = args[0]
+
         p = kwargs.get('p', Tableau())
         q = kwargs.get('q', Tableau())
-        offset = abs(q.last())
-        state = HState(p)
-        for index, a in enumerate(args):
-            state, path = state.insert(a)
+        args = tuple(args)
+
+        for a in args:
+            p, q = cls.push(p, q, a)
+        return p, q
+
+    @classmethod
+    def push(cls, p, q, arg):
+        if (p, q, arg) not in HSTATE_CACHE:
+            offset = abs(q.last())
+            state = HState(p)
+            state, path = state.insert(arg)
             i, j = path[-1]
-            r = index + 1 + offset
+            r = 1 + offset
 
             if (i, j) not in state:
                 a = max([a for (a, b) in state.boxes if b == j - 1])
@@ -209,9 +220,8 @@ class HState(InsertionState):
                 b = max([b for (a, b) in state.boxes if i - 1 == a])
                 i, j = i - 1, b
 
-            q = q.add(i, j, r)
-        p = state.tableau
-        return p, q
+            HSTATE_CACHE[(p, q, arg)] = (state.tableau, q.add(i, j, r))
+        return HSTATE_CACHE[(p, q, arg)]
 
     def _row_transition(self):
         i, n = self.outer
