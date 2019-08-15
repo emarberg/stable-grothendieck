@@ -5,6 +5,43 @@ from collections import defaultdict
 class Word:
 
     @classmethod
+    def wiring_diagram(cls, word):
+        a = '\u2502'  # |
+        b = '\u2588'  # box
+        c = '\u2572'  # \
+        d = '\u2571'  # /
+
+        def baseline(n, i):
+            return [
+                n * [a + '   '],
+                n * [a + '   '] + [str(i)],
+                n * [a + '   '],
+                n * [b + '   '],
+            ]
+
+        def switch(n, i, index):
+            base = baseline(n, index)
+            if i is not None:
+                base[0][i - 1] = ' ' + c + ' ' + d
+                base[1][i - 1] = '  \u2573 '
+                base[2][i - 1] = ' ' + d + ' ' + c
+
+                base[0][i] = '    '
+                base[1][i] = '    '
+                base[2][i] = '    '
+            return [''.join(bits) for bits in base]
+
+        filtered = [i for i in word if i is not None]
+        n = max(filtered) + 1 if filtered else 1
+        numbers = '   '.join([str(i) for i in range(1, n + 1)])
+        bullets = '   '.join(n * [b])
+        lines = ['', bullets]
+        for index, i in enumerate(reversed(word)):
+            lines += switch(n, i, len(word) - index)
+        lines += ['', numbers]
+        return '\n'.join(lines)
+
+    @classmethod
     def f_crystal_operator(cls, i, *args, **kwargs):
         w = ()
         for subword in args:

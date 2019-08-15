@@ -2,6 +2,7 @@ from permutations import Permutation
 from partitions import Partition
 from insertion import InsertionAlgorithm
 from tableaux import Tableau
+from words import Word
 
 
 def test_grassmannian():
@@ -61,12 +62,12 @@ def test_eg_insertion():
                 x, y = mapping[(x,y)]
                 tab = tab.add(x, y, i + 1)
 
-            print(word, '->')
+            print(w)
+            print(word)
+            print(Word.wiring_diagram(word))
             p, q = InsertionAlgorithm.hecke(word)
             print(p)
-            print()
             print(q)
-            print()
             print()
 
             assert q == tab
@@ -75,8 +76,22 @@ def test_eg_insertion():
         print()
 
 
+def double_inv_word(word):
+    w = Permutation()
+    ans = []
+    for i in word:
+        s = Permutation.s_i(i)
+        if w * s == s * w:
+            ans = [None] + ans + [i]
+            w = w * s
+        else:
+            ans = [i] + ans + [i]
+            w = s * w * s
+    return tuple(ans)
+
+
 def test_inv_eg_insertion():
-    rank = 4
+    rank = 6
     for w in Permutation.inv_grassmannians(rank):
         print(w.involution_shape(), '=', 'shape(', w, ')')
         print()
@@ -87,7 +102,9 @@ def test_inv_eg_insertion():
 #        mapping = {(x, y): (i + 1, j + 1) for i, x in enumerate(a) for j, y in enumerate(b)}
 
         for word in w.get_involution_words():
-
+            p, q = InsertionAlgorithm.orthogonal_hecke(word)
+            if not q.is_shifted_column_superstandard():
+                continue
             # tab = Tableau()
             # partial = [Permutation()]
             # for i in reversed(word):
@@ -97,12 +114,16 @@ def test_inv_eg_insertion():
             #     x, y = mapping[(x,y)]
             #     tab = tab.add(x, y, i + 1)
 
-            print(word, '->')
-            p, q = InsertionAlgorithm.orthogonal_hecke(word)
+            print(w)
+            print(w.get_min_atom())
+            print(word)
+            double = double_inv_word(word)
+            print(double)
+            print()
+            print(Word.wiring_diagram(double))
+            print()
             print(p)
-            print()
             print(q)
-            print()
             print()
 
         print()

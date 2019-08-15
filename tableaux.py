@@ -2,6 +2,7 @@ from cached import cached_value
 from words import Word
 from partitions import Partition
 from collections import defaultdict
+from operator import itemgetter
 
 COUNT_SEMISTANDARD_CACHE = {}
 COUNT_SEMISTANDARD_MARKED_CACHE = {}
@@ -88,6 +89,18 @@ class Tableau:
             a = a + 1 if v > 0 else -a - 1
             ans = ans.add(i, j, a)
         return ans
+
+    def is_shifted_column_superstandard(self):
+        if any(len(v) > 1 for i, j, v in self):
+            return False
+        c = 1
+        for i, j in sorted(self.boxes, key=itemgetter(1, 0)):
+            if i == j and self.get(i, j) != c:
+                return False
+            if i != j and self.get(i, j) != c:
+                return False
+            c += 1
+        return True
 
     def is_semistandard(self):
         def dbl(v):
