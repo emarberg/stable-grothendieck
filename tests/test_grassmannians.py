@@ -149,4 +149,39 @@ def test_inv_eg_insertion():
         print()
         print()
         print()
+#    assert False
+
+
+def test_inv_grassmannian_braids():
+
+    def standardize(t):
+        seen = set()
+        offset = 0
+        offsets = {}
+        for i, j in sorted(t.boxes, key=lambda box: (box[1], box[0])):
+            v = t.get(i, j)
+            while v + offset in seen:
+                offset += 1
+            seen.add(v + offset)
+            offsets[(i, j)] = offset
+        for i, j in offsets:
+            t = t.replace(i, j, t.get(i, j) + offsets[(i, j)])
+        return t
+
+    rank = 6
+    for w in Permutation.inv_grassmannians(rank):
+        w = w.star()
+        for v in w.get_involution_words():
+            print()
+            p, q = InsertionAlgorithm.orthogonal_hecke(v)
+            print(p)
+            t = standardize(p)
+            print(t)
+            u, _ = InsertionAlgorithm.inverse_orthogonal_hecke(t, q)
+            print(v)
+            print(u)
+            d = tuple(u[i] - v[i] for i in range(len(u)))
+            print(d)
+            print(Word.wiring_diagram(v))
     assert False
+
