@@ -39,6 +39,10 @@ class Permutation:
         self._ldes = None
         self._len = None
 
+    def star(self):
+        n = self.rank
+        return Permutation(*[n + 1 - i for i in reversed(self.oneline)])
+
     @property
     def oneline(self):
         return self._oneline

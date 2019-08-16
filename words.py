@@ -5,7 +5,7 @@ from collections import defaultdict
 class Word:
 
     @classmethod
-    def wiring_diagram(cls, word):
+    def wiring_diagram(cls, word, labels=None):
         a = '\u2502'  # |
         b = '\u2588'  # box
         c = '\u2572'  # \
@@ -14,7 +14,7 @@ class Word:
         def baseline(n, i):
             return [
                 n * [a + '   '],
-                n * [a + '   '] + [str(i)],
+                n * [a + '   '] + [str(i) + (': ' + str(labels[i]) if labels else '')],
                 n * [a + '   '],
                 n * [b + '   '],
             ]

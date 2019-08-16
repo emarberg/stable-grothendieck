@@ -91,8 +91,9 @@ def double_inv_word(word):
 
 
 def test_inv_eg_insertion():
-    rank = 6
+    rank = 4
     for w in Permutation.inv_grassmannians(rank):
+        w = w.star()
         print(w.involution_shape(), '=', 'shape(', w, ')')
         print()
 
@@ -103,8 +104,10 @@ def test_inv_eg_insertion():
 
         for word in w.get_involution_words():
             p, q = InsertionAlgorithm.orthogonal_hecke(word)
-            if not q.is_shifted_column_superstandard():
-                continue
+
+            # if not q.is_shifted_column_superstandard():
+            #     continue
+
             # tab = Tableau()
             # partial = [Permutation()]
             # for i in reversed(word):
@@ -114,17 +117,34 @@ def test_inv_eg_insertion():
             #     x, y = mapping[(x,y)]
             #     tab = tab.add(x, y, i + 1)
 
-            print(w)
-            print(w.get_min_atom())
-            print(word)
-            double = double_inv_word(word)
-            print(double)
             print()
-            print(Word.wiring_diagram(double))
+            print()
+            print()
+            print(w.cycle_repr())
+            print()
+            print(w.get_min_atom())
+            print()
+            print(word)
+
+            labels = {}
+            for i in range(1, len(word) + 1):
+                j = len(word) + i
+                k = len(word) + 1 - i
+                if q.find(i):
+                    a = q.find(i)[0]
+                else:
+                    a = tuple(reversed(q.find(-i)[0]))
+                labels[j] = a
+                labels[k] = ''
+
+            double = double_inv_word(word)
+            #print(double)
+            #print()
+            print(q)
+            print(Word.wiring_diagram(double, labels))
             print()
             print(p)
-            print(q)
-            print()
+            #print()
 
         print()
         print()
