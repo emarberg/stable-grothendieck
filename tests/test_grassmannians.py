@@ -230,6 +230,49 @@ def get_crossings(word):
     return ans
 
 
+def predict(word):
+    z = Permutation.from_involution_word(word)
+    minword = minimal_word(z.involution_shape())
+    mincrossings = get_crossings(minword)
+    values = rectify_print(minword, False)
+    base = {}
+    for i in range(len(minword)):
+        base[mincrossings[i]] = values[i]
+        base[tuple(reversed(mincrossings[i]))] = values[i]
+
+    n = z.rank
+    fpts = [i for i in range(1, n + 1) if z(i) == i]
+    apts = [i for i in range(1, n + 1) if i < z(i)]
+
+    crossings = get_crossings(word)
+    keys = sorted({tuple(sorted(key)) for key in crossings})
+    index = {}
+    for i, key in enumerate(keys):
+        index[key] = i + 1
+        index[tuple(reversed(key))] = i + 1
+
+    sigma = Permutation()
+    for f in reversed(fpts):
+        factor = Permutation()
+        for j in [ _ for _ in reversed(apts) if f < z(_)]:
+            if (f, j) in crossings:
+                factor *= Permutation.transposition(index[(f, j)], index[(j, j)])
+            elif (j, f) in crossings:
+                pass
+            else:
+                raise Exception
+            for i in [_ for _ in reversed(apts) if _ < j and f < z(_)]:
+                order = [tuple(sorted(k)) for k in crossings if k in [(i, f), (f, i), (j, f), (f, j)]]
+                if order == [(i, f), (j, f)]:
+                    factor *= Permutation.cycle(index[(i, j)], index[(i, f)], index[(j, f)])
+                elif order == [(j, f), (i, f)]:
+                    pass
+                else:
+                    raise Exception
+        sigma = factor * sigma
+    return tuple(base[keys[sigma(index[c]) - 1]] for c in crossings)
+
+
 def test_inv_grassmannian_braids():
     rank = 7
     delta = tuple(range(rank - 1, 0, -2))
@@ -260,8 +303,8 @@ def test_inv_grassmannian_braids():
             for v in add:
                 rect[v] = rectify_print(v, False)
                 vmap = getmap(v)
-                for i, u in get_inv_ck_moves(v):
 
+                for i, u in get_inv_ck_moves(v):
                     r = rect[v]
                     if i >= 0 and v[i] == v[i + 2] < v[i + 1]:
                         assert r[i + 2] < r[i] < r[i + 1]
@@ -271,13 +314,17 @@ def test_inv_grassmannian_braids():
                         assert r[i + 1] < r[i] < r[i + 2]
                     if i >= 0 and v[i + 2] < v[i] < v[i + 1]:
                         assert r[i + 2] < r[i] < r[i + 1]
+                    if i >= 0 and v[i] < v[i + 2] < v[i + 1]:
+                        assert r[i] < r[i + 2] < r[i + 1]
+                    if i >= 0 and v[i + 1] < v[i + 2] < v[i]:
+                        assert r[i + 1] < r[i + 2] < r[i]
 
                     if u not in seen:
                         rect[u] = rectify_print(u, False)
                         umap = getmap(u)
                         nextadd.add(u)
 
-                        if len([key for key in mmap if vmap[key] != umap[key]]) >= 3:
+                        if False: #len([key for key in mmap if vmap[key] != umap[key]]) >= 0:
                             rectify_print(minword, True)
                             rectify_print(v, True)
                             rectify_print(u, True)
@@ -288,11 +335,18 @@ def test_inv_grassmannian_braids():
                             print()
 
                             for key in mmap:
-                                if vmap[key] != umap[key]:
-                                    print(key, ':', mmap[key], '=>', vmap[key], '=>', umap[key])
+                                print(key, ':', mmap[key], '=>', vmap[key], '=>', umap[key], '*' if vmap[key] != umap[key] else '')
 
                             print(10 * '\n')
-                            input('pause')
+
+                    pv = predict(v)
+                    rectify_print(minword, True)
+                    rectify_print(v, True)
+                    print(v)
+                    print(rect[v])
+                    print(pv, 'predicted')
+                    print()
+                    assert rect[v] == pv
 
             if len(nextadd) == 0:
                 break

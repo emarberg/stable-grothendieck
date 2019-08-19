@@ -780,8 +780,17 @@ class Permutation:
         return cls.reflection_t(i, j)
 
     @classmethod
+    def cycle(cls, *args):
+        ans = Permutation()
+        for i in range(len(args) - 1):
+            a, b = args[i], args[i + 1]
+            ans *= Permutation.transposition(a, b)
+        return ans
+
+    @classmethod
     def reflection_t(cls, i, j):
-        assert i < j
+        if j < i:
+            j, i = i, j
         caller = list(range(1, j + 1))
         caller[i - 1] = j
         caller[j - 1] = i
