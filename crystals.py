@@ -272,6 +272,17 @@ class MRTShiftedCrystalGenerator(ShiftedCrystalGenerator):
 
     def __init__(self, mu, rank, excess):
         super(MRTShiftedCrystalGenerator, self).__init__(mu, rank, excess, False, self._SYMPLECTIC)
+
+        # t = Tableau()
+        # for i in range(1, 1 + len(mu)):
+        #     for j in range(1, 1 + i):
+        #         t = t.add(j, i, i + j - 1)
+        # for i in range(len(mu) + 1, mu[0] + 1 if mu else 0):
+        #     m = max(t.values()) + 1
+        #     k = len([j for j in range(len(mu)) if j + mu[j] >= i])
+        #     for j in range(k):
+        #         t = t.add(k - j, i, m - j)
+
         t = Tableau()
         for i in range(len(mu)):
             for j in range(mu[i]):

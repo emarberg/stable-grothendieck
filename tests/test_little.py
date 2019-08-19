@@ -58,7 +58,7 @@ def get_ck_type_three(word):
 
 def get_ck_type_inv(word):
     if len(word) >= 2 and word[0] != word[1]:
-        yield 0, (word[1], word[0]) + word[2:]
+        yield -1, (word[1], word[0]) + word[2:]
 
 
 def get_inv_ck_moves(word):

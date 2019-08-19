@@ -53,9 +53,9 @@ class Permutation:
 
     def __repr__(self):
         # if self.is_unsigned():
-        #    return self.cycle_repr()
+        return self.cycle_repr()
         # else:
-        return (',' if self.rank > 9 else '').join([str(i) for i in self.oneline])
+        # return (',' if self.rank > 9 else '').join([str(i) for i in self.oneline])
 
     @property
     def cycles(self):

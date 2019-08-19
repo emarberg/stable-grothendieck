@@ -78,6 +78,7 @@ class InsertionAlgorithm:
 
     @classmethod
     def inverse_symplectic_hecke(cls, insertion_tableau, recording_tableau, multisetvalued=True):
+        assert set(insertion_tableau.boxes) == set(recording_tableau.boxes)
         standard_tableau, record = cls._standardize_recording_tableau(recording_tableau)
         if not multisetvalued:
             standard_tableau = standard_tableau.negate()

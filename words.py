@@ -5,7 +5,26 @@ from collections import defaultdict
 class Word:
 
     @classmethod
+    def involution_wiring_diagram(cls, word, labels=None):
+        commutations = {}
+        oneline = [i for i in range(1, max(word) + 2)] if word else []
+        for index, i in enumerate(word):
+            newline = oneline[:]
+            newline = [j + (1 if j == i else -1 if j == i + 1 else 0) for j in newline]
+            newline[i - 1], newline[i] = newline[i], newline[i - 1]
+            if newline == oneline:
+                commutations[index + 1] = i
+                newline = oneline[:]
+                newline[i - 1], newline[i] = newline[i], newline[i - 1]
+            oneline = newline
+        return cls._wiring_diagram_helper(word, labels, commutations)
+
+    @classmethod
     def wiring_diagram(cls, word, labels=None):
+        return cls._wiring_diagram_helper(word, labels, [])
+
+    @classmethod
+    def _wiring_diagram_helper(cls, word, labels, commutations):
         a = '\u2502'  # |
         b = '\u2588'  # box
         c = '\u2572'  # \
@@ -21,14 +40,39 @@ class Word:
 
         def switch(n, i, index):
             base = baseline(n, index)
-            if i is not None:
-                base[0][i - 1] = ' ' + c + ' ' + d
-                base[1][i - 1] = '  \u2573 '
-                base[2][i - 1] = ' ' + d + ' ' + c
 
-                base[0][i] = '    '
-                base[1][i] = '    '
-                base[2][i] = '    '
+            for jndex in commutations:
+                if jndex > index:
+                    j = commutations[jndex]
+                    base[0][j - 1] = '    '
+                    base[1][j - 1] = '    '
+                    base[2][j - 1] = '    '
+                    base[3][j - 1] = '    '
+                    base[0][j] = '    '
+                    base[1][j] = '    '
+                    base[2][j] = '    '
+                    base[3][j] = '    '
+
+            if i is not None:
+                if index in commutations:
+                    base[0][i - 1] = a + '   '
+                    base[1][i - 1] = a + '   '
+                    base[2][i - 1] = a + '   '
+                    base[3][i - 1] = '\u2570' + 3 * '\u2500' + '\u256f'
+
+                    base[0][i] = a + '   '
+                    base[1][i] = a + '   '
+                    base[2][i] = a + '   '
+                    base[3][i] = '   '
+
+                else:
+                    base[0][i - 1] = ' ' + c + ' ' + d
+                    base[1][i - 1] = '  \u2573 '
+                    base[2][i - 1] = ' ' + d + ' ' + c
+
+                    base[0][i] = '    '
+                    base[1][i] = '    '
+                    base[2][i] = '    '
             return [''.join(bits) for bits in base]
 
         filtered = [i for i in word if i is not None]
@@ -39,7 +83,7 @@ class Word:
         for index, i in enumerate(reversed(word)):
             lines += switch(n, i, len(word) - index)
         lines += ['', numbers]
-        return '\n'.join(lines)
+        return '\n'.join(lines) + '\n'
 
     @classmethod
     def f_crystal_operator(cls, i, *args, **kwargs):
