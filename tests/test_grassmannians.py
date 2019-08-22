@@ -380,7 +380,7 @@ def fpf_rectify_print(v, printw=True):
 
 
 def test_fpf_grassmannian_braids():
-    rank = 6
+    rank = 8
     delta = tuple(range(rank - 2, 0, -2))
     rect = {}
     for mu in Partition.subpartitions(delta, strict=True):
@@ -412,6 +412,28 @@ def test_fpf_grassmannian_braids():
                         print(u, '          ', rect[u])
                         print()
                         print(10 * '\n')
+
+                        r = rect[v]
+                        if i >= 0 and v[i] == v[i + 2] < v[i + 1]:
+                            assert r[i] < r[i + 2] < r[i + 1]
+                        if i >= 0 and v[i] == v[i + 2] > v[i + 1]:
+                            assert r[i + 1] < r[i + 2] < r[i]
+
+                        if i >= 0 and v[i + 1] < v[i] < v[i + 2]:
+                            assert r[i + 1] < r[i] <= r[i + 2]
+                        if i >= 0 and v[i + 2] < v[i] < v[i + 1]:
+                            assert r[i + 2] <= r[i] < r[i + 1]
+
+                        if i >= 0 and v[i] < v[i + 2] < v[i + 1]:
+                            assert r[i] < r[i + 2] < r[i + 1]
+
+                        if i >= 0 and v[i + 1] < v[i + 2] < v[i]:
+                            assert r[i + 1] < r[i + 2] < r[i]
+
+                        if i == 0 and v[0] < v[1]:
+                            assert r[0] < r[1]
+                        if i == 0 and v[1] < v[0]:
+                            assert r[1] < r[0]
 
             if len(nextadd) == 0:
                 break
