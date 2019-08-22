@@ -588,6 +588,34 @@ class Permutation:
             return ()
 
     @property
+    def involution_word(self):
+        return self.get_involution_word()
+
+    def get_involution_word(self):
+        assert self.is_involution()
+        if self.left_descent_set:
+            i = min(self.left_descent_set)
+            s = Permutation.s_i(i)
+            w = self * s if self * s == s * self else s * self * s
+            return w.get_involution_word() + (i,)
+        else:
+            return ()
+
+    @property
+    def fpf_involution_word(self):
+        return self.get_fpf_involution_word()
+
+    def get_fpf_involution_word(self):
+        assert self.is_fpf_involution()
+        des = [i for i in self.left_descent_set if self(i) != i + 1]
+        if des:
+            i = min(des)
+            s = Permutation.s_i(i)
+            return (s * self * s).get_fpf_involution_word() + (i,)
+        else:
+            return ()
+
+    @property
     def reduced_words(self):
         return self.get_reduced_words()
 

@@ -5,6 +5,28 @@ from collections import defaultdict
 class Word:
 
     @classmethod
+    def fpf_involution_wiring_diagram(cls, word, labels=None):
+        n = (max(word) + 1) if word else 1
+        adjust = False
+        if n % 2 != 0:
+            n += 1
+            adjust = True
+
+        lines = cls._wiring_diagram_helper(word, labels, []).split('\n')
+        lines = lines[:-3] + [
+            (n // 2) * '│   │   ',
+            (n // 2) * '╰───╯   ',
+        ] + lines[-3:]
+
+        if adjust:
+            m = 4 * n - 4
+            for i in range(1, len(lines) - 5):
+                lines[i] = lines[i][:m] + ('│   ' if (i - 1) % 4 else '█   ') + lines[i][m:]
+
+        return '\n'.join(lines)
+
+
+    @classmethod
     def involution_wiring_diagram(cls, word, labels=None):
         commutations = {}
         oneline = [i for i in range(1, max(word) + 2)] if word else []
@@ -25,6 +47,8 @@ class Word:
 
     @classmethod
     def _wiring_diagram_helper(cls, word, labels, commutations):
+        assert all(i > 0 for i in word)
+
         a = '\u2502'  # |
         b = '\u2588'  # box
         c = '\u2572'  # \
@@ -78,7 +102,7 @@ class Word:
         filtered = [i for i in word if i is not None]
         n = max(filtered) + 1 if filtered else 1
         numbers = '   '.join([str(i) for i in range(1, n + 1)])
-        bullets = '   '.join(n * [b])
+        bullets = '   '.join(n * [b]) + '   '
         lines = ['', bullets]
         for index, i in enumerate(reversed(word)):
             lines += switch(n, i, len(word) - index)

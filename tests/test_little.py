@@ -61,10 +61,27 @@ def get_ck_type_inv(word):
         yield -1, (word[1], word[0]) + word[2:]
 
 
+def get_ck_type_fpf(word):
+    if len(word) >= 2 and word[0] != word[1]:
+        if word[0] % 2 == word[1] % 2:
+            yield -1, (word[1], word[0]) + word[2:]
+        elif word[1] == word[0] - 1:
+            yield -1, (word[0], word[1] + 2) + word[2:]
+        elif word[1] == word[0] + 1:
+            yield -1, (word[0], word[1] - 2) + word[2:]
+
+
 def get_inv_ck_moves(word):
     for i, v in get_ck_moves(word):
         yield i, v
     for i, v in get_ck_type_inv(word):
+        yield i, v
+
+
+def get_fpf_ck_moves(word):
+    for i, v in get_ck_moves(word):
+        yield i, v
+    for i, v in get_ck_type_fpf(word):
         yield i, v
 
 

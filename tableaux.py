@@ -305,6 +305,12 @@ class Tableau:
     def max_column(self):
         return max([j for i, j in self.boxes]) if self.boxes else 0
 
+    def shape(self):
+        ans = []
+        for i in range(1, self.max_row() + 1):
+            ans += [len([j for i_, j, v in self if i == i_])]
+        return tuple(ans)
+
     COLUMN_SPACING_OFFSET = 2
 
     @property
@@ -579,7 +585,7 @@ class Tableau:
         return cls._count_semistandard(max_entry, mu, nu, setvalued)
 
     @cached_value(COUNT_SEMISTANDARD_CACHE)
-    def _count_semistandard(cls, max_entry, mu, lam, setvalued):  # noqa    
+    def _count_semistandard(cls, max_entry, mu, lam, setvalued):  # noqa
         ans = defaultdict(int)
         if mu == lam:
             ans[()] = 1

@@ -3,7 +3,8 @@ from partitions import Partition
 from insertion import InsertionAlgorithm
 from tableaux import Tableau
 from words import Word
-from tests.test_little import get_inv_ck_moves
+from tests.test_little import get_inv_ck_moves, get_fpf_ck_moves
+import pytest
 
 
 def test_grassmannian():
@@ -190,6 +191,10 @@ def rectify_print(v, printw=True):
     return u
 
 
+def fpf_minimal_word(mu):
+    pass
+
+
 def minimal_word(mu):
     if len(mu) == 0:
         return ()
@@ -273,6 +278,7 @@ def predict(word):
     return tuple(base[keys[sigma(index[c]) - 1]] for c in crossings)
 
 
+@pytest.mark.slow
 def test_inv_grassmannian_braids():
     rank = 7
     delta = tuple(range(rank - 1, 0, -2))
@@ -353,40 +359,6 @@ def test_inv_grassmannian_braids():
             seen |= add
             add = nextadd
 
-    # for w in Permutation.inv_grassmannians(rank):
-    #     w = w.star()
-    #     rect = {}
-    #     print(w.cycle_repr())
-    #     # print(10 * '*')
-    #     print()
-    #     for v in w.get_involution_words():
-    #         rect[v] = rectify_print(v)
-        # for v in sorted(rect, key=lambda v: tuple(rect[v][i] - v[i] for i in range(len(v)))):
-        #     r = {}
-        #     for i, u in get_inv_ck_moves(rect[v]):
-        #         r[i] = u
-        #     for i, u in get_inv_ck_moves(v):
-        #         d = tuple(rect[v][i] - v[i] for i in range(len(u)))
-        #         e = tuple(rect[u][i] - u[i] for i in range(len(u)))
-        #         f = tuple(d[i] - e[i] for i in range(len(u)))
-        #         f = tuple(i for i in range(len(u)) if f[i] != 0)
-        #         if f == () or (len(f) == 2 and d[f[0]] == e[f[1]] and d[f[1]] == e[f[0]]):
-        #             continue
-        #         # print(Word.wiring_diagram(v))
-        #         print()
-        #         print(' ' + i * '   ' + '*')
-        #         print(v, '          ', rect[v])
-        #         print(u, '          ', rect[u])
-        #         print()
-        #         print(d)
-        #         print(e)
-        #         print()
-        #         # print(Word.wiring_diagram(u))
-        #         print()
-        #         assert v[i] == v[i + 2]
-        #         assert rect[u][i + 1] == rect[v][i + 2]
-        #         assert rect[v][i + 1] == rect[u][i + 2]
-
     print('\ndone')
     # assert False
 
@@ -394,3 +366,57 @@ def test_inv_grassmannian_braids():
 #    assert False
 # w = (1,3,2,7,9,8,4,5,6,5,4,3,7,4,6,5,6,4)
 # w = (1 , 3 , 2 , 7 , 9 , 8 , 4 , 6 , 5 , 4 , 3 , 7 , 6 , 7 , 4 , 5 , 6 , 4)
+
+
+def fpf_rectify_print(v, printw=True):
+    p, q = InsertionAlgorithm.symplectic_hecke(v)
+    t, _ = InsertionAlgorithm.orthogonal_hecke(minimal_word(p.shape()))
+    u, _ = InsertionAlgorithm.inverse_orthogonal_hecke(t, q)
+    if printw:
+        print(Word.fpf_involution_wiring_diagram(v))
+        print(Word.involution_wiring_diagram(u))
+        print()
+    return u
+
+
+def test_fpf_grassmannian_braids():
+    rank = 6
+    delta = tuple(range(rank - 2, 0, -2))
+    rect = {}
+    for mu in Partition.subpartitions(delta, strict=True):
+
+        minword = Permutation.get_fpf_grassmannian(*mu).star().get_fpf_involution_word()
+        rect[minword] = fpf_rectify_print(minword, False)
+        w = minword
+
+        p, q = InsertionAlgorithm.symplectic_hecke(w)
+        print(p)
+
+        seen = set()
+        add = {w}
+        while True:
+            nextadd = set()
+            for v in add:
+                rect[v] = fpf_rectify_print(v, False)
+
+                for i, u in get_fpf_ck_moves(v):
+                    if u not in seen:
+                        rect[u] = fpf_rectify_print(u, False)
+                        nextadd.add(u)
+
+                        # fpf_rectify_print(v, True)
+                        # fpf_rectify_print(u, True)
+
+                        print(' ' + i * '   ' + '*')
+                        print(v, '          ', rect[v])
+                        print(u, '          ', rect[u])
+                        print()
+                        print(10 * '\n')
+
+            if len(nextadd) == 0:
+                break
+            seen |= add
+            add = nextadd
+
+    print('\ndone')
+    assert False
