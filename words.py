@@ -12,19 +12,41 @@ class Word:
             n += 1
             adjust = True
 
+        def s(c, j):
+            a, b = c[0], c[1]
+            a = (a + 1) if a == j else (a - 1) if (a == j + 1) else a
+            b = (b + 1) if b == j else (b - 1) if (b == j + 1) else b
+            return (a, b) if a < b else (b, a)
+
+        cyc = [(i, i + 1) for i in range(1, n, 2)]
+        for a in word:
+            cyc = [s(c, a) for c in cyc]
+
+        def match(c, d):
+            return c[0] < d[0] < c[1]
+
+        bools = [any(match(cyc[i], c)for c in cyc) for i in range(len(cyc))]
+        assert len(bools) == n // 2
+
+        last = ''.join([
+            '╰───╯   ' if b else '█   █   '
+            for b in bools
+        ])
+
         lines = cls._wiring_diagram_helper(word, labels, []).split('\n')
         lines = lines[:-3] + [
             (n // 2) * '│   │   ',
-            (n // 2) * '╰───╯   ',
+            (n // 2) * '│   │   ',
+            last
         ] + lines[-3:]
 
         if adjust:
             m = 4 * n - 4
-            for i in range(1, len(lines) - 5):
+            for i in range(1, len(lines) - 6):
                 lines[i] = lines[i][:m] + ('│   ' if (i - 1) % 4 else '█   ') + lines[i][m:]
+            lines[-2] += '   ' + str(n)
 
         return '\n'.join(lines)
-
 
     @classmethod
     def involution_wiring_diagram(cls, word, labels=None):
@@ -47,7 +69,7 @@ class Word:
 
     @classmethod
     def _wiring_diagram_helper(cls, word, labels, commutations):
-        assert all(i > 0 for i in word)
+        assert all(i is None or i > 0 for i in word)
 
         a = '\u2502'  # |
         b = '\u2588'  # box

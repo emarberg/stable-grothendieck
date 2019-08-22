@@ -105,7 +105,7 @@ class Permutation:
 
     @classmethod
     def from_fpf_involution_word(cls, word, strict=True):
-        n = 0 if word else max(word)
+        n = (1 + max(word)) if word else 0
         n = n if n % 2 == 0 else n + 1
         w = cls.identity()
         for i in range(1, n, 2):
@@ -284,8 +284,9 @@ class Permutation:
     def get_fpf_grassmannian(cls, *mu):
         assert Partition.is_strict_partition(mu)
         ans = Permutation()
+        o = 1 if mu and (len(mu) + 1 + mu[0]) % 2 != 0 else 0
         for i in range(len(mu)):
-            ans *= Permutation.transposition(1 + mu[0] - mu[i], i + 2 + mu[0])
+            ans *= Permutation.transposition(o + 1 + mu[0] - mu[i], o + i + 2 + mu[0])
         while not ans.is_fpf_involution():
             f = [i for i in range(1, ans.rank + 2) if ans(i) == i]
             ans *= Permutation.transposition(f[0], f[1])

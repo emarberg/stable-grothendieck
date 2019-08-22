@@ -192,7 +192,7 @@ def rectify_print(v, printw=True):
 
 
 def fpf_minimal_word(mu):
-    pass
+    return tuple(i + 1 for i in minimal_word(mu))
 
 
 def minimal_word(mu):
@@ -370,13 +370,94 @@ def test_inv_grassmannian_braids():
 
 def fpf_rectify_print(v, printw=True):
     p, q = InsertionAlgorithm.symplectic_hecke(v)
-    t, _ = InsertionAlgorithm.orthogonal_hecke(minimal_word(p.shape()))
-    u, _ = InsertionAlgorithm.inverse_orthogonal_hecke(t, q)
+    t = standardize(p).apply(lambda x: x - 1).double()
+    u, _ = InsertionAlgorithm.inverse_symplectic_hecke(t, q)
+    assert all(i % 2 == 0 for i in u)
+    u = tuple(i // 2 for i in u)
     if printw:
         print(Word.fpf_involution_wiring_diagram(v))
         print(Word.involution_wiring_diagram(u))
         print()
     return u
+
+
+def fpf_crossings(word):
+    n = (max(word) + 1) if word else 0
+    n = n + 1 if n % 2 != 0 else n
+    w = Permutation.from_fpf_involution_word(word)
+
+    v = Permutation()
+    for i in range(1, n + 1):
+        if i < w(i) and not any(j < w(j) for j in range(i + 1, w(i))):
+            v *= Permutation.transposition(i, w(i))
+    w = w * v
+
+    def endpoint(arrows, index, i):
+        key = (index, i)
+        while key in arrows:
+            key = arrows[key]
+        _, a = key
+        if w(a) < a:
+            a = w(a)
+        return a
+
+    arrows = {}
+    for index, i in enumerate(word):
+        arrows[(index, i)] = (index + 1, i + 1)
+        arrows[(index, i + 1)] = (index + 1, i)
+        for j in range(1, n + 1):
+            if j not in [i, i + 1]:
+                arrows[(index, j)] = (index + 1, j)
+    ans = []
+    for index, i in enumerate(word):
+        a = endpoint(arrows, index, i)
+        b = endpoint(arrows, index, i + 1)
+        ans += [(a, b)]
+    return ans
+
+
+def fpf_predict(word):
+    z = Permutation.from_fpf_involution_word(word)
+    minword = fpf_minimal_word(z.fpf_involution_shape())
+    mincrossings = fpf_crossings(minword)
+    values = fpf_rectify_print(minword, False)
+    base = {}
+    for i in range(len(minword)):
+        base[mincrossings[i]] = values[i]
+        base[tuple(reversed(mincrossings[i]))] = values[i]
+
+    n = (max(word) + 1) if word else 0
+    n = n + 1 if n % 2 != 0 else n
+    v = Permutation()
+    for i in range(1, n + 1):
+        if i < z(i) and not any(j < z(j) for j in range(i + 1, z(i))):
+            v *= Permutation.transposition(i, z(i))
+    z = z * v
+
+    fpts = [i for i in range(1, n + 1) if z(i) == i]
+    apts = [i for i in range(1, n + 1) if i < z(i)]
+
+    crossings = fpf_crossings(word)
+    keys = sorted({tuple(sorted(key)) for key in crossings})
+    index = {}
+    for i, key in enumerate(keys):
+        index[key] = i + 1
+        index[tuple(reversed(key))] = i + 1
+
+    sigma = Permutation()
+    for f in reversed(fpts):
+        factor = Permutation()
+        for j in [_ for _ in reversed(apts) if f < z(_)]:
+            for i in [_ for _ in reversed(apts) if _ < j and f < z(_)]:
+                order = [tuple(sorted(k)) for k in crossings if k in [(i, f), (f, i), (j, f), (f, j)]]
+                if order == [(i, f), (j, f)]:
+                    factor *= Permutation.cycle(index[(i, j)], index[(j, f)], index[(i, f)])
+                elif order == [(j, f), (i, f)]:
+                    pass
+                else:
+                    raise Exception
+        sigma = factor * sigma
+    return tuple(base[keys[sigma(index[c]) - 1]] for c in crossings)
 
 
 def test_fpf_grassmannian_braids():
@@ -385,12 +466,19 @@ def test_fpf_grassmannian_braids():
     rect = {}
     for mu in Partition.subpartitions(delta, strict=True):
 
-        minword = Permutation.get_fpf_grassmannian(*mu).star().get_fpf_involution_word()
+        minword = fpf_minimal_word(mu)
         rect[minword] = fpf_rectify_print(minword, False)
         w = minword
 
+        def getmap(word):
+            return {
+                tuple(sorted(x)): rect[word][i]
+                for i, x in enumerate(fpf_crossings(word))
+            }
+
+        mmap = getmap(minword)
+
         p, q = InsertionAlgorithm.symplectic_hecke(w)
-        print(p)
 
         seen = set()
         add = {w}
@@ -398,31 +486,61 @@ def test_fpf_grassmannian_braids():
             nextadd = set()
             for v in add:
                 rect[v] = fpf_rectify_print(v, False)
+                vmap = getmap(v)
 
                 for i, u in get_fpf_ck_moves(v):
                     if u not in seen:
                         rect[u] = fpf_rectify_print(u, False)
+                        umap = getmap(u)
                         nextadd.add(u)
 
-                        # fpf_rectify_print(v, True)
-                        # fpf_rectify_print(u, True)
+                        # if (i == -1 and abs(u[0] - u[1]) == 1) or
+                        # if (i >= 0 and u[i] == u[i + 2]):
+                        if any(vmap[key] != umap[key] for key in vmap) and not (i >= 0 and u[i] == u[i + 2]):
+                            labels = [''] + fpf_crossings(minword)
+                            print(Word.fpf_involution_wiring_diagram(minword, labels))
+                            print(rect[minword])
+                            print()
+                            labels = [''] + fpf_crossings(v)
+                            print(Word.fpf_involution_wiring_diagram(v, labels))
+                            print(2 * '\n')
+                            labels = [''] + fpf_crossings(u)
+                            print(Word.fpf_involution_wiring_diagram(u, labels))
 
-                        print(' ' + i * '   ' + '*')
-                        print(v, '          ', rect[v])
-                        print(u, '          ', rect[u])
-                        print()
-                        print(10 * '\n')
+                            # vv = rectify_print(rect[v], False)
+                            # uu = rectify_print(rect[u], False)
+                            # if rect[v] == vv and rect[u] == uu:
+                            #    continue
+
+                            print(' ' + i * '   ' + '*')
+                            print(v, '          ', rect[v])
+                            print(u, '          ', rect[u],)
+                            print()
+
+                            for key in mmap:
+                                print(key, ':', mmap[key], '=>', vmap[key], '=>', umap[key], '*' if vmap[key] != umap[key] else '')
+
+                            print(2 * '\n')
+                            # input(str(p))
 
                         r = rect[v]
+                        s = rect[u]
+
+                        if i >= 0:
+                            assert r[:i] == s[:i]
+                            assert r[i + 3:] == s[i + 3:]
+                        elif i == -1:
+                            assert r[2:] == s[2:]
+
                         if i >= 0 and v[i] == v[i + 2] < v[i + 1]:
                             assert r[i] < r[i + 2] < r[i + 1]
                         if i >= 0 and v[i] == v[i + 2] > v[i + 1]:
                             assert r[i + 1] < r[i + 2] < r[i]
 
                         if i >= 0 and v[i + 1] < v[i] < v[i + 2]:
-                            assert r[i + 1] < r[i] <= r[i + 2]
+                            assert r[i + 1] < r[i] < r[i + 2]
                         if i >= 0 and v[i + 2] < v[i] < v[i + 1]:
-                            assert r[i + 2] <= r[i] < r[i + 1]
+                            assert r[i + 2] < r[i] < r[i + 1]
 
                         if i >= 0 and v[i] < v[i + 2] < v[i + 1]:
                             assert r[i] < r[i + 2] < r[i + 1]
@@ -430,15 +548,31 @@ def test_fpf_grassmannian_braids():
                         if i >= 0 and v[i + 1] < v[i + 2] < v[i]:
                             assert r[i + 1] < r[i + 2] < r[i]
 
-                        if i == 0 and v[0] < v[1]:
+                        if i == -1 and v[0] < v[1]:
                             assert r[0] < r[1]
-                        if i == 0 and v[1] < v[0]:
+                        if i == -1 and v[1] < v[0]:
                             assert r[1] < r[0]
 
+                pv = fpf_predict(v)
+                if rect[v] != pv:
+                    labels = [''] + fpf_crossings(minword)
+                    print(Word.fpf_involution_wiring_diagram(minword, labels))
+                    labels = [''] + fpf_crossings(v)
+                    print(Word.fpf_involution_wiring_diagram(v, labels))
+                    print(v)
+                    print(rect[v])
+                    print(pv, 'predicted')
+                    print()
+                    for key in mmap:
+                        print(key, ':', mmap[key], '=>', vmap[key], '*' if vmap[key] != mmap[key] else '')
+                    print()
+                assert rect[v] == pv
+
             if len(nextadd) == 0:
+                # input('?')
                 break
             seen |= add
             add = nextadd
 
     print('\ndone')
-    assert False
+#    assert False
