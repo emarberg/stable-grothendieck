@@ -52,10 +52,10 @@ class Permutation:
         return self._rank
 
     def __repr__(self):
-        # if self.is_unsigned():
-        return self.cycle_repr()
-        # else:
-        # return (',' if self.rank > 9 else '').join([str(i) for i in self.oneline])
+        if self.is_unsigned():
+            return self.cycle_repr()
+        else:
+            return (',' if self.rank > 9 else '').join([str(i) for i in self.oneline])
 
     @property
     def cycles(self):
@@ -346,19 +346,31 @@ class Permutation:
         raise Exception
 
     @classmethod
-    def involution_little_bump(cls, word, j, k):
-        t = cls.transposition(j, k)
+    def involution_little_bump(cls, word, *args):
+        assert len(args) in [1, 2]
+
         w = cls.from_involution_word(word, strict=False)
         assert w.involution_length == len(word)
-        subatoms = [x * t for x in w.get_atoms() if len(x * t) == len(x) - 1]
-        subatoms = [x for x in subatoms if (x.inverse() % x).involution_length == len(x)]
-        assert len(subatoms) > 0
-        y = subatoms[0].inverse() % subatoms[0]
-        for i in range(len(word)):
-            if y == cls.from_involution_word(word[:i] + word[i + 1:], strict=False):
-                while i is not None:
-                    word, i = cls.involution_little_push(word, i)
-                return word
+
+        if len(args) == 1:
+            y = args[0]
+            assert type(y) == Permutation
+            for i in range(len(word)):
+                subword = word[:i] + word[i + 1:]
+                if Permutation.from_involution_word(subword, strict=False) == y:
+                    while i is not None:
+                        word, i = cls.involution_little_push(word, i)
+                    return word
+            raise Exception
+        else:
+            j, k = args[0], args[1]
+            assert type(j) == type(k) == int
+            t = cls.transposition(j, k)
+            subatoms = [x * t for x in w.get_atoms() if len(x * t) == len(x) - 1]
+            subatoms = [x for x in subatoms if (x.inverse() % x).involution_length == len(x)]
+            assert len(subatoms) > 0
+            y = subatoms[0].inverse() % subatoms[0]
+            return cls.involution_little_bump(word, y)
 
     @classmethod
     def little_push(cls, word, i):
@@ -373,16 +385,29 @@ class Permutation:
         raise Exception
 
     @classmethod
-    def little_bump(cls, word, j, k):
-        t = cls.transposition(j, k)
+    def little_bump(cls, word, *args):
+        assert len(args) in [1, 2]
+
         w = cls.from_word(word)
-        assert len(w) == len(word)
-        assert len(w * t) == len(w) - 1
-        for i in range(len(word)):
-            if w * t == cls.from_word(word[:i] + word[i + 1:]):
-                while i is not None:
-                    word, i = cls.little_push(word, i)
-                return word
+        assert w.length == len(word)
+
+        if len(args) == 1:
+            y = args[0]
+            assert type(y) == Permutation
+            for i in range(len(word)):
+                subword = word[:i] + word[i + 1:]
+                if Permutation.from_word(subword) == y:
+                    while i is not None:
+                        word, i = cls.little_push(word, i)
+                    return word
+            raise Exception
+        else:
+            j, k = args[0], args[1]
+            assert type(j) == type(k) == int
+            t = cls.transposition(j, k)
+            assert len(w * t) == len(w) - 1
+            return cls.little_bump(word, w * t)
+            raise Exception
 
     @classmethod
     def hecke_words(cls, n, length_bound=None, ascent_bound=None):

@@ -7,6 +7,7 @@ from tests.test_little import get_inv_ck_moves, get_fpf_ck_moves
 import pytest
 
 
+
 def test_grassmannian():
     w = Permutation.get_grassmannian(4, 4, 3, 2, 2, 2, 1)
     assert w.shape() == (4, 4, 3, 2, 2, 2, 1)
@@ -278,9 +279,52 @@ def predict(word):
     return tuple(base[keys[sigma(index[c]) - 1]] for c in crossings)
 
 
+def columns_subwords(p):
+    columns = []
+    for i, j in sorted(p.boxes, key=lambda x: (x[1], -x[0])):
+        if j > len(columns):
+            columns += [[]]
+        columns[-1].append(p.get(i, j))
+    return columns
+
+
+def test_inv_predict(rank=8, bound=0):
+    delta = tuple(range(rank - 1, 0, -2))
+    partitions = list(Partition.subpartitions(delta, strict=True))
+    for count, mu in enumerate(partitions):
+        w = Permutation.get_inv_grassmannian(*mu).star()
+        p, _ = InsertionAlgorithm.orthogonal_hecke(w.get_involution_word())
+        columns = columns_subwords(p)
+        stcolumns = columns_subwords(standardize(p))
+        print(p)
+        print(columns)
+        print(stcolumns)
+        print()
+
+        nodes = []
+        for i in range(len(columns) - 1, -1, -1):
+            while columns[i] != stcolumns[i]:
+                word = [a for j, col in enumerate(columns) for a in (col[:-1] if i == j else col)]
+                nodes.append(Permutation.from_involution_word(word))
+                columns[i] = [a + 1 for a in columns[i]]
+        assert all(y is not None for y in nodes)
+
+        for index, word in enumerate(w.get_involution_words()):
+            if index > bound > 0:
+                break
+            testpr = word
+            for y in nodes:
+                testpr = Permutation.involution_little_bump(testpr, y)
+            pr = predict(word)
+            print(len(partitions) - count, ':', w, word, ':', index)
+            print(' test =', testpr)
+            print(' real =', pr)
+            print()
+            assert testpr == pr
+
+
 @pytest.mark.slow
-def test_inv_grassmannian_braids():
-    rank = 7
+def test_inv_grassmannian_braids(rank=7):
     delta = tuple(range(rank - 1, 0, -2))
     rect = {}
     for mu in Partition.subpartitions(delta, strict=True):
@@ -460,8 +504,8 @@ def fpf_predict(word):
     return tuple(base[keys[sigma(index[c]) - 1]] for c in crossings)
 
 
-def test_fpf_grassmannian_braids():
-    rank = 8
+@pytest.mark.slow
+def test_fpf_grassmannian_braids(rank=8):
     delta = tuple(range(rank - 2, 0, -2))
     rect = {}
     for mu in Partition.subpartitions(delta, strict=True):

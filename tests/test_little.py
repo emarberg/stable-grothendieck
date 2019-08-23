@@ -239,7 +239,7 @@ def test_unique_transposition_invol():
             for i, other in get_inv_ck_moves(word):
                 pp, qq = InsertionAlgorithm.orthogonal_hecke(other)
 
-                if i == 0 and other == (word[1], word[0]) + word[2:]:
+                if i == -1 and other == (word[1], word[0]) + word[2:]:
                     r = Permutation(1, -2)
                     pi = [r]
                 else:
