@@ -26,7 +26,7 @@ class Partition:
     def trim(cls, mu):
         while mu and mu[-1] == 0:
             mu = mu[:-1]
-        return mu
+        return tuple(mu)
 
     @classmethod
     def sort(cls, mu, trim=False):

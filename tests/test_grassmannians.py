@@ -7,6 +7,105 @@ from tests.test_little import get_inv_ck_moves, get_fpf_ck_moves
 import pytest
 
 
+def test_standard():
+    for mu in Partition.all(6):
+        tab = Tableau.standard(mu)
+        print(mu)
+        for t in tab:
+            print(t)
+        words = Permutation.get_grassmannian(*mu).get_reduced_words()
+        assert len(tab) == len(words)
+        print()
+
+
+def test_shifted_standard():
+    for mu in Partition.all(6, strict=True):
+        tab = Tableau.standard_shifted_marked(mu)
+        print(mu)
+        for t in tab:
+            print(t)
+        words = Permutation.get_inv_grassmannian(*mu).get_involution_words()
+        assert len(tab) == len(words)
+        print()
+
+
+def test_descents():
+    for mu in Partition.all(6, strict=True):
+        tab = Tableau.standard_shifted_marked(mu)
+        print(mu)
+        for t in tab:
+            w = {a: i for i, a in enumerate(t.shifted_reading_word())}
+            d = t.descent_set()
+            print(t)
+            print(t.shifted_reading_word())
+            print(t.descent_set())
+            print()
+            assert d == {i for i in w if i < sum(mu) and w[i] > w[i + 1]}
+        print()
+
+
+def test_dual_equiv():
+    for w in Permutation.involutions(4):
+        print()
+        print('w =', w)
+        words = w.get_involution_words()
+        tab = {
+            v: InsertionAlgorithm.orthogonal_hecke(v)[1]
+            for v in words
+        }
+        for v in words:
+            for i, u in get_inv_ck_moves(v):
+
+                a = tab[v].shifted_reading_word()
+                b = tab[u].shifted_reading_word()
+
+                loc = {x - 1: i for i, x in enumerate(a)}
+
+                print(tab[v])
+                print(tab[u])
+                print('i =', i + 1)
+                print()
+                print(' ' + i * '   ' + '*')
+                print(v, '          ', a)
+                print(u, '          ', b)
+                print()
+
+                if i == -1:
+                    print('Case IV')
+                    t = Permutation.reflection_s(2) * tab[v]
+                    if tab[u] != t:
+                        print(t)
+                    assert tab[u] == t
+                    continue
+
+                x, y, z = loc[i], loc[i + 1], loc[i + 2]
+                if x < z < y or y < z < x:
+                    print('Case I')
+                    t = Permutation.s_i(i + 1) * tab[v]
+                    if not t.is_semistandard():
+                        t = Permutation.reflection_s(i + 1) * Permutation.reflection_s(i + 2) * tab[v]
+                    if not t.is_semistandard():
+                        t = Permutation.reflection_s(i + 2) * tab[v]
+                    if tab[u] != t:
+                        print(t)
+                    assert tab[u] == t
+                elif y < x < z or z < x < y:
+                    print('Case II')
+                    t = Permutation.s_i(i + 2) * tab[v]
+                    if not t.is_semistandard():
+                        t = Permutation.reflection_s(i + 2) * Permutation.reflection_s(i + 3) * tab[v]
+                    if not t.is_semistandard():
+                        t = Permutation.reflection_s(i + 2) * tab[v]
+                    if tab[u] != t:
+                        print(t)
+                    assert tab[u] == t
+                elif x < y < z or z < y < x:
+                    print('Case III')
+                    assert False
+                else:
+                    raise Exception
+    print('done')
+
 
 def test_grassmannian():
     w = Permutation.get_grassmannian(4, 4, 3, 2, 2, 2, 1)
@@ -288,6 +387,7 @@ def columns_subwords(p):
     return columns
 
 
+@pytest.mark.slow
 def test_inv_predict(rank=8, bound=0):
     delta = tuple(range(rank - 1, 0, -2))
     partitions = list(Partition.subpartitions(delta, strict=True))

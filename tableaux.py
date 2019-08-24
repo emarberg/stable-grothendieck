@@ -10,6 +10,9 @@ COUNT_SEMISTANDARD_SHIFTED_MARKED_CACHE = {}
 COUNT_SEMISTANDARD_RPP_CACHE = {}
 COUNT_SEMISTANDARD_MARKED_RPP_CACHE = {}
 
+STANDARD_CACHE = {}
+STANDARD_SHIFTED_MARKED_CACHE = {}
+
 SEMISTANDARD_CACHE = {}
 SEMISTANDARD_RPP_CACHE = {}
 SEMISTANDARD_MARKED_RPP_CACHE = {}
@@ -76,6 +79,23 @@ class Tableau:
     def __lt__(self, other):
         return len(self) < len(other) or (len(self) == len(other) and self._sorting_word < other._sorting_word)
 
+    def row_reading_word(self):
+        return tuple(
+            a for key in sorted(self.boxes, key=lambda x: (-x[0], x[1]))
+            for a in self.boxes[key]
+        )
+
+    def column_reading_word(self):
+        return tuple(
+            a for key in sorted(self.boxes, key=lambda x: (x[1], -x[0]))
+            for a in self.boxes[key]
+        )
+
+    def shifted_reading_word(self):
+        x = tuple(-a for a in reversed(self.column_reading_word()) if a < 0)
+        y = tuple(a for a in self.row_reading_word() if a > 0)
+        return x + y
+
     def transpose(self):
         return Tableau({(j, i): v for i, j, v in self})
 
@@ -115,7 +135,7 @@ class Tableau:
                 minval = min({dbl(v) for v in self.get(i, j + 1, unpack=False)})
                 if minval < maxval or (maxval == minval and minval % 2 != 0):
                     return False
-            if (i + 1, j) in self and max(values) >= min(self.get(i + 1, j, unpack=False)):
+            if (i + 1, j) in self:
                 minval = min({dbl(v) for v in self.get(i + 1, j, unpack=False)})
                 if minval < maxval or (maxval == minval and minval % 2 == 0):
                     return False
@@ -766,11 +786,56 @@ class Tableau:
             ans = {Tableau()}
         elif Partition.contains(mu, lam) and max_entry > 0:
             for nu, diff, corners in cls._horizontal_strips(mu, lam):
-                    for aug in cls._subsets(diff, corners, setvalued):
-                        for tab in cls._semistandard(max_entry - 1, nu, lam, setvalued):
-                            for (i, j) in aug:
-                                tab = tab.add(i, j, max_entry)
-                            ans.add(tab)
+                for aug in cls._subsets(diff, corners, setvalued):
+                    for tab in cls._semistandard(max_entry - 1, nu, lam, setvalued):
+                        for (i, j) in aug:
+                            tab = tab.add(i, j, max_entry)
+                        ans.add(tab)
+        return ans
+
+    @classmethod
+    def standard(cls, mu, nu=()):  # noqa
+        return cls._standard(mu, nu)
+
+    @cached_value(STANDARD_CACHE)
+    def _standard(cls, mu, lam):  # noqa
+        ans = set()
+        if mu == lam:
+            ans = {Tableau()}
+        elif Partition.contains(mu, lam):
+            n = sum(mu) - sum(lam)
+            for i in range(len(mu)):
+                row, col = (i + 1), mu[i]
+                nu = list(mu)
+                nu[i] -= 1
+                nu = Partition.trim(nu)
+                if Partition.is_partition(nu):
+                    for tab in cls._standard(nu, lam):
+                        ans.add(tab.add(row, col, n))
+        return ans
+
+    @classmethod
+    def standard_shifted_marked(cls, mu, nu=(), diagonal_primes=False):  # noqa
+        return cls._standard_shifted_marked(mu, nu, diagonal_primes)
+
+    @cached_value(STANDARD_SHIFTED_MARKED_CACHE)
+    def _standard_shifted_marked(cls, mu, lam, diagonal_primes):  # noqa
+        assert Partition.is_strict_partition(mu)
+        ans = set()
+        if mu == lam:
+            ans = {Tableau()}
+        elif Partition.contains(mu, lam):
+            n = sum(mu) - sum(lam)
+            for i in range(len(mu)):
+                row, col = (i + 1), (i + mu[i])
+                nu = list(mu)
+                nu[i] -= 1
+                nu = Partition.trim(nu)
+                if Partition.is_strict_partition(nu):
+                    for tab in cls._standard_shifted_marked(nu, lam, diagonal_primes):
+                        ans.add(tab.add(row, col, n))
+                        if diagonal_primes or row != col:
+                            ans.add(tab.add(row, col, -n))
         return ans
 
     @classmethod
