@@ -9,8 +9,11 @@ HECKE_CACHE = defaultdict(list)
 SYMPLECTIC_HECKE_CACHE = defaultdict(list)
 ORTHOGONAL_HECKE_CACHE = defaultdict(list)
 
+FPF_INVOLUTION_WORDS = {(): {()}}
 INVOLUTION_WORDS = {(): {()}}
+
 SIGNED_REDUCED_WORDS = {(): {()}}
+
 EVEN_SIGNED_REDUCED_WORDS = {(): [()]}
 EVEN_SIGNED_REDUCED_COUNTS = {(): 1}
 EVEN_SIGNED_INVOLUTION_WORDS = {(): [()]}
@@ -667,6 +670,26 @@ class Permutation:
         if oneline not in INVOLUTION_WORDS:
             INVOLUTION_WORDS[oneline] = {word for a in w.get_atoms() for word in a.get_reduced_words()}
         return INVOLUTION_WORDS[oneline]
+
+    @property
+    def fpf_involution_words(self):
+        return self.get_fpf_involution_words()
+
+    def get_fpf_involution_words(self):
+        w = self
+        assert w.is_fpf_involution()
+        oneline = w.oneline
+        while oneline and oneline[-2] == len(oneline) and oneline[-1] == len(oneline) - 1:
+            oneline = oneline[:-2]
+        w = Permutation(*oneline)
+        if oneline not in FPF_INVOLUTION_WORDS:
+            ans = set()
+            for i in w.right_descent_set:
+                if w(i) != i + 1:
+                    s = Permutation.s_i(i)
+                    ans |= {word + (i,) for word in (s * w * s).get_fpf_involution_words()}
+            FPF_INVOLUTION_WORDS[oneline] = ans
+        return FPF_INVOLUTION_WORDS[oneline]
 
     def __call__(self, i):
         if 0 < i <= self.rank:
