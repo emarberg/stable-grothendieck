@@ -463,3 +463,31 @@ def test_inv_q_tab():
                         print(qq)
                         assert q == qq
             assert cases != 0
+
+
+def test_inv_bumping_multiplicity():
+    n = 5
+    countmax = 100
+    for pi in Permutation.involutions(n):
+        for count, w in enumerate(pi.get_involution_words()):
+            if count >= countmax:
+                break
+            for i in range(1, n):
+                for j in range(i + 1, n + 1):
+                    bumped = Permutation.involution_little_bump(w, i, j)
+                    if w != bumped:
+                        assert {bumped[e] - w[e] for e in range(len(w))}.issubset({0, 1})
+
+
+def test_fpf_bumping_multiplicity():
+    n = 6
+    countmax = 100
+    for pi in Permutation.fpf_involutions(n):
+        for count, w in enumerate(pi.get_fpf_involution_words()):
+            if count >= countmax:
+                break
+            for i in range(1, n):
+                for j in range(i + 1, n + 1):
+                    bumped = Permutation.fpf_involution_little_bump(w, i, j)
+                    if w != bumped:
+                        assert {bumped[e] - w[e] for e in range(len(w))}.issubset({0, 1})
