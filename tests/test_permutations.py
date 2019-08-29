@@ -124,22 +124,22 @@ def test_all():
 
 def test_reduced_words():
     w = Permutation.identity()
-    assert w.get_reduced_words() == {tuple()}
-    assert w.reduced_words == {tuple()}
+    assert set(w.get_reduced_words()) == {tuple()}
+    assert set(w.reduced_words) == {tuple()}
 
     r = Permutation.s_i(1)
     s = Permutation.s_i(2)
     t = Permutation.s_i(3)
 
-    assert r.reduced_words == {(1,)}
-    assert (r * s).reduced_words == {(1, 2)}
-    assert (r * s * t).reduced_words == {(1, 2, 3)}
-    assert (r * s * t * r).reduced_words == {(1, 2, 3, 1), (1, 2, 1, 3), (2, 1, 2, 3)}
-    assert (r * s * r).reduced_words == {(1, 2, 1), (2, 1, 2)}
+    assert set(r.reduced_words) == {(1,)}
+    assert set((r * s).reduced_words) == {(1, 2)}
+    assert set((r * s * t).reduced_words) == {(1, 2, 3)}
+    assert set((r * s * t * r).reduced_words) == {(1, 2, 3, 1), (1, 2, 1, 3), (2, 1, 2, 3)}
+    assert set((r * s * r).reduced_words) == {(1, 2, 1), (2, 1, 2)}
 
     n = 5
     w = Permutation(*reversed(range(1, n + 1)))
-    words = w.get_reduced_words()
+    words = set(w.get_reduced_words())
     assert len(words) == 768
     for e in words:
         v = Permutation.identity()
@@ -150,8 +150,8 @@ def test_reduced_words():
 
 def test_involution_words():
     w = Permutation.identity()
-    assert w.get_involution_words() == {tuple()}
-    assert w.involution_words == {tuple()}
+    assert set(w.get_involution_words()) == {tuple()}
+    assert set(w.involution_words) == {tuple()}
 
     r = Permutation.s_i(1)
     s = Permutation.s_i(2)
@@ -159,18 +159,18 @@ def test_involution_words():
 
     # can only access this property for affine permutations which are involutions
     try:
-        (r * s).involution_words
+        set((r * s).involution_words)
         assert False
     except:
         pass
 
-    assert r.involution_words == {(1,)}
-    assert (s * r * s).involution_words == {(1, 2), (2, 1)}
-    assert (t * s * r * s * t).involution_words == {(1, 2, 3), (2, 1, 3), (2, 3, 1), (3, 2, 1)}
+    assert set(r.involution_words) == {(1,)}
+    assert set((s * r * s).involution_words) == {(1, 2), (2, 1)}
+    assert set((t * s * r * s * t).involution_words) == {(1, 2, 3), (2, 1, 3), (2, 3, 1), (3, 2, 1)}
 
     n = 5
     w = Permutation(*reversed(range(1, n + 1)))
-    words = w.get_involution_words()
+    words = set(w.get_involution_words())
     assert len(words) == 80
     for e in words:
         v = Permutation.identity()
@@ -210,3 +210,15 @@ def test_involutions():
 def test_atoms():
     y = Permutation(3, 4, 1, 2, 7, 9, 5, 10, 6, 8, 12, 11)
     assert y.get_min_atom() in y.get_atoms()
+
+    y = Permutation(3, 4, 1, 2)
+    assert Permutation(3, 1, 4, 2).inverse() in y.get_atoms()
+    assert Permutation(3, 1, 4, 2) not in y.get_atoms()
+
+
+def test_mod():
+    s = Permutation.s_i(1)
+    t = Permutation.s_i(2)
+
+    assert (s * t) % (t * s) == s * t * s
+    assert (s * t) % (t * s * t) == s * t * s

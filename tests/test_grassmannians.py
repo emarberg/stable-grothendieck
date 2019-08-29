@@ -13,7 +13,7 @@ def test_standard():
         print(mu)
         for t in tab:
             print(t)
-        words = Permutation.get_grassmannian(*mu).get_reduced_words()
+        words = set(Permutation.get_grassmannian(*mu).get_reduced_words())
         assert len(tab) == len(words)
         print()
 
@@ -24,7 +24,7 @@ def test_shifted_standard():
         print(mu)
         for t in tab:
             print(t)
-        words = Permutation.get_inv_grassmannian(*mu).get_involution_words()
+        words = set(Permutation.get_inv_grassmannian(*mu).get_involution_words())
         assert len(tab) == len(words)
         print()
 

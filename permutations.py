@@ -364,14 +364,24 @@ class Permutation:
                     while i is not None:
                         word, i = cls.involution_little_push(word, i)
                     return word
-            raise Exception
+            return word
         else:
             j, k = args[0], args[1]
             assert type(j) == type(k) == int
             t = cls.transposition(j, k)
+            print('w =', w)
+            print('t =', t)
             subatoms = [x * t for x in w.get_atoms() if len(x * t) == len(x) - 1]
+            print('atoms =')
+            for x in w.get_atoms():
+                print('  ', x.get_reduced_word(), '->', ''.join(map(str, x.oneline)))
+            print('subatoms =', [''.join(map(str, x.oneline)) for x in subatoms])
+            for x in subatoms:
+                print('  ', x.get_reduced_word(), '->', x.inverse() % x)
             subatoms = [x for x in subatoms if (x.inverse() % x).involution_length == len(x)]
-            assert len(subatoms) > 0
+            print('  subatoms =', [''.join(map(str, x.oneline)) for x in subatoms])
+            if len(subatoms) == 0:
+                return word
             y = subatoms[0].inverse() % subatoms[0]
             return cls.involution_little_bump(word, y)
 
@@ -403,14 +413,14 @@ class Permutation:
                     while i is not None:
                         word, i = cls.little_push(word, i)
                     return word
-            raise Exception
+            return word
         else:
             j, k = args[0], args[1]
             assert type(j) == type(k) == int
             t = cls.transposition(j, k)
-            assert len(w * t) == len(w) - 1
+            if len(w * t) != len(w) - 1:
+                return word
             return cls.little_bump(word, w * t)
-            raise Exception
 
     @classmethod
     def hecke_words(cls, n, length_bound=None, ascent_bound=None):
@@ -655,9 +665,14 @@ class Permutation:
             words = set()
             for i in w.right_descent_set:
                 s = Permutation.s_i(i)
-                words |= {e + (i,) for e in (w * s).get_reduced_words()}
+                for e in (w * s).get_reduced_words():
+                    word = e + (i,)
+                    yield word
+                    words.add(word)
             SIGNED_REDUCED_WORDS[oneline] = words
-        return SIGNED_REDUCED_WORDS[oneline]
+        else:
+            for word in SIGNED_REDUCED_WORDS[oneline]:
+                yield word
 
     @property
     def involution_words(self):
@@ -668,8 +683,15 @@ class Permutation:
         assert w.inverse() == w
         oneline = w.oneline
         if oneline not in INVOLUTION_WORDS:
-            INVOLUTION_WORDS[oneline] = {word for a in w.get_atoms() for word in a.get_reduced_words()}
-        return INVOLUTION_WORDS[oneline]
+            ans = set()
+            for a in w.get_atoms():
+                for word in a.get_reduced_words():
+                    yield word
+                    ans.add(word)
+            INVOLUTION_WORDS[oneline] = ans
+        else:
+            for word in INVOLUTION_WORDS[oneline]:
+                yield word
 
     @property
     def fpf_involution_words(self):
@@ -790,7 +812,7 @@ class Permutation:
             i = next(iter(other.left_descent_set))
             s = Permutation.s_i(i)
             if i in self.right_descent_set:
-                return self * (s * other)
+                return self % (s * other)
             else:
                 return (self * s) % (s * other)
         else:

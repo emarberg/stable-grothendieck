@@ -423,4 +423,43 @@ def test_tab():
 #    assert False
 
 
+def test_q_tab():
+    n = 4
+    for pi in Permutation.all(n):
+        for w in pi.get_reduced_words():
+            _, q = InsertionAlgorithm.hecke(w)
+            for i in range(1, n):
+                for j in range(i + 1, n + 1):
+                    bumped = Permutation.little_bump(w, i, j)
+                    if w != bumped:
+                        _, qq = InsertionAlgorithm.hecke(bumped)
+                        print(pi)
+                        print(i, j, ':', w, '->', bumped)
+                        print(q)
+                        print(qq)
+                        assert q == qq
 
+
+def test_inv_q_tab():
+    n = 5
+    countmax = 5
+    for pi in Permutation.involutions(n):
+        if len(pi) == 0:
+            continue
+        for count, w in enumerate(pi.get_involution_words()):
+            if count >= countmax:
+                break
+            _, q = InsertionAlgorithm.orthogonal_hecke(w)
+            cases = 0
+            for i in range(1, n):
+                for j in range(i + 1, n + 1):
+                    bumped = Permutation.involution_little_bump(w, i, j)
+                    if w != bumped:
+                        cases += 1
+                        _, qq = InsertionAlgorithm.orthogonal_hecke(bumped)
+                        print(pi)
+                        print(i, j, ':', w, '->', bumped)
+                        print(q)
+                        print(qq)
+                        assert q == qq
+            assert cases != 0
