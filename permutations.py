@@ -337,6 +337,43 @@ class Permutation:
         return all(i > 0 for i in self.oneline)
 
     @classmethod
+    def fpf_involution_little_push(cls, word, i):
+        new = word[:i] + (word[i] + 1,) + word[i + 1:]
+        w = cls.from_fpf_involution_word(new, strict=False)
+        if w.fpf_involution_length == len(new):
+            return new, None
+        elif w.fpf_involution_length == len(new) - 1:
+            print('  ', new, i, Permutation.from_word(new).length == len(new))
+            return new, i
+        v = cls.from_fpf_involution_word(word[:i] + word[i + 1:], strict=False)
+        for j in range(len(new)):
+            if i != j and v == cls.from_fpf_involution_word(new[:j] + new[j + 1:], strict=False):
+                print('  ', new, j, Permutation.from_word(new).length == len(new))
+                return new, j
+        raise Exception
+
+    @classmethod
+    def fpf_involution_little_bump(cls, word, *args):
+        assert len(args) in [1, 2]
+
+        w = cls.from_fpf_involution_word(word, strict=False)
+        assert w.fpf_involution_length == len(word)
+
+        if len(args) == 1:
+            y = args[0]
+            assert type(y) == Permutation
+            assert y.is_fpf_involution()
+            for i in range(len(word)):
+                subword = word[:i] + word[i + 1:]
+                if Permutation.from_fpf_involution_word(subword, strict=False) == y:
+                    while i is not None:
+                        word, i = cls.fpf_involution_little_push(word, i)
+                    return word
+            return word
+        else:
+            raise Exception
+
+    @classmethod
     def involution_little_push(cls, word, i):
         new = word[:i] + (word[i] + 1,) + word[i + 1:]
         v = cls.from_involution_word(word[:i] + word[i + 1:], strict=False)
@@ -369,17 +406,8 @@ class Permutation:
             j, k = args[0], args[1]
             assert type(j) == type(k) == int
             t = cls.transposition(j, k)
-            print('w =', w)
-            print('t =', t)
             subatoms = [x * t for x in w.get_atoms() if len(x * t) == len(x) - 1]
-            print('atoms =')
-            for x in w.get_atoms():
-                print('  ', x.get_reduced_word(), '->', ''.join(map(str, x.oneline)))
-            print('subatoms =', [''.join(map(str, x.oneline)) for x in subatoms])
-            for x in subatoms:
-                print('  ', x.get_reduced_word(), '->', x.inverse() % x)
             subatoms = [x for x in subatoms if (x.inverse() % x).involution_length == len(x)]
-            print('  subatoms =', [''.join(map(str, x.oneline)) for x in subatoms])
             if len(subatoms) == 0:
                 return word
             y = subatoms[0].inverse() % subatoms[0]
