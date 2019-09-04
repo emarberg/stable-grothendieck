@@ -490,4 +490,33 @@ def test_fpf_bumping_multiplicity():
                 for j in range(i + 1, n + 1):
                     bumped = Permutation.fpf_involution_little_bump(w, i, j)
                     if w != bumped:
-                        assert {bumped[e] - w[e] for e in range(len(w))}.issubset({0, 1})
+                        assert {bumped[e] - w[e] for e in range(len(w))}.issubset({0, 1, 2})
+
+
+def test_fpf_q_tab():
+    n = 6
+    countmax = None
+    for pi in Permutation.fpf_involutions(n):
+        if len(pi) == 0:
+            continue
+        for count, w in enumerate(pi.get_fpf_involution_words()):
+            if len(w) == 0:
+                continue
+            if countmax and count >= countmax:
+                break
+            _, q = InsertionAlgorithm.symplectic_hecke(w)
+            cases = 0
+            for i in range(1, n):
+                for j in range(i + 1, n + 1):
+                    bumped = Permutation.fpf_involution_little_bump(w, i, j)
+                    print(w, bumped, w == bumped)
+                    if w != bumped:
+                        cases += 1
+                        _, qq = InsertionAlgorithm.symplectic_hecke(bumped)
+                        if q != qq:
+                            print(pi)
+                            print(i, j, ':', w, '->', bumped)
+                            print(q)
+                            print(qq)
+                        assert q == qq
+            assert cases != 0

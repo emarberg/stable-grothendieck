@@ -18,6 +18,7 @@ EVEN_SIGNED_REDUCED_WORDS = {(): [()]}
 EVEN_SIGNED_REDUCED_COUNTS = {(): 1}
 EVEN_SIGNED_INVOLUTION_WORDS = {(): [()]}
 
+ATOMS_FPF_CACHE = {}
 atoms_b_cache = {}
 atoms_d_cache = {}
 
@@ -343,12 +344,12 @@ class Permutation:
         if w.fpf_involution_length == len(new):
             return new, None
         elif w.fpf_involution_length == len(new) - 1:
-            print('  ', new, i, Permutation.from_word(new).length == len(new))
+            # print('  ', new, i, Permutation.from_word(new).length == len(new))
             return new, i
         v = cls.from_fpf_involution_word(word[:i] + word[i + 1:], strict=False)
         for j in range(len(new)):
             if i != j and v == cls.from_fpf_involution_word(new[:j] + new[j + 1:], strict=False):
-                print('  ', new, j, Permutation.from_word(new).length == len(new))
+                # print('  ', new, j, Permutation.from_word(new).length == len(new))
                 return new, j
         raise Exception
 
@@ -365,13 +366,26 @@ class Permutation:
             assert y.is_fpf_involution()
             for i in range(len(word)):
                 subword = word[:i] + word[i + 1:]
-                if Permutation.from_fpf_involution_word(subword, strict=False) == y:
+                if subword in y.get_fpf_involution_words():
                     while i is not None:
                         word, i = cls.fpf_involution_little_push(word, i)
                     return word
             return word
         else:
-            raise Exception
+            j, k = args[0], args[1]
+            assert type(j) == type(k) == int
+            t = cls.transposition(j, k)
+
+            n = (max(word) + 1) if word else 0
+            n = n + 1 if n % 2 != 0 else n
+            minfpf = Permutation(*[i + (1 if i % 2 != 0 else -1) for i in range(1, n + 1)])
+
+            subatoms = [x * t for x in w.get_fpf_atoms() if len(x * t) == len(x) - 1]
+            subatoms = [x for x in subatoms if (x.inverse() * minfpf * x).fpf_involution_length == len(x)]
+            if len(subatoms) == 0:
+                return word
+            y = subatoms[0].inverse() * minfpf * subatoms[0]
+            return cls.fpf_involution_little_bump(word, y)
 
     @classmethod
     def involution_little_push(cls, word, i):
@@ -946,6 +960,23 @@ class Permutation:
     def get_min_atom(self):
         assert self == self.inverse()
         return Permutation(*self._min_inv_atom_oneline()).inverse()
+
+    def get_fpf_atoms(self):
+        assert self.is_fpf_involution()
+        assert self.is_unsigned()
+        w = self
+        if w not in ATOMS_FPF_CACHE:
+            des = [i for i in w.right_descent_set if w(i) != i + 1]
+            if des:
+                ans = set()
+                for i in des:
+                    s = Permutation.s_i(i)
+                    v = s * w * s
+                    ans |= {x * s for x in v.get_fpf_atoms()}
+            else:
+                ans = [Permutation()]
+            ATOMS_FPF_CACHE[w] = list(ans)
+        return ATOMS_FPF_CACHE[w]
 
     def get_atoms(self):
         assert self == self.inverse()

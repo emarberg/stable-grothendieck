@@ -216,6 +216,21 @@ def test_atoms():
     assert Permutation(3, 1, 4, 2) not in y.get_atoms()
 
 
+def test_fpf_atoms():
+    y = Permutation(4, 3, 2, 1)
+    s = Permutation.s_i(1)
+    t = Permutation.s_i(2)
+    u = Permutation.s_i(3)
+    assert set(y.get_fpf_atoms()) == {t * s, t * u}
+
+    n = 6
+    for w in Permutation.fpf_involutions(n):
+        atoms = set()
+        for word in w.get_fpf_involution_words():
+            atoms.add(Permutation.from_word(word))
+        assert atoms == set(w.get_fpf_atoms())
+
+
 def test_mod():
     s = Permutation.s_i(1)
     t = Permutation.s_i(2)
