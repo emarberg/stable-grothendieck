@@ -175,7 +175,18 @@ class Permutation:
 
     @classmethod
     def fpf_involutions(cls, n):
-        return cls.involutions(n, False, True)
+        if n % 2 != 0:
+            return
+        crop = {Permutation.minfpf(n)}
+        while crop:
+            for z in crop:
+                yield z
+            crop = {
+                Permutation.s_i(i) * z * Permutation.s_i(i)
+                for z in crop
+                for i in range(1, n)
+                if z(i) < z(i + 1)
+            }
 
     def rothe_diagram(self):
         n = len(self.oneline)
@@ -378,7 +389,7 @@ class Permutation:
 
             n = (max(word) + 1) if word else 0
             n = n + 1 if n % 2 != 0 else n
-            minfpf = Permutation(*[i + (1 if i % 2 != 0 else -1) for i in range(1, n + 1)])
+            minfpf = Permutation.minfpf(n)
 
             subatoms = [x * t for x in w.get_fpf_atoms() if len(x * t) == len(x) - 1]
             subatoms = [x for x in subatoms if (x.inverse() * minfpf * x).fpf_involution_length == len(x)]
@@ -386,6 +397,11 @@ class Permutation:
                 return word
             y = subatoms[0].inverse() * minfpf * subatoms[0]
             return cls.fpf_involution_little_bump(word, y)
+
+    @classmethod
+    def minfpf(cls, n):
+        assert n % 2 == 0
+        return Permutation(*[i + (1 if i % 2 != 0 else -1) for i in range(1, n + 1)])
 
     @classmethod
     def involution_little_push(cls, word, i):

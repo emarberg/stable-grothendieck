@@ -1,6 +1,116 @@
 from permutations import Permutation
 from insertion import InsertionAlgorithm
 from tableaux import Tableau
+from itertools import chain, combinations
+import pytest
+
+
+def powerset(iterable, maxsize=None):
+    "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+    s = list(iterable)
+    maxsize = len(s) if maxsize is None else maxsize
+    return chain.from_iterable(combinations(s, r) for r in range(maxsize + 1))
+
+
+@pytest.mark.slow
+def test_strong_little(n=5, k=5, maxcount=20):
+    cases = 0
+    for b, pi in enumerate(Permutation.all(n)):
+        print(b, len(pi), pi, cases)
+        for c, w in enumerate(pi.get_reduced_words()):
+            if c > 0 and c % 10 == 0:
+                print('  ', c)
+            if c > maxcount:
+                break
+            p, q = InsertionAlgorithm.hecke(w)
+            for i in powerset(range(len(w)), k):
+                v = list(w)
+                for x in i:
+                    v[x] += 1
+                if len(Permutation.from_word(v)) == len(v):
+                    cases += 1
+                    pp, qq = InsertionAlgorithm.hecke(v)
+                    assert q == qq
+                    assert all(pp.get(i, j) - p.get(i, j) in [0, 1] for i, j in p.boxes)
+    assert cases > 0
+
+
+@pytest.mark.slow
+def test_strong_inv_little(n=6, k=5, maxcount=20):
+    cases = 0
+    for b, pi in enumerate(Permutation.involutions(n)):
+        print(b, pi.involution_length, pi, cases)
+        for c, w in enumerate(pi.get_involution_words()):
+            if c > 0 and c % 10 == 0:
+                print('  ', c)
+            if c > maxcount:
+                break
+            p, q = InsertionAlgorithm.orthogonal_hecke(w)
+            for i in powerset(range(len(w)), k):
+                v = list(w)
+                for x in i:
+                    v[x] += 1
+                if Permutation.from_involution_word(v, strict=True) is not None:
+                    cases += 1
+                    pp, qq = InsertionAlgorithm.orthogonal_hecke(v)
+                    assert q == qq
+                    assert all(pp.get(i, j) - p.get(i, j) in [0, 1] for i, j in p.boxes)
+    assert cases > 0
+
+
+def test_strong_fpf_little(n=6, k=5, maxcount=20):
+    assert n % 2 == 0
+    cases = 0
+    minfpf = Permutation.minfpf(n)
+
+    def invol(w, i):
+        v = [w[j] + 1 if j in i else w[j] for j in range(len(w))]
+        if len(Permutation.from_word(v)) != len(v):
+            return None, None
+        z = minfpf
+        v = []
+        for j in range(len(w)):
+            a = w[j] + (1 if j in i else 0)
+            if z(a) == a + 1:
+                a += 1
+            if z(a) > z(a + 1):
+                return None, None
+            s = Permutation.s_i(a)
+            z = s * z * s
+            v += [a]
+        return z, v
+
+    for b, pi in enumerate(Permutation.fpf_involutions(n)):
+        print(b, pi.fpf_involution_length, pi, cases)
+        for c, w in enumerate(pi.get_fpf_involution_words()):
+            if c > 0 and c % 10 == 0:
+                print('  ', c)
+            if c > maxcount:
+                break
+            p, q = InsertionAlgorithm.symplectic_hecke(w)
+            for i in powerset(range(len(w)), k):
+                z, v = invol(w, i)
+
+                if z is None:
+                    continue
+                # if not all((v[j] > v[j + 1]) == (w[j] > w[j + 1]) for j in range(len(w) - 1)):
+                #     continue
+
+                pp, qq = InsertionAlgorithm.symplectic_hecke(v)
+                if q != qq or not all(pp.get(i, j) - p.get(i, j) in [0, 1, 2] for i, j in p.boxes):
+                    print()
+                    print('*', w, '->', v)
+                    print(p)
+                    print(q)
+                    print()
+                    print(pp)
+                    print(qq)
+                    input('?')
+                else:
+                    cases += 1
+                # assert q == qq
+                # assert all(pp.get(i, j) - p.get(i, j) in [0, 1, 2] for i, j in p.boxes)
+    assert cases > 0
 
 
 def test_push():
@@ -440,6 +550,7 @@ def test_q_tab():
                         assert q == qq
 
 
+@pytest.mark.slow
 def test_inv_q_tab():
     n = 5
     countmax = 5
@@ -465,6 +576,7 @@ def test_inv_q_tab():
             assert cases != 0
 
 
+@pytest.mark.slow
 def test_inv_bumping_multiplicity():
     n = 5
     countmax = 100
@@ -479,8 +591,9 @@ def test_inv_bumping_multiplicity():
                         assert {bumped[e] - w[e] for e in range(len(w))}.issubset({0, 1})
 
 
+@pytest.mark.slow
 def test_fpf_bumping_multiplicity():
-    n = 6
+    n = 4
     countmax = 100
     for pi in Permutation.fpf_involutions(n):
         for count, w in enumerate(pi.get_fpf_involution_words()):
@@ -493,8 +606,9 @@ def test_fpf_bumping_multiplicity():
                         assert {bumped[e] - w[e] for e in range(len(w))}.issubset({0, 1, 2})
 
 
+@pytest.mark.slow
 def test_fpf_q_tab():
-    n = 6
+    n = 4
     countmax = None
     for pi in Permutation.fpf_involutions(n):
         if len(pi) == 0:
@@ -509,7 +623,6 @@ def test_fpf_q_tab():
             for i in range(1, n):
                 for j in range(i + 1, n + 1):
                     bumped = Permutation.fpf_involution_little_bump(w, i, j)
-                    print(w, bumped, w == bumped)
                     if w != bumped:
                         cases += 1
                         _, qq = InsertionAlgorithm.symplectic_hecke(bumped)
