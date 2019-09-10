@@ -67,26 +67,27 @@ class Partition:
         return all(0 <= smaller[i] <= bigger[i] for i in range(len(smaller)))
 
     @classmethod
-    def all(cls, n, max_part=None, strict=False):
+    def all(cls, n, max_part=None, max_row=None, strict=False):
         for i in range(n + 1):
-            for mu in cls.generate(i, max_part=max_part, strict=strict):
+            for mu in cls.generate(i, max_part=max_part, max_row=max_row, strict=strict):
                 yield mu
 
     @classmethod
-    def generate(cls, n, max_part=None, strict=False):
+    def generate(cls, n, max_part=None, max_row=None, strict=False):
         if n == 0:
             yield ()
         else:
-            if (n, max_part, strict) not in PARTITIONS:
+            if (n, max_part, max_row, strict) not in PARTITIONS:
                 ans = []
                 max_part = n if (max_part is None or max_part > n) else max_part
-                for i in range(1, max_part + 1):
-                    for mu in cls.generate(n - i, i):
-                        nu = (i,) + mu
-                        if not strict or Partition.is_strict_partition(nu):
-                            ku = (i,) + mu
-                            ans.append(ku)
-                            yield ku
+                max_row = n if (max_row is None or max_row > n) else max_row
+                if max_row > 0:
+                    for i in range(1, max_part + 1):
+                        for mu in cls.generate(n - i, i, max_row - 1):
+                            nu = (i,) + mu
+                            if not strict or Partition.is_strict_partition(nu):
+                                ans.append(nu)
+                                yield nu
                 PARTITIONS[(n, max_part, strict)] = ans
             else:
                 for mu in PARTITIONS[(n, max_part, strict)]:

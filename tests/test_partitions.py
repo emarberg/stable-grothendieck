@@ -54,7 +54,13 @@ def test_generate_partitions():
     assert set(Partition.generate(1)) == {(1,)}
     assert set(Partition.generate(2)) == {(1, 1), (2,)}
     assert set(Partition.generate(3)) == {(1, 1, 1), (2, 1), (3,)}
+
     assert set(Partition.generate(4)) == {(1, 1, 1, 1), (2, 1, 1), (2, 2), (3, 1), (4,)}
+    assert set(Partition.generate(4, max_row=0)) == set()
+    assert set(Partition.generate(4, max_row=1)) == {(4,)}
+    assert set(Partition.generate(4, max_row=2)) == {(2, 2), (3, 1), (4,)}
+    assert set(Partition.generate(4, max_row=3)) == {(2, 1, 1), (2, 2), (3, 1), (4,)}
+    assert set(Partition.generate(4, max_row=4)) == {(1, 1, 1, 1), (2, 1, 1), (2, 2), (3, 1), (4,)}
 
 
 def test_subpartitions():
