@@ -48,9 +48,9 @@ def ck(i, w):
 
 def descent(i, w):
     assert 0 <= i < len(w) - 1
-    # print()
-    # print((1 + 3 * i) * ' ' + '*')
-    # print(w, 'descent at index', i)
+    # _print()
+    # _print((1 + 3 * i) * ' ' + '*')
+    # _print(w, 'descent at index', i)
     return w[i] > w[i + 1]
 
 
@@ -77,8 +77,8 @@ def get_columns(word):
 def sp_ck_compute(tab, letter):
     rows = get_rows(tab.row_reading_word())
 
-    print('rows:', rows, '<-', letter)
-    print()
+    _print('rows:', rows, '<-', letter)
+    _print()
 
     if len(rows) == 0:
         return (1, 1, True)
@@ -89,9 +89,9 @@ def sp_ck_compute(tab, letter):
     for i in range(1, len(rows) + 1):
         row = rows[-i]
 
-        print('*', i)
-        print('*', row, ':', bit, ':', left)
-        print()
+        _print('*', i)
+        _print('*', row, ':', bit, ':', left)
+        _print()
 
         assert len(bit) == i
 
@@ -116,17 +116,17 @@ def sp_ck_compute(tab, letter):
         bit = working[:i + 1]
         left = working[i + 1:] + left
 
-    print('* reversing bit')
-    print('*', bit, ':', left)
-    print()
+    _print('* reversing bit')
+    _print('*', bit, ':', left)
+    _print()
 
     for b in range(len(bit) - 2, -1, -1):
         for a in range(-1, b):
             bit = ck(a, bit)
 
-    print('* left to column word')
-    print('*', bit, ':', left)
-    print()
+    _print('* left to column word')
+    _print('*', bit, ':', left)
+    _print()
 
     leftrows = get_rows(left)
     lefttab = Tableau()
@@ -135,9 +135,9 @@ def sp_ck_compute(tab, letter):
             lefttab = lefttab.add(i + 1, i + j + 1, a)
     left = lefttab.column_reading_word()
 
-    print('* integration')
-    print('*', bit, ':', left)
-    print()
+    _print('* integration')
+    _print('*', bit, ':', left)
+    _print()
 
     m  = len(rows) - 1
     working = bit + left
@@ -152,9 +152,9 @@ def sp_ck_compute(tab, letter):
     bit, left = working[:i], working[i:]
     letter = bit[-1]
 
-    print('* ready for column insertion')
-    print('*', bit[:-1], ':', letter, ':', left)
-    print()
+    _print('* ready for column insertion')
+    _print('*', bit[:-1], ':', letter, ':', left)
+    _print()
 
     offset = len(rows)
     columns = get_columns(left)
@@ -166,9 +166,9 @@ def sp_ck_compute(tab, letter):
         col = columns[j - 1]
         working = (letter,) + col
 
-        print('* column', j + offset, j, len(columns))
-        print('*', working)
-        print()
+        _print('* column', j + offset, j, len(columns))
+        _print('*', working)
+        _print()
 
         if descent(0, working):
             i = len(col) + 1
@@ -186,11 +186,19 @@ def sp_ck_compute(tab, letter):
 
 
 
-def test_fpf(n=8):
-    for pi in Permutation.fpf_involutions(n):
-        for w in pi.get_fpf_involution_words():
+def _print(*args):
+    # print(*args)
+    pass
+
+
+def test_fpf(n=8, maxcount=20):
+    for a, pi in enumerate(Permutation.fpf_involutions(n)):
+        print(a, pi.fpf_involution_length, pi)
+        for b, w in enumerate(pi.get_fpf_involution_words()):
             if len(w) == 0:
                 continue
+            if b > maxcount:
+                break
 
             v = w[:-1]
             p, q = InsertionAlgorithm.symplectic_hecke(v)
@@ -199,11 +207,11 @@ def test_fpf(n=8):
             if r.max_row() > 3:
                 continue
 
-            print()
-            print('word =', w)
-            print(p)
-            print(q)
-            print(r)
+            _print()
+            _print('word =', w)
+            _print(p)
+            _print(q)
+            _print(r)
 
             newboxes = [b for b in r.boxes if b not in q.boxes]
             assert len(newboxes) == 1
