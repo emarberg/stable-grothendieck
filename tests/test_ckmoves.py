@@ -123,7 +123,7 @@ def to_column_reading(word):
 def sp_ck_compute_improved(tab, letter):
     read = tab.row_reading_word()
     rows = get_rows(read)
-    columns = get_columns(read)
+    columns = get_columns(tab.column_reading_word())
 
     n = len(read)
     r = len(rows)
@@ -141,7 +141,7 @@ def sp_ck_compute_improved(tab, letter):
         s = [s[0] + len(row)] + s
     assert s[0] == n - 1
 
-    def rho(i, w):
+    def rowinsert(i, w):
         for a in range(n - 2, s[i], -1):
             w = ck_noop(a, w)
         return w
@@ -149,16 +149,16 @@ def sp_ck_compute_improved(tab, letter):
     h = [r * (r + 1) // 2]
     for c in columns[r:]:
         h += [h[-1] + len(c)]
-    q = len(columns)
+    q = len(h)
 
-    def gam(i, w):
+    def colinsert(i, w):
         for a in range(h[0], h[i] - 1):
             w = ck_noop(a, w)
         return w
 
     def collectdiag(w):
-        for _ in range(r - 1):
-            for a in range(n - 2, -1, -1):
+        for i in range(1, r):
+            for a in range(s[i] + i - 1, -1, -1):
                 w = ck_noop(a, w)
                 print(w)
             print()
@@ -188,12 +188,12 @@ def sp_ck_compute_improved(tab, letter):
     print()
 
     for i in range(r):
-        test = rho(i, word)
+        test = rowinsert(i, word)
         if not descent(s[i], test):
             return i + 1, len(rows[-i - 1]) + i + 1, True, test
 
-    test = rho(r - 1, word)
-    word = rho(r, word)
+    test = rowinsert(r - 1, word)
+    word = rowinsert(r, word)
     print('* diagonal bump?')
     print('*', test)
     print()
@@ -224,16 +224,16 @@ def sp_ck_compute_improved(tab, letter):
 
     print('* column insertion')
     print('*', word, left)
-    print('*', h, q)
+    print('*', h)
     print()
 
-    for i in range(q):
-        test = gam(i, word)
+    for i in range(q - 1):
+        test = colinsert(i, word)
         if descent(h[i], test):
-            return len(columns[i]) + 1, r + i + 1, False, test
+            return len(columns[r + i]) + 1, r + i + 1, False, test
 
-    test = gam(q, word)
-    return 1, q + r + 1, False, test
+    test = colinsert(q - 1, word)
+    return 1, q + r, False, test
 
 
 def sp_ck_compute(tab, letter):
