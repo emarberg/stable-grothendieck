@@ -51,6 +51,15 @@ def descent(i, w):
     return w[i] > w[i + 1]
 
 
+def ck_noop(i, w, vee=True):
+    try:
+        if i >= 0 and not vee:
+            assert not (w[i] > w[i + 1] < w[i + 2])
+        return ck(i, w)
+    except:
+        return w
+
+
 def get_rows(word):
     rows = []
     for x in word:
@@ -109,6 +118,122 @@ def to_column_reading(word):
     ans += bns
     word = newword + word[-m:]
     return ans, word
+
+
+def sp_ck_compute_improved(tab, letter):
+    read = tab.row_reading_word()
+    rows = get_rows(read)
+    columns = get_columns(read)
+
+    n = len(read)
+    r = len(rows)
+    word = read + (letter,)
+
+    print()
+    print('rows:', rows, '<-', letter)
+    print()
+
+    if n == 0:
+        return 1, 1, True, (letter,)
+
+    s = [-1]
+    for row in rows:
+        s = [s[0] + len(row)] + s
+    assert s[0] == n - 1
+
+    def rho(i, w):
+        for a in range(n - 2, s[i], -1):
+            w = ck_noop(a, w)
+        return w
+
+    h = [r * (r + 1) // 2]
+    for c in columns[r:]:
+        h += [h[-1] + len(c)]
+    q = len(columns)
+
+    def gam(i, w):
+        for a in range(h[0], h[i] - 1):
+            w = ck_noop(a, w)
+        return w
+
+    def collectdiag(w):
+        for _ in range(r - 1):
+            for a in range(n - 2, -1, -1):
+                w = ck_noop(a, w, vee=False)
+                print(w)
+            print()
+        print(w)
+        for _ in range(r):
+            for a in range(-1, r - 1):
+                w = ck_noop(a, w)
+        return w
+
+    def diagtest(w):
+        for a in range(-1, s[-2] - 1):
+            w = ck(a, w)
+        return not descent(s[-2], w)
+
+    def integrate(w):
+        start = r - 1
+        for a in range(r - 1):
+            for _ in range(a + 1):
+                for b in range(start, start - r + 1 + a, -1):
+                    w = ck(b, w)
+                start += 1
+        return w
+
+    print('* word')
+    print('*', word)
+    print('*', s)
+    print()
+
+    for i in range(r):
+        test = rho(i, word)
+        if not descent(s[i], test):
+            return i + 1, len(rows[-i - 1]) + i + 1, True, test
+
+    test = rho(r - 1, word)
+    word = rho(r, word)
+    print('* diagonal bump?')
+    print('*', test)
+    print()
+
+    if diagtest(test):
+        return r + 1, r + 1, True, word
+
+    print('* collecting diagonal')
+    print('*', word)
+    print()
+
+    word = collectdiag(word)
+
+    print('* left to column word')
+    print('*', word)
+    print()
+
+    _, left = to_column_reading(word[r + 1:])
+    word = word[:r + 1] + left
+
+    print('* integration')
+    print('*', word)
+    print()
+
+    word = integrate(word)
+
+    left = word[r * (r + 1) // 2 + 1:]
+
+    print('* column insertion')
+    print('*', word, left)
+    print('*', h, q)
+    print()
+
+    for i in range(q):
+        test = gam(i, word)
+        if descent(h[i], test):
+            return len(columns[i]) + 1, r + i + 1, False, test
+
+    test = gam(q, word)
+    return 1, q + r + 1, False, test
 
 
 def sp_ck_compute(tab, letter):
@@ -249,10 +374,10 @@ def sp_ck_compute(tab, letter):
 
 
 def _print(*args):
-    print(*args)
+    pass  # print(*args)
 
 
-def test_fpf(n=10, maxcount=10):
+def test_fpf(n=8, maxcount=0):
     for a, pi in enumerate(Permutation.fpf_involutions(n)):
         print(a, pi.fpf_involution_length, pi)
         for b, w in enumerate(pi.get_fpf_involution_words()):
@@ -260,7 +385,7 @@ def test_fpf(n=10, maxcount=10):
                 continue
             if b > maxcount > 0:
                 break
-
+            w = (6, 4, 5, 7, 2, 3, 4, 5, 2)
             v = w[:-1]
             p, q = InsertionAlgorithm.symplectic_hecke(v)
             t, r = InsertionAlgorithm.symplectic_hecke(w)
@@ -268,9 +393,9 @@ def test_fpf(n=10, maxcount=10):
             if r.max_row() > 3:
                 continue
 
-            _print()
-            _print('word =', w)
-            _print(p)
+            print()
+            print('word =', w)
+            print(p)
             _print(q)
             _print(r)
 
@@ -287,3 +412,7 @@ def test_fpf(n=10, maxcount=10):
             for a in seq:
                 word = ck(a, word)
             assert word == t.row_reading_word()
+
+            a, b, s, word = sp_ck_compute_improved(p, w[-1])
+            assert (a, b, s) == (i, j, sgn)
+            assert (s and word == t.row_reading_word()) or (not s and word == t.column_reading_word())
