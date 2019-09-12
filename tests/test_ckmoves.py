@@ -159,7 +159,7 @@ def sp_ck_compute_improved(tab, letter):
     def collectdiag(w):
         for _ in range(r - 1):
             for a in range(n - 2, -1, -1):
-                w = ck_noop(a, w, vee=False)
+                w = ck_noop(a, w)
                 print(w)
             print()
         print(w)
