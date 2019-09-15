@@ -120,6 +120,122 @@ def to_column_reading(word):
     return ans, word
 
 
+def sp_ck_compute_functional(w):
+
+    def des(i, w):
+        return w[i - 1] > w[i]
+
+    def a(i):
+        return lambda x: ck_noop(i - 1, x)
+
+    def compose(*args):
+        def f(x):
+            for fun in args:
+                x = fun(x)
+            return x
+        return f
+
+    def convert_to_col(mu):
+        if len(mu) <= 1:
+            return []
+        starts = []
+        for r in list(reversed(mu[1:])):
+            starts += [r + (starts[-1] if starts else -1)]
+        starts = [starts[i] for i in range(len(mu) - 1) if mu[len(mu) - 1 - i] + len(mu) - i - 1 == mu[0]]
+
+        ans = []
+        for i, a in enumerate(starts):
+            for b in range(i + 1):
+                c = (starts[i + 1] - 1) if i + 1 < len(starts) else (sum(mu) - 2)
+                ans += list(range(a - b + 1, c - b + 1))
+
+        nu = tuple((mu[i] - 1) if mu[i] + i == mu[0] else mu[i] for i in range(len(mu)))
+        while nu and nu[-1] == 0:
+            nu = nu[:-1]
+
+        return ans + convert_to_col(nu)
+
+    def convert_to_row(mu):
+        return list(reversed(convert_to_col(mu)))
+
+    if len(w) == 0:
+        return compose(), Tableau()
+    if len(w) == 1:
+        return compose(), Tableau().add(1, 1, 1)
+
+    op, Q = sp_ck_compute_functional(w[:-1])
+
+    mu = Q.shape()
+    n = len(w) - 1
+    r = len(mu)
+
+    d = {i: n - sum(mu[:i - 1]) for i in range(1, r + 2)}
+
+    def rho(i):
+        f = op
+        for j in range(n - 1, d[i], -1):
+            f = compose(f, a(j))
+        return f
+
+    for i in range(1, r + 1):
+        if not des(d[i], rho(i)(w)):
+            return rho(i), Q.add(i, i - 1 + mu[i - 1] + 1, n + 1)
+
+    f = rho(r)
+    for j in range(mu[r - 1] - 1):
+        f = compose(f, a(j))
+
+    if not des(d[r], f(w)):
+        return rho(r + 1), Q.add(r + 1, r + 1, n + 1)
+
+    def psi(i):
+        return compose(*[a(j) for j in range(d[i] + i - 2, 0, -1)])
+
+    def phi(i):
+        delta = (i + 1) * i // 2
+        factors = i * [compose(*[a(j) for j in range(delta + r - 1, delta, -1)])]
+        return compose(*factors)
+
+    Psi = compose(*[psi(i) for i in range(1, r + 1)])
+
+    factors = r * [compose(*[a(j) for j in range(r)])]
+    Theta = compose(*factors)
+
+    Phi = compose(*[phi(i) for i in range(1, r)])
+
+    nu = tuple(mu[i] - 1 for i in range(len(mu)))
+    nu = nu if nu[-1] != 0 else nu[:-1]
+    indices = convert_to_col(nu)
+    Gamma = compose(*[a(r + 1 + j) for j in indices])
+
+    q = mu[0]
+    h = Q.transpose().shape() + (0,)
+    e = {i: sum(h[:i - 1]) for i in range(1, q + 2)}
+
+    def gamma(i):
+        f = compose(op, Psi, Theta, Gamma, Phi)
+        delta = r * (r + 1) // 2
+        for j in range(delta + 1, e[i]):
+            f = compose(f, a(j))
+        return f
+
+    i = None
+    for index in range(r + 1, q + 1):
+        print('!', index, e, gamma(r + 1)(w), gamma(index)(w), des(e[index] + 1, gamma(index)(w)))
+        if des(e[index] + 1, gamma(index)(w)):
+            i = index
+            break
+    if i is None:
+        i = q + 1
+    f = gamma(i)
+
+    newQ = Q.add(h[i - 1] + 1, i, -n - 1)
+    nu = newQ.shape()
+    for j in convert_to_row(mu):
+        f = compose(f, a(j))
+    return f, newQ
+
+
 def sp_ck_compute_improved(tab, letter):
     read = tab.row_reading_word()
     rows = get_rows(read)
@@ -129,9 +245,9 @@ def sp_ck_compute_improved(tab, letter):
     r = len(rows)
     word = read + (letter,)
 
-    print()
-    print('rows:', rows, '<-', letter)
-    print()
+    _print()
+    _print('rows:', rows, '<-', letter)
+    _print()
 
     if n == 0:
         return 1, 1, True, (letter,)
@@ -160,9 +276,6 @@ def sp_ck_compute_improved(tab, letter):
         for i in range(1, r):
             for a in range(s[i] + i - 1, -1, -1):
                 w = ck_noop(a, w)
-                print(w)
-            print()
-        print(w)
         for _ in range(r):
             for a in range(-1, r - 1):
                 w = ck_noop(a, w)
@@ -182,10 +295,10 @@ def sp_ck_compute_improved(tab, letter):
                 start += 1
         return w
 
-    print('* word')
-    print('*', word)
-    print('*', s)
-    print()
+    _print('* word')
+    _print('*', word)
+    _print('*', s)
+    _print()
 
     for i in range(r):
         test = rowinsert(i, word)
@@ -194,38 +307,38 @@ def sp_ck_compute_improved(tab, letter):
 
     test = rowinsert(r - 1, word)
     word = rowinsert(r, word)
-    print('* diagonal bump?')
-    print('*', test)
-    print()
+    _print('* diagonal bump?')
+    _print('*', test)
+    _print()
 
     if diagtest(test):
         return r + 1, r + 1, True, word
 
-    print('* collecting diagonal')
-    print('*', word)
-    print()
+    _print('* collecting diagonal')
+    _print('*', word)
+    _print()
 
     word = collectdiag(word)
 
-    print('* left to column word')
-    print('*', word)
-    print()
+    _print('* left to column word')
+    _print('*', word)
+    _print()
 
     _, left = to_column_reading(word[r + 1:])
     word = word[:r + 1] + left
 
-    print('* integration')
-    print('*', word)
-    print()
+    _print('* integration')
+    _print('*', word)
+    _print()
 
     word = integrate(word)
 
     left = word[r * (r + 1) // 2 + 1:]
 
-    print('* column insertion')
-    print('*', word, left)
-    print('*', h)
-    print()
+    _print('* column insertion')
+    _print('*', word, left)
+    _print('*', h)
+    _print()
 
     for i in range(q - 1):
         test = colinsert(i, word)
@@ -385,7 +498,7 @@ def test_fpf(n=8, maxcount=0):
                 continue
             if b > maxcount > 0:
                 break
-            w = (6, 4, 5, 7, 2, 3, 4, 5, 2)
+
             v = w[:-1]
             p, q = InsertionAlgorithm.symplectic_hecke(v)
             t, r = InsertionAlgorithm.symplectic_hecke(w)
@@ -416,3 +529,11 @@ def test_fpf(n=8, maxcount=0):
             a, b, s, word = sp_ck_compute_improved(p, w[-1])
             assert (a, b, s) == (i, j, sgn)
             assert (s and word == t.row_reading_word()) or (not s and word == t.column_reading_word())
+
+            op, Q = sp_ck_compute_functional(w)
+            print(Q)
+            print(r)
+            print(t)
+            print(op(w))
+            assert Q == r
+            assert t.row_reading_word() == op(w)
