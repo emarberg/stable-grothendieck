@@ -120,13 +120,10 @@ def to_column_reading(word):
     return ans, word
 
 
-def sp_ck_compute_functional(w):
+def ck_compute_functional(w, a):
 
     def des(i, w):
         return w[i - 1] > w[i]
-
-    def a(i):
-        return lambda x: ck_noop(i - 1, x)
 
     def compose(*args):
         def f(x):
@@ -163,7 +160,7 @@ def sp_ck_compute_functional(w):
     if len(w) == 1:
         return compose(), Tableau().add(1, 1, 1)
 
-    op, Q = sp_ck_compute_functional(w[:-1])
+    op, Q = ck_compute_functional(w[:-1], a)
 
     mu = Q.shape()
     n = len(w) - 1
@@ -221,7 +218,6 @@ def sp_ck_compute_functional(w):
 
     i = None
     for index in range(r + 1, q + 1):
-        print('!', index, e, gamma(r + 1)(w), gamma(index)(w), des(e[index] + 1, gamma(index)(w)))
         if des(e[index] + 1, gamma(index)(w)):
             i = index
             break
@@ -231,9 +227,33 @@ def sp_ck_compute_functional(w):
 
     newQ = Q.add(h[i - 1] + 1, i, -n - 1)
     nu = newQ.shape()
-    for j in convert_to_row(mu):
+    for j in convert_to_row(nu):
         f = compose(f, a(j))
     return f, newQ
+
+
+def sp_ck_compute_functional(w):
+
+    def a(i):
+        return lambda x: ck_noop(i - 1, x)
+
+    return ck_compute_functional(w, a)
+
+
+def o_ck_compute_functional(w):
+
+    def a(i):
+        def f(x):
+            if i == 0:
+                if len(x) >= 2:
+                    return tuple(reversed(x[:2])) + x[2:]
+                else:
+                    return x
+            else:
+                return ck_noop(i - 1, x)
+        return f
+
+    return ck_compute_functional(w, a)
 
 
 def sp_ck_compute_improved(tab, letter):
@@ -490,7 +510,7 @@ def _print(*args):
     pass  # print(*args)
 
 
-def test_fpf(n=8, maxcount=0):
+def test_fpf(n=6, maxcount=0):
     for a, pi in enumerate(Permutation.fpf_involutions(n)):
         print(a, pi.fpf_involution_length, pi)
         for b, w in enumerate(pi.get_fpf_involution_words()):
@@ -502,9 +522,6 @@ def test_fpf(n=8, maxcount=0):
             v = w[:-1]
             p, q = InsertionAlgorithm.symplectic_hecke(v)
             t, r = InsertionAlgorithm.symplectic_hecke(w)
-
-            if r.max_row() > 3:
-                continue
 
             print()
             print('word =', w)
@@ -531,6 +548,34 @@ def test_fpf(n=8, maxcount=0):
             assert (s and word == t.row_reading_word()) or (not s and word == t.column_reading_word())
 
             op, Q = sp_ck_compute_functional(w)
+            print(Q)
+            print(r)
+            print(t)
+            print(op(w))
+            assert Q == r
+            assert t.row_reading_word() == op(w)
+
+
+def test_inv(n=6, maxcount=0):
+    for a, pi in enumerate(Permutation.involutions(n)):
+        print(a, pi.involution_length, pi)
+        for b, w in enumerate(pi.get_involution_words()):
+            if len(w) == 0:
+                continue
+            if b > maxcount > 0:
+                break
+
+            v = w[:-1]
+            p, q = InsertionAlgorithm.orthogonal_hecke(v)
+            t, r = InsertionAlgorithm.orthogonal_hecke(w)
+
+            print()
+            print('word =', w)
+            _print(p)
+            _print(q)
+            _print(r)
+
+            op, Q = o_ck_compute_functional(w)
             print(Q)
             print(r)
             print(t)
