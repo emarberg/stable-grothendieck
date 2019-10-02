@@ -782,4 +782,141 @@ def test_fpf_grassmannian_braids(rank=8):
             add = nextadd
 
     print('\ndone')
-#    assert False
+
+
+def test_inv_conversion_to_permutation(rank=5):
+    def pi(mu):
+        r = len(mu)
+        ans = Permutation()
+        for i in range(1, r + 1):
+            ans *= Permutation.transposition(i, r + mu[-i])
+        return ans
+
+    def bumping_sequence(mu):
+        assert len(mu) == 0 or mu[-1] > 0
+        r = len(mu)
+        if r == 0:
+            return tuple()
+        q = mu[0]
+
+        h = 1
+        while h + 1 <= r and mu[h] + h == q:
+            h += 1
+
+        nu = list(mu)
+        nu[h - 1] -= 1
+        nu = tuple(nu)
+        while nu and nu[-1] == 0:
+            nu = nu[:-1]
+
+        n = sum(mu)
+        s = Permutation.s_i(2 * n)
+        ans = [s * w for w in bumping_sequence(nu)]
+        bns = (2 * n - q - r + 1) * [pi(nu)]
+        return tuple(ans + bns)
+
+    for w in Permutation.inv_grassmannians(rank):
+        w = w.star()
+        mu = w.involution_shape()
+        print(mu, '=', 'shape(', w, ')')
+        print()
+
+        seq = bumping_sequence(mu)
+        print('  bumping_sequence:')
+        for v in seq:
+            print('    ', v)
+        print()
+
+        print()
+        word = minimal_word(mu)
+        for sigma in reversed(seq):
+            print('  ', sigma.get_involution_word(), 'bumps', word)
+            word = Permutation.involution_little_bump(word, sigma)
+        print('  result:', word)
+        print()
+
+        word = w.get_involution_word()
+        for sigma in reversed(seq):
+            word = Permutation.involution_little_bump(word, sigma)
+        print('  result:', word)
+        print()
+        assert set(word) == {2 * i for i in range(1, sum(mu) + 1)}
+
+
+def test_fpf_conversion_to_permutation(rank=8):
+    def pi(mu):
+        r = len(mu)
+        ans = Permutation()
+        for i in range(1, r + 1):
+            ans *= Permutation.transposition(i, r + 1 + mu[-i])
+        n = ans.rank
+        f = [i for i in range(1, n + 1) if ans(i) == i]
+        if len(f) % 2 != 0:
+            f += [n + 1]
+        for i in range(0, len(f), 2):
+            ans *= Permutation.transposition(f[i], f[i + 1])
+        return ans
+
+    def bumping_sequence(mu):
+        assert len(mu) == 0 or mu[-1] > 0
+        r = len(mu)
+        if r == 0:
+            return tuple()
+        q = mu[0]
+
+        h = 1
+        while h + 1 <= r and mu[h] + h == q:
+            h += 1
+
+        nu = list(mu)
+        nu[h - 1] -= 1
+        nu = tuple(nu)
+        while nu and nu[-1] == 0:
+            nu = nu[:-1]
+
+        e = 1 if (q + r) % 2 == 0 else 0
+        n = sum(mu)
+        s = Permutation.s_i(2 * n)
+        ans = []
+        for w in bumping_sequence(nu):
+            i = w.rank + 1
+            assert i % 2 != 0
+            while i <= 2 * n + 1:
+                w *= Permutation.s_i(i)
+                i += 2
+            ans += [s * w * s]
+        bns = (n - (q + r + e + 1) // 2 + 1) * [pi(nu)]
+        return tuple(ans + bns)
+
+    for w in Permutation.fpf_grassmannians(rank):
+        w = w.star()
+        mu = w.fpf_involution_shape()
+        print(mu, '=', 'shape(', w, ')')
+        print()
+
+        seq = bumping_sequence(mu)
+        print('  bumping_sequence:')
+        for v in seq:
+            print('    ', v)
+        print()
+
+        print()
+        word = fpf_minimal_word(mu)
+        for sigma in reversed(seq):
+            newword = Permutation.fpf_involution_little_bump(word, sigma)
+            print('  ', sigma, 'bumps', word, 'to', newword)
+            word = newword
+        print()
+        print('  result:', word)
+        print()
+
+        word = w.get_fpf_involution_word()
+        for sigma in reversed(seq):
+            word = Permutation.fpf_involution_little_bump(word, sigma)
+        print('  result:', word)
+        print()
+        assert set(word) == {2 * i for i in range(1, sum(mu) + 1)}
+
+
+
+

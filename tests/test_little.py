@@ -58,6 +58,7 @@ def test_strong_inv_little(n=6, k=5, maxcount=20):
     assert cases > 0
 
 
+@pytest.mark.slow
 def test_strong_fpf_little(n=6, k=5, maxcount=20):
     assert n % 2 == 0
     cases = 0
