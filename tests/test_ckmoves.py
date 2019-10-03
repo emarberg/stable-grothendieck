@@ -1,6 +1,136 @@
 from tableaux import Tableau
 from insertion import InsertionAlgorithm
 from permutations import Permutation
+from tests.test_little import get_inv_ck_moves, get_fpf_ck_moves
+import pytest
+
+
+@pytest.mark.slow
+def test_dual_equiv():
+    for w in Permutation.involutions(7):
+        print()
+        print('w =', w)
+        words = w.get_involution_words()
+        tab = {
+            v: InsertionAlgorithm.orthogonal_hecke(v)[1]
+            for v in words
+        }
+        for v in words:
+            for i, u in get_inv_ck_moves(v):
+
+                a = tab[v].shifted_reading_word()
+                b = tab[u].shifted_reading_word()
+
+                loc = {x - 1: i for i, x in enumerate(a)}
+
+                print(tab[v])
+                print(tab[u])
+                print('i =', i + 1)
+                print()
+                print(' ' + i * '   ' + '*')
+                print(v, '          ', a)
+                print(u, '          ', b)
+                print()
+
+                if i == -1:
+                    print('Case IV')
+                    t = Permutation.reflection_s(2) * tab[v]
+                    if tab[u] != t:
+                        print(t)
+                    assert tab[u] == t
+                    continue
+
+                x, y, z = loc[i], loc[i + 1], loc[i + 2]
+                if x < z < y or y < z < x:
+                    print('Case I')
+                    t = Permutation.s_i(i + 1) * tab[v]
+                    if not t.is_semistandard():
+                        t = Permutation.reflection_s(i + 1) * Permutation.reflection_s(i + 2) * tab[v]
+                    if not t.is_semistandard():
+                        t = Permutation.reflection_s(i + 2) * tab[v]
+                    if tab[u] != t:
+                        print(t)
+                    assert tab[u] == t
+                elif y < x < z or z < x < y:
+                    print('Case II')
+                    t = Permutation.s_i(i + 2) * tab[v]
+                    if not t.is_semistandard():
+                        t = Permutation.reflection_s(i + 2) * Permutation.reflection_s(i + 3) * tab[v]
+                    if not t.is_semistandard():
+                        t = Permutation.reflection_s(i + 2) * tab[v]
+                    if tab[u] != t:
+                        print(t)
+                    assert tab[u] == t
+                elif x < y < z or z < y < x:
+                    print('Case III')
+                    assert False
+                else:
+                    raise Exception
+    print('done')
+
+
+@pytest.mark.slow
+def test_fpf_dual_equiv():
+    for w in Permutation.fpf_involutions(6):
+        print()
+        print('w =', w)
+        words = w.get_fpf_involution_words()
+        tab = {
+            v: InsertionAlgorithm.symplectic_hecke(v)[1]
+            for v in words
+        }
+        for v in words:
+            for i, u in get_fpf_ck_moves(v):
+
+                a = tab[v].shifted_reading_word()
+                b = tab[u].shifted_reading_word()
+
+                loc = {x - 1: i for i, x in enumerate(a)}
+
+                print(tab[v])
+                print(tab[u])
+                print('i =', i + 1)
+                print()
+                print(' ' + i * '   ' + '*')
+                print(v, '          ', a)
+                print(u, '          ', b)
+                print()
+
+                if i == -1:
+                    print('Case IV')
+                    t = Permutation.reflection_s(2) * tab[v]
+                    if tab[u] != t:
+                        print(t)
+                    assert tab[u] == t
+                    continue
+
+                x, y, z = loc[i], loc[i + 1], loc[i + 2]
+                if x < z < y or y < z < x:
+                    print('Case I')
+                    t = Permutation.s_i(i + 1) * tab[v]
+                    if not t.is_semistandard():
+                        t = Permutation.reflection_s(i + 1) * Permutation.reflection_s(i + 2) * tab[v]
+                    if not t.is_semistandard():
+                        t = Permutation.reflection_s(i + 2) * tab[v]
+                    if tab[u] != t:
+                        print(t)
+                    assert tab[u] == t
+                elif y < x < z or z < x < y:
+                    print('Case II')
+                    t = Permutation.s_i(i + 2) * tab[v]
+                    if not t.is_semistandard():
+                        t = Permutation.reflection_s(i + 2) * Permutation.reflection_s(i + 3) * tab[v]
+                    if not t.is_semistandard():
+                        t = Permutation.reflection_s(i + 2) * tab[v]
+                    if tab[u] != t:
+                        print(t)
+                    assert tab[u] == t
+                elif x < y < z or z < y < x:
+                    print('Case III')
+                    assert False
+                else:
+                    raise Exception
+    print('done')
 
 
 def ck(i, w):
@@ -556,7 +686,7 @@ def test_fpf(n=6, maxcount=0):
             assert t.row_reading_word() == op(w)
 
 
-def test_inv(n=6, maxcount=0):
+def test_inv(n=5, maxcount=0):
     for a, pi in enumerate(Permutation.involutions(n)):
         print(a, pi.involution_length, pi)
         for b, w in enumerate(pi.get_involution_words()):
