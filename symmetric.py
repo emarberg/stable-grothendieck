@@ -293,7 +293,7 @@ class SymmetricPolynomial(Vector):
     @classmethod
     def stable_grothendieck_q_doublebar(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa
         ans = SymmetricPolynomial()
-        for x in Partition.shifted_inner_corner_covers(nu):
+        for x in Partition.remove_shifted_inner_corners(nu):
             ans += (-1)**(sum(nu) - sum(x)) * cls._stable_grothendieck_q(num_variables, mu, x, degree_bound)
         return ans
 
@@ -309,7 +309,7 @@ class SymmetricPolynomial(Vector):
     @classmethod
     def stable_grothendieck_p_doublebar(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa
         ans = SymmetricPolynomial()
-        for x in Partition.shifted_inner_corner_covers(nu):
+        for x in Partition.remove_shifted_inner_corners(nu):
             ans += (-1)**(sum(nu) - sum(x)) * cls._stable_grothendieck_p(num_variables, mu, x, degree_bound)
         return ans
 
@@ -325,7 +325,7 @@ class SymmetricPolynomial(Vector):
     @classmethod
     def stable_grothendieck_doublebar(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa
         ans = SymmetricPolynomial()
-        for x in Partition.inner_corner_covers(nu):
+        for x in Partition.remove_inner_corners(nu):
             ans += (-1)**(sum(nu) - sum(x)) * cls._stable_grothendieck(num_variables, mu, x, degree_bound)
         return ans
 
