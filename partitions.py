@@ -1,9 +1,69 @@
 from collections import defaultdict
+import itertools
 
 PARTITIONS = {}
 
 
 class Partition:
+
+    @classmethod
+    def inner_corner_covers(cls, mu):
+        rows = []
+        for i in range(1, len(mu) + 1):
+            try:
+                cls.remove_inner_corner(mu, i)
+                rows += [i]
+            except:
+                continue
+        for k in range(len(rows) + 1):
+            for subset in itertools.combinations(rows, k):
+                ans = mu
+                for row in subset:
+                    ans = cls.remove_inner_corner(ans, row)
+                yield ans
+
+    @classmethod
+    def remove_inner_corner(cls, mu, row):
+        if row == 1 and (len(mu) == 1 or mu[1] < mu[0]):
+            return (mu[0] - 1,) + mu[1:]
+        elif 1 < row < len(mu) and mu[row] < mu[row - 1]:
+            ans = list(mu)
+            ans[row - 1] -= 1
+            return tuple(ans)
+        elif row == len(mu) and mu[-1] > 1:
+            return mu[:-1] + (mu[-1] - 1,)
+        elif row == len(mu) and mu[-1] == 1:
+            return mu[:-1]
+        raise Exception
+
+    @classmethod
+    def shifted_inner_corner_covers(cls, mu):
+        rows = []
+        for i in range(1, len(mu) + 1):
+            try:
+                cls.remove_shifted_inner_corner(mu, i)
+            except:
+                rows += [i]
+        for k in range(len(rows) + 1):
+            for subset in itertools.combinations(rows, k):
+                ans = mu
+                for row in subset:
+                    ans = cls.remove_shifted_inner_corner(ans, row)
+                yield ans
+
+    @classmethod
+    def remove_shifted_inner_corner(cls, mu, row):
+        if row == 1 and (len(mu) == 1 or mu[1] + 1 < mu[0]):
+            return (mu[0] - 1,) + mu[1:]
+        elif 1 < row < len(mu) and mu[row] + 1 < mu[row - 1]:
+            ans = list(mu)
+            ans[row - 1] -= 1
+            return tuple(ans)
+        elif row == len(mu) and mu[-1] > 1:
+            return mu[:-1] + (mu[-1] - 1,)
+        elif row == len(mu) and mu[-1] == 1:
+            return mu[:-1]
+        raise Exception
 
     @classmethod
     def complement(cls, n, mu):

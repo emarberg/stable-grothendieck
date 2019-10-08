@@ -291,6 +291,13 @@ class SymmetricPolynomial(Vector):
         return (-1)**(sum(mu) - sum(nu)) * cls._vectorize(num_variables, tableaux, True, degree_bound)
 
     @classmethod
+    def stable_grothendieck_q_doublebar(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa
+        ans = SymmetricPolynomial()
+        for x in Partition.shifted_inner_corner_covers(nu):
+            ans += (-1)**(sum(nu) - sum(x)) * cls._stable_grothendieck_q(num_variables, mu, x, degree_bound)
+        return ans
+
+    @classmethod
     def stable_grothendieck_q(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa
         return cls._stable_grothendieck_q(num_variables, mu, nu, degree_bound)
 
@@ -300,6 +307,13 @@ class SymmetricPolynomial(Vector):
         return (-1)**(sum(mu) - sum(nu)) * cls._vectorize(num_variables, tableaux, True, degree_bound)
 
     @classmethod
+    def stable_grothendieck_p_doublebar(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa
+        ans = SymmetricPolynomial()
+        for x in Partition.shifted_inner_corner_covers(nu):
+            ans += (-1)**(sum(nu) - sum(x)) * cls._stable_grothendieck_p(num_variables, mu, x, degree_bound)
+        return ans
+
+    @classmethod
     def stable_grothendieck_p(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa
         return cls._stable_grothendieck_p(num_variables, mu, nu, degree_bound)
 
@@ -307,6 +321,13 @@ class SymmetricPolynomial(Vector):
     def _stable_grothendieck_p(cls, num_variables, mu, nu, degree_bound):  # noqa
         tableaux = Tableau.count_semistandard_shifted_marked_setvalued(num_variables, mu, nu, diagonal_primes=False)
         return (-1)**(sum(mu) - sum(nu)) * cls._vectorize(num_variables, tableaux, True, degree_bound)
+
+    @classmethod
+    def stable_grothendieck_doublebar(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa
+        ans = SymmetricPolynomial()
+        for x in Partition.inner_corner_covers(nu):
+            ans += (-1)**(sum(nu) - sum(x)) * cls._stable_grothendieck(num_variables, mu, x, degree_bound)
+        return ans
 
     @classmethod
     def stable_grothendieck(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa

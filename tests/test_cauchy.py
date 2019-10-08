@@ -7,34 +7,53 @@ import pytest
 def _test(n_max, v_max):
     for n in range(n_max + 1):
         for v in range(1, v_max + 1):
-            a, b = [], []
-            for k in range(max(n, 1)):
-                for mu in Partition.generate(k):
-                    if mu and mu[0] + k > n:
-                        continue
-                    a += [SymmetricPolynomial.dual_stable_grothendieck(v, mu).truncate(n)]
-                    b += [SymmetricPolynomial.stable_grothendieck(v, mu).truncate(n)]
+            for lam1 in Partition.all(n):
+                for lam2 in Partition.all(n):
+                    print()
+                    print()
+                    print('* n =', n, ', mu =', lam1, ', nu =', lam2)
+                    print()
 
-            s = Polynomial()
-            for i in range(len(a)):
-                s += (a[i].polynomial('x') * b[i].polynomial('y')).truncate(n)
-                print(s)
-                print()
+                    print('Computing LHS . . .')
+                    print()
 
-            t = Polynomial.one()
-            x = Polynomial.x
-            y = Polynomial.y
-            for i in range(1, v + 1):
-                for j in range(1, v + 1):
-                    a = x(i) * y(j)
-                    term = Polynomial.one()
-                    for e in range(1, n + 1):
-                        term += a**e
-                    t = (t * term).truncate(n)
-            print(t)
-            print()
-            print(s - t)
-            assert s == t
+                    s = Polynomial()
+                    for mu in Partition.all(max(n, 1)):
+                        a = SymmetricPolynomial.dual_stable_grothendieck(v, mu, lam2).truncate(n)
+                        b = SymmetricPolynomial.stable_grothendieck_doublebar(v, mu, lam1).truncate(n)
+                        s += (a.polynomial('y') * b.polynomial('x')).truncate(n)
+                        print('  ', mu, ':', s)
+                        print()
+                    print('LHS =', s)
+                    print()
+                    print()
+
+                    print('Computing RHS . . .')
+                    print()
+
+                    t = Polynomial()
+                    for kappa in Partition.subpartitions(lam2):
+                        a = SymmetricPolynomial.dual_stable_grothendieck(v, lam1, kappa).truncate(n)
+                        b = SymmetricPolynomial.stable_grothendieck_doublebar(v, lam2, kappa).truncate(n)
+                        t += (a.polynomial('y') * b.polynomial('x')).truncate(n)
+                        print('  ', kappa, ':', t)
+                        print()
+
+                    x = Polynomial.x
+                    y = Polynomial.y
+                    for i in range(1, v + 1):
+                        for j in range(1, v + 1):
+                            a = x(i) * y(j)
+                            term = Polynomial.one()
+                            for e in range(1, n + 1):
+                                term += a**e
+                            t = (t * term).truncate(n)
+                    print('RHS =', t)
+                    print()
+                    print()
+                    print('diff =', s - t)
+                    print()
+                    assert s == t
 
 
 def test_grothendieck_cauchy():

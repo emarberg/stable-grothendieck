@@ -45,6 +45,18 @@ def grothendieck_S(num_variables, mu, nu=(), degree_bound=None): # noqa
         return SymmetricPolynomial.stable_grothendieck_s(num_variables, mu, nu, degree_bound)
 
 
+def grothendieck_doublebar(num_variables, mu, nu=(), degree_bound=None): # noqa
+    return SymmetricPolynomial.stable_grothendieck_doublebar(num_variables, mu, nu, degree_bound=degree_bound)
+
+
+def grothendieck_Q_doublebar(num_variables, mu, nu=(), degree_bound=None): # noqa
+    return SymmetricPolynomial.stable_grothendieck_q_doublebar(num_variables, mu, nu, degree_bound=degree_bound)
+
+
+def grothendieck_P_doublebar(num_variables, mu, nu=(), degree_bound=None): # noqa
+    return SymmetricPolynomial.stable_grothendieck_p_doublebar(num_variables, mu, nu, degree_bound=degree_bound)
+
+
 def dual_grothendieck(num_variables, mu, nu=()): # noqa
     return SymmetricPolynomial.dual_stable_grothendieck(num_variables, mu, nu)
 
@@ -66,6 +78,10 @@ G = grothendieck
 GP = grothendieck_P
 GQ = grothendieck_Q
 GS = grothendieck_S
+
+G_doublebar = grothendieck_doublebar
+GP_doublebar = grothendieck_P_doublebar
+GQ_doublebar = grothendieck_Q_doublebar
 
 g = dual_grothendieck
 gp = dual_grothendieck_P
