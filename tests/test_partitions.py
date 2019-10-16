@@ -49,6 +49,31 @@ def test_contains():
     assert not Partition.contains(nu, mu)
 
 
+def test_covers():
+    mu = ()
+    assert set(Partition.remove_inner_corners(mu)) == {()}
+    assert set(Partition.remove_shifted_inner_corners(mu)) == {()}
+
+    mu = (1,)
+    assert set(Partition.remove_inner_corners(mu)) == {(1,), ()}
+    assert set(Partition.remove_shifted_inner_corners(mu)) == {(1,), ()}
+
+    mu = (3, 2, 1)
+    assert set(Partition.remove_inner_corners(mu)) == {
+        (3, 2, 1),
+        (2, 2, 1),
+        (3, 1, 1),
+        (3, 2),
+        (2, 1, 1),
+        (2, 2),
+        (3, 1),
+        (2, 1)}
+    assert set(Partition.remove_shifted_inner_corners(mu)) == {
+        (3, 2),
+        (3, 2, 1)
+    }
+
+
 def test_generate_partitions():
     assert set(Partition.generate(0)) == {()}
     assert set(Partition.generate(1)) == {(1,)}

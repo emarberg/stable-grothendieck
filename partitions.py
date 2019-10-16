@@ -7,7 +7,7 @@ PARTITIONS = {}
 class Partition:
 
     @classmethod
-    def inner_corner_covers(cls, mu):
+    def remove_inner_corners(cls, mu):
         rows = []
         for i in range(1, len(mu) + 1):
             try:
@@ -24,7 +24,7 @@ class Partition:
 
     @classmethod
     def remove_inner_corner(cls, mu, row):
-        if row == 1 and (len(mu) == 1 or mu[1] < mu[0]):
+        if row == 1 and len(mu) > 1 and mu[1] < mu[0]:
             return (mu[0] - 1,) + mu[1:]
         elif 1 < row < len(mu) and mu[row] < mu[row - 1]:
             ans = list(mu)
@@ -37,13 +37,14 @@ class Partition:
         raise Exception
 
     @classmethod
-    def shifted_inner_corner_covers(cls, mu):
+    def remove_shifted_inner_corners(cls, mu):
         rows = []
         for i in range(1, len(mu) + 1):
             try:
                 cls.remove_shifted_inner_corner(mu, i)
-            except:
                 rows += [i]
+            except:
+                continue
         for k in range(len(rows) + 1):
             for subset in itertools.combinations(rows, k):
                 ans = mu
@@ -53,7 +54,7 @@ class Partition:
 
     @classmethod
     def remove_shifted_inner_corner(cls, mu, row):
-        if row == 1 and (len(mu) == 1 or mu[1] + 1 < mu[0]):
+        if row == 1 and len(mu) > 1 and mu[1] + 1 < mu[0]:
             return (mu[0] - 1,) + mu[1:]
         elif 1 < row < len(mu) and mu[row] + 1 < mu[row - 1]:
             ans = list(mu)

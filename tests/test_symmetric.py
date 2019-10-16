@@ -1,9 +1,20 @@
 from symmetric import SymmetricMonomial, SymmetricPolynomial
 from tableaux import Tableau, Partition
 from polynomials import Polynomial, X
-from utils import GQ, GP
+from utils import G, GQ, GP, G_doublebar, GP_doublebar, GQ_doublebar
 import itertools
 import pytest
+
+
+def test_doublebar():
+    assert  G(1, (), (1,)) == 0
+    assert  G_doublebar(1, (), (1,)) == 0
+
+    assert  GP(1, (), (1,)) == 0
+    assert  GP_doublebar(1, (), (1,)) == 0
+
+    assert  GQ(1, (), (1,)) == 0
+    assert  GQ_doublebar(1, (), (1,)) == 0
 
 
 def test_multipeak_formula():
