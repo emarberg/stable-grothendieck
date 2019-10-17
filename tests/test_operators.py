@@ -251,7 +251,7 @@ def small_schur_expressions(n):
                 yield (-i, -j, -k), compose(d(i), d(j), d(k))
 
 
-def span(relations, tup):
+def calc_span(relations, tup):
     ans = set()
     add = {tup}
     while add:
@@ -279,7 +279,18 @@ def get_dict(expected):
     return dictionary
 
 
-def test_schur_relations(n=5):
+ZERO = (('z', 0),)
+
+
+def get_span(dictionary, keys):
+    span = {k: calc_span(dictionary, k) for k in keys}
+    for k in span:
+        if any(ZERO[0] in t for t in span[k]):
+            span[k] = {ZERO}
+    return span
+
+
+def test_schur_relations(n=4):
 
     def tag(args):
         if len(args) == 0:
@@ -319,16 +330,18 @@ def test_schur_relations(n=5):
     ] + [
         {(-i, -i - 1, -i - 1), (-i - 1, -i, -i - 1)} for i in range(1, n)
     ]
-    get_dict(expected)
+    dictionary = get_dict(expected)
+    span = get_span(dictionary, small)
 
-    def check_expected_identities(k1, k2):
+    def check_expected_identities(k1, k2, do_check=True):
         if {k1, k2} in expected:
-            try:
-                assert equals(k1, k2)
-            except:
-                print()
-                print('** failure: ', tag(k1), '!=', tag(k2))
-                raise Exception
+            if do_check:
+                try:
+                    assert equals(k1, k2)
+                except:
+                    print()
+                    print('** failure: ', tag(k1), '!=', tag(k2))
+                    raise Exception
             return True
         return False
 
@@ -341,7 +354,7 @@ def test_schur_relations(n=5):
                     print()
                     print('* expected: ', tag(k1), '=', tag(k2))
                     continue
-                if span(dictionary, k1) & span(dictionary, k2):
+                if span[k1] & span[k2]:
                     continue
                 if equals(k1, k2):
                     relations.add((k1, k2))
@@ -353,26 +366,17 @@ def test_schur_relations(n=5):
 
 
 def small_q_schur_expressions(n):
-    return small_shifted_schur_expressions(n, u_symmetric, d_symmetric)
+    f, g = u_symmetric, d_symmetric
 
-
-def small_p_schur_expressions(n):
-    return small_shifted_schur_expressions(n, u_skew_symmetric, d_skew_symmetric)
-
-
-def small_shifted_schur_expressions(n, f, g):
+    yield ZERO, lambda x: Vector()
     yield (), compose()
 
     for i in range(0, n + 1):
-        if i == 0:
-            continue
         yield (('u', i),), compose(f(i))
         yield (('d', i),), compose(g(i))
 
     for i in range(0, n + 1):
         for j in range(0, n + 1):
-            if i == 0 or j == 0:
-                continue
             yield (('u', i), ('u', j)), compose(f(i), f(j))
             yield (('d', i), ('d', j)), compose(g(i), g(j))
             yield (('u', i), ('d', j)), compose(f(i), g(j))
@@ -381,17 +385,23 @@ def small_shifted_schur_expressions(n, f, g):
     for i in range(0, n + 1):
         for j in range(0, n + 1):
             for k in range(0, n + 1):
-                if i == 0 or j == 0 or k == 0:
-                    continue
                 yield (('u', i), ('u', j), ('u', k)), compose(f(i), f(j), f(k))
                 yield (('d', i), ('d', j), ('d', k)), compose(g(i), g(j), g(k))
 
+    for i in range(0, n):
+        yield (('u', i), ('u', i + 1), ('u', i), ('u', i + 1)), compose(f(i), f(i + 1), f(i), f(i + 1))
+        yield (('u', i + 1), ('u', i), ('u', i + 1), ('u', i)), compose(f(i + 1), f(i), f(i + 1), f(i))
+        yield (('d', i), ('d', i + 1), ('d', i), ('d', i + 1)), compose(g(i), g(i + 1), g(i), g(i + 1))
+        yield (('d', i + 1), ('d', i), ('d', i + 1), ('d', i)), compose(g(i + 1), g(i), g(i + 1), g(i))
 
-def test_q_schur_relations(n=5):
+
+def test_shifted_schur_relations(n=4):
 
     def tag(args):
         if len(args) == 0:
             return 'id'
+        if args == ZERO:
+            return '0'
         s = ''
         for a in args:
             s += '%s_{%i} ' % a
@@ -405,7 +415,33 @@ def test_q_schur_relations(n=5):
         op1, op2 = small[k1], small[k2]
         return all(op1(mu) == op2(mu) for mu in partitions)
 
-    expected = []
+    expected = [
+        {(('u', i), ('u', i + 1), ('u', i)), ZERO} for i in range(1, n)
+    ] + [
+        {(('d', i), ('d', i + 1), ('d', i)), ZERO} for i in range(1, n)
+    ] + [
+        {(('u', i), ('u', i)), ZERO} for i in range(0, n + 1)
+    ] + [
+        {(('u', i + 1), ('u', i), ('u', i + 1)), ZERO} for i in range(0, n)
+    ] + [
+        {(('d', i), ('d', i)), ZERO} for i in range(0, n + 1)
+    ]+ [
+        {(('d', i + 1), ('d', i), ('d', i + 1)), ZERO} for i in range(0, n)
+    ] + [
+        {(('u', i + 1), ('d', i)), ZERO} for i in range(0, n)
+    ] + [
+        {(('d', i), ('u', i + 1)), ZERO} for i in range(0, n)
+    ] + [
+        {(('d', i + 1), ('u', i)), ZERO} for i in range(0, n)
+    ] + [
+        {(('u', i), ('d', i + 1)), ZERO} for i in range(0, n)
+    ] + [
+        {(('u', i), ('u', j)), (('u', j), ('u', i))} for i in range(0, n + 1) for j in range(0, n + 1) if i + 1 < j
+    ] + [
+        {(('d', i), ('d', j)), (('d', j), ('d', i))} for i in range(0, n + 1) for j in range(0, n + 1) if i + 1 < j
+    ] + [
+        {(('u', i), ('d', j)), (('d', j), ('u', i))} for i in range(0, n + 1) for j in range(0, n + 1) if abs(i - j) > 1
+    ]
     # [
     #     {(), (('d', -1), ('u', -1))},
     #     #
@@ -438,30 +474,29 @@ def test_q_schur_relations(n=5):
     # ] + [
     #     {(('u', -i - 1), ('u', -i - 1), ('u', -i)), (('u', -i - 1), ('u', -i), ('u', -i - 1))} for i in range(1, n)
     # ]
-    dictionary = get_dict(expected)
+    span = get_span(get_dict(expected), small)
+    print('\n.\n')
 
-    def check_expected_identities(k1, k2):
+    def check_expected_identities(k1, k2, do_check=True):
         if {k1, k2} in expected:
-            try:
-                assert equals(k1, k2)
-            except:
-                print()
-                print('** failure: ', tag(k1), '!=', tag(k2))
-                # for mu in partitions:
-                #     op1 = small[k1]
-                #     op2 = small[k2]
-                #     if op1(mu) != op2(mu):
-                #         print('  ', mu, ':', op1(mu), '!=', op2(mu))
-                # print()
-                #raise Exception
+            if do_check:
+                try:
+                    assert equals(k1, k2)
+                except:
+                    print()
+                    print('** failure: ', tag(k1), '!=', tag(k2))
+                    # for mu in partitions:
+                    #     op1 = small[k1]
+                    #     op2 = small[k2]
+                    #     if op1(mu) != op2(mu):
+                    #         print('  ', mu, ':', op1(mu), '!=', op2(mu))
+                    # print()
+                    raise Exception
             return True
         return False
 
     relations = set()
     for k1 in sorted(small):
-        #if all(small[k1](mu).is_zero() for mu in partitions):
-            #print('***** zero:', tag(k1))
-            #continue
         for k2 in sorted(small):
             if k1 < k2:
                 if check_expected_identities(k1, k2):
@@ -469,15 +504,17 @@ def test_q_schur_relations(n=5):
                     # print()
                     # print('* expected: ', tag(k1), '=', tag(k2))
                     continue
-                if all(small[k1](mu).is_zero() for mu in partitions):
+                if span[k1] & span[k2]:
                     continue
-                if span(dictionary, k1) & span(dictionary, k2):
-                    continue
+
+#                if all(small[k1](mu).is_zero() for mu in partitions) and k2 != ZERO:
+#                     continue
+
                 if equals(k1, k2):
                     relations.add((k1, k2))
                     print()
                     print('unexpected:', tag(k1), '=', tag(k2))
-                    # raise Exception
+                    raise Exception
     print()
     return relations
 
