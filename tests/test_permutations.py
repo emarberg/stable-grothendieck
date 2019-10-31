@@ -2,6 +2,13 @@ from permutations import Permutation
 from tableaux import Partition
 
 
+def test_init():
+    w = Permutation(1)
+    v = Permutation([1])
+    u = Permutation(*[1])
+    assert u == v == w
+
+
 def test_constructor():
     try:
         Permutation(3)

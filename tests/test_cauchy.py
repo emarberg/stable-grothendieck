@@ -64,6 +64,7 @@ def test_grothendieck_cauchy_fast():
     _test(3, 1)
 
 
+@pytest.mark.slow
 def test_grothendieck_cauchy_fast_two():
     _test(4, 2)
 
@@ -149,6 +150,7 @@ def test_grothendieck_cauchy_q_fast():
     _test_shifted_q(3, 1)
 
 
+@pytest.mark.slow
 def test_grothendieck_cauchy_q_fast_two():
     _test_shifted_q(4, 2)
 
@@ -214,6 +216,7 @@ def test_grothendieck_cauchy_p_fast():
     _test_shifted_p(3, 1)
 
 
+@pytest.mark.slow
 def test_grothendieck_cauchy_p_fast_two():
     _test_shifted_p(4, 2)
 

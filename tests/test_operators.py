@@ -1,5 +1,6 @@
 from vectors import Vector
 from partitions import Partition
+import pytest
 
 
 def compose(*args):
@@ -290,6 +291,7 @@ def get_span(dictionary, keys):
     return span
 
 
+@pytest.mark.slow
 def test_schur_relations(n=4):
 
     def tag(args):
@@ -395,6 +397,7 @@ def small_q_schur_expressions(n):
         yield (('d', i + 1), ('d', i), ('d', i + 1), ('d', i)), compose(g(i + 1), g(i), g(i + 1), g(i))
 
 
+@pytest.mark.slow
 def test_shifted_schur_relations(n=4):
 
     def tag(args):
