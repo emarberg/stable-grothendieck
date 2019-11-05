@@ -230,8 +230,6 @@ def d_symmetric(i):
     return op
 
 
-
-
 def small_schur_expressions(n):
     yield (), compose()
     for i in range(1, n + 1):
@@ -445,38 +443,6 @@ def test_shifted_schur_relations(n=4):
     ] + [
         {(('u', i), ('d', j)), (('d', j), ('u', i))} for i in range(0, n + 1) for j in range(0, n + 1) if abs(i - j) > 1
     ]
-    # [
-    #     {(), (('d', -1), ('u', -1))},
-    #     #
-    #     {(('u', -1), ('d', 1)), (('u', 1), ('d', 1))},
-    #     {(('u', 1), ('d', -1)), (('u', 1), ('d', 1))},
-    #     #
-    #     {(('d', -1), ('u', 1)), (('d', 1), ('u', 1))},
-    #     {(('d', 1), ('u', -1)), (('d', 1), ('u', 1))},
-    #     #
-    #     {(('u', -1), ('u', 1)), (('u', 2), ('u', 1))},
-    #     {(('d', 1), ('d', -1)), (('d', 1), ('d', 2))}
-    # ] + [
-    #     {(('u', i), ('u', j)), (('u', j), ('u', i))} for i in range(1, n + 1) for j in range(1, n + 1) if i + 1 < j
-    # ] + [
-    #     {(('u', -i), ('u', -j)), (('u', -j), ('u', -i))} for i in range(1, n + 1) for j in range(1, n + 1) if i + 1 < j
-    # ] + [
-    #     {(('d', i), ('d', j)), (('d', j), ('d', i))} for i in range(1, n + 1) for j in range(1, n + 1) if i + 1 < j
-    # ] + [
-    #     {(('d', -i), ('d', -j)), (('d', -j), ('d', -i))} for i in range(1, n + 1) for j in range(1, n + 1) if i + 1 < j
-    # ] + [
-    #     {(('d', -i), ('u', i)), (('d', i), ('u', -i))} for i in range(1, n + 1)
-    # ] + [
-    #     {(('u', -i), ('d', i)), (('u', i), ('d', -i))} for i in range(1, n + 1)
-    # ] + [
-    #     {(('d', i), ('u', j)), (('u', j), ('d', i))} for i in range(1, n + 1) for j in range(1, n + 1) if i != j
-    # ] + [
-    #     {(('d', -i), ('u', -j)), (('u', -j), ('d', -i))} for i in range(1, n + 1) for j in range(1, n + 1) if i != j
-    # ] + [
-    #     {(('u', i), ('u', i + 1), ('u', i)), (('u', i + 1), ('u', i), ('u', i))} for i in range(1, n)
-    # ] + [
-    #     {(('u', -i - 1), ('u', -i - 1), ('u', -i)), (('u', -i - 1), ('u', -i), ('u', -i - 1))} for i in range(1, n)
-    # ]
     span = get_span(get_dict(expected), small)
     print('\n.\n')
 
@@ -520,4 +486,3 @@ def test_shifted_schur_relations(n=4):
                     raise Exception
     print()
     return relations
-
