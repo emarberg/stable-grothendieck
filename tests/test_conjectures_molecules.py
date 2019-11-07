@@ -24,7 +24,7 @@ def des_n(pi):
 def dual_equivalence(tab, i):
     word = tab.row_reading_word()
 
-    subword = tuple(a for a in word if a in [i -1, i, i + 1])
+    subword = tuple(a for a in word if a in [i - 1, i, i + 1])
     if subword in [(i, i + 1, i - 1), (i - 1, i + 1, i)]:
         word = tuple(a + (1 if a == i - 1 else -1 if a == i else 0) for a in word)
 
@@ -47,6 +47,7 @@ def representative_m(mu):
         a += b
     return w
 
+
 def representative_n(mu):
     if mu == (2, 2, 2, 2):
         return Permutation(5, 6, 7, 8, 1, 2, 3, 4)
@@ -66,11 +67,14 @@ def representative_n(mu):
         return Permutation(2, 1, 4, 3, 9, 10, 11, 12, 5, 6, 7, 8)
     if mu == (5, 5, 2, 2):
         return Permutation(5, 6, 13, 14, 1, 2, 11, 12, 10, 9, 7, 8, 3, 4)
-        q = sorted([w for w in Permutation.fpf_involutions(12) if des_n(w) == des_m(representative_m(mu))])
-        x = q[0]
-        print(q)
-        return x
-
+    if mu == (3, 3, 3, 3, 3, 3):
+        return Permutation(13, 14, 15, 16, 17, 18, 8, 7, 10, 9, 12, 11, 1, 2, 3, 4, 5, 6)
+    if mu == (4, 4, 3, 3):
+        return Permutation(9, 10, 13, 14, 6, 5, 11, 12, 1, 2, 7, 8, 3, 4)
+        # q = sorted([w for w in Permutation.fpf_involutions(14) if des_n(w) == des_m(representative_m(mu))])
+        # x = q[0]
+        # print(q)
+        # return x
 
     a = 0
     w = Permutation()
@@ -266,4 +270,3 @@ def test_bidirected_edges_m(n=10):
             print(q)
             print()
             assert q == dual_equivalence(p, i)
-
