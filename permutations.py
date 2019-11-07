@@ -56,7 +56,7 @@ class Permutation:
         return self._rank
 
     def __repr__(self):
-        if self.is_unsigned():
+        if False and self.is_unsigned():
             return self.cycle_repr()
         else:
             return (',' if self.rank > 9 else '').join([str(i) for i in self.oneline])

@@ -85,6 +85,20 @@ class Tableau:
             for a in self.boxes[key]
         )
 
+    @classmethod
+    def from_row_reading_word(cls, word):
+        subwords = [[]]
+        for i, a in enumerate(word):
+            if i == 0 or word[i - 1] < a:
+                subwords[-1].append(a)
+            else:
+                subwords.append([a])
+        mapping = {}
+        for i, row in enumerate(reversed(subwords)):
+            for j, entry in enumerate(row):
+                mapping[(i + 1, j + 1)] = entry
+        return Tableau(mapping)
+
     def column_reading_word(self):
         return tuple(
             a for key in sorted(self.boxes, key=lambda x: (x[1], -x[0]))

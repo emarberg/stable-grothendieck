@@ -1,6 +1,19 @@
 from tableaux import Tableau, MarkedReversePlanePartition
 
 
+def test_row_reading_word():
+    t = Tableau()
+    assert t.row_reading_word() == tuple()
+    assert t == Tableau.from_row_reading_word(t.row_reading_word())
+
+    t = Tableau({
+        (1, 1): 1, (1, 2): 3, (1, 3): 4,
+        (2, 1): 2
+    })
+    assert t.row_reading_word() == (2, 1, 3, 4)
+    u = Tableau.from_row_reading_word(t.row_reading_word())
+    assert t == u
+
 def test_standardize():
     t = Tableau({
         (1, 1): 1, (1, 2): (-3, 2), (1, 3): (4, 5), (1, 4): (-7, -6, 7), (1, 5): (9, 10),
