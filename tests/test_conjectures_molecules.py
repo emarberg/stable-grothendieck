@@ -71,10 +71,13 @@ def representative_n(mu):
         return Permutation(13, 14, 15, 16, 17, 18, 8, 7, 10, 9, 12, 11, 1, 2, 3, 4, 5, 6)
     if mu == (4, 4, 3, 3):
         return Permutation(9, 10, 13, 14, 6, 5, 11, 12, 1, 2, 7, 8, 3, 4)
-        # q = sorted([w for w in Permutation.fpf_involutions(14) if des_n(w) == des_m(representative_m(mu))])
-        # x = q[0]
-        # print(q)
-        # return x
+    if mu == (5, 5, 3, 3):
+        return Permutation(9, 10, 15, 16, 6, 5, 13, 14, 1, 2, 12, 11, 7, 8, 3, 4)
+    if mu == (3, 3, 2, 2, 2, 2):
+        q = sorted([w for w in Permutation.fpf_involutions(14) if des_n(w) == des_m(representative_m(mu))])
+        x = q[0]
+        print(q)
+        return x
 
     a = 0
     w = Permutation()
@@ -219,10 +222,29 @@ def construct_molecular_correspondence(mu):
     return mapping
 
 
-def test_molecular_correspondence(k=10):
-    for n in range(2, k + 1, 2):
-        for mu in Partition.generate(n, even_parts=True):
-            construct_molecular_correspondence(Partition.transpose(mu))
+def descent_dicts(n):
+    ndes = {}
+    mdes = {}
+    for w in Permutation.fpf_involutions(n):
+        d = tuple(sorted(des_m(w)))
+        if d not in mdes:
+            mdes[d] = {w}
+        else:
+            mdes[d].add(w)
+
+        d = tuple(sorted(des_n(w)))
+        if d not in mdes:
+            ndes[d] = {w}
+        else:
+            ndes[d].add(w)
+    return mdes, ndes
+
+
+def test_molecular_correspondence(n=10):
+    for mu in Partition.generate(n, even_parts=True):
+        mu = Partition.transpose(mu)
+        construct_molecular_correspondence(mu)
+    # for n in range(2, k + 1, 2):
         # a = get_molecules_m(n)
         # b = get_molecules_n(n)
         # print(a)
