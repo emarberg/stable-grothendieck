@@ -7,6 +7,14 @@ PARTITIONS = {}
 class Partition:
 
     @classmethod
+    def shape(cls, mu):
+        ans = set()
+        for i, a in enumerate(mu):
+            for j in range(a):
+                ans.add((i + 1, j + 1))
+        return ans
+
+    @classmethod
     def remove_inner_corners(cls, mu):
         rows = []
         for i in range(1, len(mu) + 1):

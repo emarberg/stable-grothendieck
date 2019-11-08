@@ -2,6 +2,7 @@ from permutations import Permutation
 from insertion import InsertionAlgorithm
 from tableaux import Tableau
 from partitions import Partition
+from collections import defaultdict
 
 
 def rsk(pi):
@@ -49,48 +50,64 @@ def representative_m(mu):
 
 
 def representative_n(mu):
-    if mu == (2, 2, 2, 2):
-        return Permutation(5, 6, 7, 8, 1, 2, 3, 4)
-    if mu == (3, 3, 2, 2):
-        return Permutation(5, 6, 9, 10, 1, 2, 8, 7, 3, 4)
-    if mu == (2, 2, 2, 2, 1, 1):
-        return Permutation(2, 1, 7, 8, 9, 10, 3, 4, 5, 6)
-    if mu == (4, 4, 2, 2):
-        return Permutation(5, 6, 11, 12, 1, 2, 9, 10, 7, 8, 3, 4)
-    if mu == (3, 3, 3, 3):
-        return Permutation(9, 10, 11, 12, 6, 5, 8, 7, 1, 2, 3, 4)
-    if mu == (3, 3, 2, 2, 1, 1):
-        return Permutation(2, 1, 7, 8, 11, 12, 3, 4, 10, 9, 5, 6)
-    if mu == (2, 2, 2, 2, 2, 2):
-        return Permutation(7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6)
-    if mu == (2, 2, 2, 2, 1, 1, 1, 1):
-        return Permutation(2, 1, 4, 3, 9, 10, 11, 12, 5, 6, 7, 8)
-    if mu == (5, 5, 2, 2):
-        return Permutation(5, 6, 13, 14, 1, 2, 11, 12, 10, 9, 7, 8, 3, 4)
-    if mu == (3, 3, 3, 3, 3, 3):
-        return Permutation(13, 14, 15, 16, 17, 18, 8, 7, 10, 9, 12, 11, 1, 2, 3, 4, 5, 6)
-    if mu == (4, 4, 3, 3):
-        return Permutation(9, 10, 13, 14, 6, 5, 11, 12, 1, 2, 7, 8, 3, 4)
-    if mu == (5, 5, 3, 3):
-        return Permutation(9, 10, 15, 16, 6, 5, 13, 14, 1, 2, 12, 11, 7, 8, 3, 4)
-    if mu == (3, 3, 2, 2, 2, 2):
-        q = sorted([w for w in Permutation.fpf_involutions(14) if des_n(w) == des_m(representative_m(mu))])
-        x = q[0]
-        print(q)
-        return x
-
-    a = 0
+    shape = {
+        (i, j): (i, min(j, mu[i - 1] + 1 - j)) if j != (mu[i - 1] + 1 - j) else (2 * ((i + 1) // 2), j)
+        for (i, j) in Partition.shape(mu)
+    }
+    word = [shape[key] for key in sorted(shape, key=lambda ij: (ij[1], -ij[0]))]
+    pairs = defaultdict(list)
+    for i, key in enumerate(word):
+        pairs[key].append(i + 1)
     w = Permutation()
-    assert len(mu) % 2 == 0
-    mu = [mu[i] for i in range(0, len(mu), 2)]
-    for b in mu:
-        for i in range(b):
-            w *= Permutation.transposition(a + i + 1, a + 2 * b - i)
-            if i % 2 != 0:
-                s = Permutation.s_i(a + i)
-                w = s * w * s
-        a += 2 * b
-    return w.star()
+    for pair in pairs.values():
+        i, j = tuple(pair)
+        w *= Permutation.transposition(i, j)
+    return w
+
+    # if mu == (2, 2, 2, 2):
+    #     return Permutation(5, 6, 7, 8, 1, 2, 3, 4)
+    # if mu == (3, 3, 2, 2):
+    #     return Permutation(5, 6, 9, 10, 1, 2, 8, 7, 3, 4)
+    # if mu == (2, 2, 2, 2, 1, 1):
+    #     return Permutation(2, 1, 7, 8, 9, 10, 3, 4, 5, 6)
+    # if mu == (4, 4, 2, 2):
+    #     return Permutation(5, 6, 11, 12, 1, 2, 9, 10, 7, 8, 3, 4)
+    # if mu == (3, 3, 3, 3):
+    #     return Permutation(9, 10, 11, 12, 6, 5, 8, 7, 1, 2, 3, 4)
+    # if mu == (3, 3, 2, 2, 1, 1):
+    #     return Permutation(2, 1, 7, 8, 11, 12, 3, 4, 10, 9, 5, 6)
+    # if mu == (2, 2, 2, 2, 2, 2):
+    #     return Permutation(7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6)
+    # if mu == (2, 2, 2, 2, 1, 1, 1, 1):
+    #     return Permutation(2, 1, 4, 3, 9, 10, 11, 12, 5, 6, 7, 8)
+    # if mu == (5, 5, 2, 2):
+    #     return Permutation(5, 6, 13, 14, 1, 2, 11, 12, 10, 9, 7, 8, 3, 4)
+    # if mu == (3, 3, 3, 3, 3, 3):
+    #     return Permutation(13, 14, 15, 16, 17, 18, 8, 7, 10, 9, 12, 11, 1, 2, 3, 4, 5, 6)
+    # if mu == (4, 4, 3, 3):
+    #     return Permutation(9, 10, 13, 14, 6, 5, 11, 12, 1, 2, 7, 8, 3, 4)
+    # if mu == (5, 5, 3, 3):
+    #     return Permutation(9, 10, 15, 16, 6, 5, 13, 14, 1, 2, 12, 11, 7, 8, 3, 4)
+    # if mu == (4, 4, 3, 3, 1, 1):
+    #     return Permutation(2, 1, 11, 12, 15, 16, 8, 7, 13, 14, 3, 4, 9, 10, 5, 6)
+    # if mu == (3, 3, 2, 2, 2, 2):
+    #     q = sorted([w for w in Permutation.fpf_involutions(14) if des_n(w) == des_m(representative_m(mu))])
+    #     x = q[0]
+    #     print(q)
+    #     return x
+
+    # a = 0
+    # w = Permutation()
+    # assert len(mu) % 2 == 0
+    # mu = [mu[i] for i in range(0, len(mu), 2)]
+    # for b in mu:
+    #     for i in range(b):
+    #         w *= Permutation.transposition(a + i + 1, a + 2 * b - i)
+    #         if i % 2 != 0:
+    #             s = Permutation.s_i(a + i)
+    #             w = s * w * s
+    #     a += 2 * b
+    # return w.star()
 
 
 def bidirected_edges_m(w):
