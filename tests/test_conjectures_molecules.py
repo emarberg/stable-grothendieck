@@ -5,6 +5,9 @@ from partitions import Partition
 from collections import defaultdict
 
 
+MAPPING_CACHE = {}
+
+
 def rsk(pi):
     return InsertionAlgorithm.hecke(pi.oneline)
 
@@ -42,10 +45,37 @@ def representative_m(mu):
     a = 0
     w = Permutation()
     for b in Partition.transpose(mu):
-        assert b % 2 == 0
         for i in range(b // 2):
             w *= Permutation.transposition(a + i + 1, a + b - i)
         a += b
+    return w
+
+
+def anti_representative_m(mu):
+    t = Tableau({box: i + 1 for i, box in enumerate(sorted(Partition.shape(mu)))})
+    oneline, _ = InsertionAlgorithm.inverse_hecke(t, t)
+    return Permutation(*oneline)
+
+
+def anti_representative_n(mu):
+    mapping = construct_molecular_correspondence(mu)
+    return mapping[anti_representative_m(mu)]
+
+
+def tilde_representative_n(mu):
+    shape = {
+        (i, j): (i, min(j, mu[i - 1] + 1 - j)) if j != (mu[i - 1] + 1 - j) else (i, j)
+        for (i, j) in Partition.shape(mu)
+    }
+    word = [shape[key] for key in sorted(shape, key=lambda ij: (ij[1], -ij[0]))]
+    pairs = defaultdict(list)
+    for i, key in enumerate(word):
+        pairs[key].append(i + 1)
+    w = Permutation()
+    for pair in pairs.values():
+        if len(pair) == 2:
+            i, j = tuple(pair)
+            w *= Permutation.transposition(i, j)
     return w
 
 
@@ -111,7 +141,6 @@ def representative_n(mu):
 
 
 def bidirected_edges_m(w):
-    assert w.is_fpf_involution()
     n = w.rank
 
     for i in range(2, n):
@@ -208,6 +237,8 @@ def double_fac(n):
 
 
 def construct_molecular_correspondence(mu):
+    if mu in MAPPING_CACHE:
+        return MAPPING_CACHE[mu]
     mapping = {}
     w = representative_m(mu)
     mapping[w] = representative_n(mu)
@@ -236,13 +267,14 @@ def construct_molecular_correspondence(mu):
                     assert mapping[y] == z
         level = nextlevel
         a += 1
+    MAPPING_CACHE[mu] = mapping
     return mapping
 
 
 def descent_dicts(n):
     ndes = {}
     mdes = {}
-    for w in Permutation.fpf_involutions(n):
+    for w in Permutation.involutions(n):
         d = tuple(sorted(des_m(w)))
         if d not in mdes:
             mdes[d] = {w}
@@ -257,29 +289,14 @@ def descent_dicts(n):
     return mdes, ndes
 
 
-def test_molecular_correspondence(n=10):
-    for mu in Partition.generate(n, even_parts=True):
-        mu = Partition.transpose(mu)
-        construct_molecular_correspondence(mu)
-    # for n in range(2, k + 1, 2):
-        # a = get_molecules_m(n)
-        # b = get_molecules_n(n)
-        # print(a)
-        # print(b)
-        # print(n)
-        # print()
-        # assert set(a) == set(b)
-        # assert all(len(a[mu]) == len(b[mu]) for mu in a)
-
-
-def test_get_molecules_m(n=10):
+def test_get_molecules_m(n=8):
     ans = {}
-    fpf = set(Permutation.fpf_involutions(n))
-    while fpf:
-        w = fpf.pop()
+    inv = set(Permutation.fpf_involutions(n))
+    while inv:
+        w = inv.pop()
         mu = rsk(w)[0].shape()
         molecule = molecule_m(mu)
-        fpf -= molecule
+        inv -= molecule
         assert mu not in ans
         ans[mu] = molecule
     bns = get_molecules_m(n)
@@ -287,7 +304,25 @@ def test_get_molecules_m(n=10):
     assert all(representative_m(mu) in bns[mu] for mu in bns)
 
 
-def test_get_molecules_n(n=10):
+def test_bidirected_edges_m(n=8):
+    for w in Permutation.fpf_involutions(n):
+        p, _ = rsk(w)
+        for y, i in set(bidirected_edges_m(w)):
+            print(w, '<--', i, '-->', y)
+            q, _ = rsk(y)
+            print(p)
+            print(q)
+            print()
+            assert q == dual_equivalence(p, i)
+
+
+def test_molecular_correspondence(n=8):
+    for mu in Partition.generate(n, even_parts=True):
+        mu = Partition.transpose(mu)
+        construct_molecular_correspondence(mu)
+
+
+def test_get_molecules_n(n=8):
     ans = {}
     fpf = set(Permutation.fpf_involutions(n))
     bns = get_molecules_n(n)
@@ -299,13 +334,48 @@ def test_get_molecules_n(n=10):
     assert all(ans[mu] == bns[mu] for mu in bns)
 
 
-def test_bidirected_edges_m(n=10):
-    for w in Permutation.fpf_involutions(n):
-        p, _ = rsk(w)
-        for y, i in set(bidirected_edges_m(w)):
-            print(w, '<--', i, '-->', y)
-            q, _ = rsk(y)
-            print(p)
-            print(q)
-            print()
-            assert q == dual_equivalence(p, i)
+def test_tilde_representatives(n=8):
+    for nu in Partition.generate(n):
+        w = tilde_representative_n(nu)
+        v = anti_representative_m(Partition.transpose(nu))
+        assert w == v
+
+
+def test_star(n=8):
+    for nu in Partition.generate(n, even_parts=True):
+        mu = Partition.transpose(nu)
+        lu = Partition.transpose(tuple(2 * mu[i] for i in range(0, len(mu), 2)))
+        assert mu == Partition.transpose(tuple(2 * lu[i] for i in range(0, len(lu), 2)))
+
+
+def test_anti_representatives(n=8):
+    for nu in Partition.generate(n, even_parts=True):
+        mu = Partition.transpose(nu)
+        lu = Partition.transpose(tuple(2 * mu[i] for i in range(0, len(mu), 2)))
+        print(mu)
+        print(lu)
+        print()
+
+        assert representative_m(lu) == anti_representative_n(mu)
+
+        # a = representative_m(mu)
+        # b = representative_m(lu)
+        # c = representative_n(mu)
+        # d = representative_n(lu)
+
+        # print('a =', a, a.oneline_repr())
+        # print('b =', b, b.oneline_repr())
+        # print('c =', c, c.oneline_repr())
+        # print('d =', d, d.oneline_repr())
+        # print()
+
+        # a = anti_representative_m(mu)
+        # b = anti_representative_m(lu)
+        # c = anti_representative_n(mu)
+        # d = anti_representative_n(lu)
+
+        # print('a =', a, a.oneline_repr())
+        # print('b =', b, b.oneline_repr())
+        # print('c =', c, c.oneline_repr())
+        # print('d =', d, d.oneline_repr())
+        # print()
