@@ -87,7 +87,7 @@ class Permutation:
         s = ''
         for c in self.cycles:
             if len(c) > 1:
-                s += '(' + ' '.join([str(x) for x in c]) + ')'
+                s += '(' + ', '.join([str(x) for x in c]) + ')'
         return s
 
     @classmethod

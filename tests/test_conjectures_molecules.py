@@ -316,6 +316,34 @@ def test_bidirected_edges_m(n=8):
             assert q == dual_equivalence(p, i)
 
 
+def print_molecular_correspondence(n=8):
+    def wstr(w):
+        return ' $\\barr{c}' + str(w) + ' \\\\ ' + w.oneline_repr() + ' \\earr$ '
+
+    ans = []
+    for n in range(2, n + 1, 2):
+        for mu in Partition.generate(n, even_parts=True):
+            s = []
+            mu = Partition.transpose(mu)
+            mapping = construct_molecular_correspondence(mu)
+            i = 0
+            for v in mapping:
+                w = mapping[v]
+                t, _ = rsk(v)
+                s += ['\n&\n'.join([wstr(v), t.tex(), wstr(w)])]
+                i += 1
+                if i * t.max_row() >= 24:
+                    s += ['\n\\end{tabular} \\newpage \\begin{tabular}{ccc}\nM & Tableau & N \\\\ \\hline ']
+                    i = 0
+            s = '\n \\\\ \\\\ \n'.join(s)
+            ans += ['\\begin{tabular}{ccc}\nM & Tableau & N \\\\ \\hline \\\\ \\\\ \n' + s + '\n\\end{tabular}']
+
+    ans = '\n\n\\newpage\n\n'.join(ans + [''])
+    with open('/Users/emarberg/Dropbox/projects/affine-transitions/notes/eric_notes/examples.tex', 'w') as f:
+        f.write(ans)
+        f.close()
+
+
 def test_molecular_correspondence(n=8):
     for mu in Partition.generate(n, even_parts=True):
         mu = Partition.transpose(mu)

@@ -79,6 +79,14 @@ class Tableau:
     def __lt__(self, other):
         return len(self) < len(other) or (len(self) == len(other) and self._sorting_word < other._sorting_word)
 
+    def tex(self):
+        s = defaultdict(list)
+        for box in sorted(self.boxes):
+            v = ','.join(map(str, self.boxes[box]))
+            s[box[0]] += [v]
+        s = '\n\\\\\n'.join([' & '.join(s[row]) for row in reversed(sorted(s))])
+        return '\\begin{ytableau}\n' + s + '\n\\end{ytableau}'
+
     def row_reading_word(self):
         return tuple(
             a for key in sorted(self.boxes, key=lambda x: (-x[0], x[1]))
