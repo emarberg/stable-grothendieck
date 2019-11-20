@@ -8,8 +8,13 @@ from collections import defaultdict
 MAPPING_CACHE = {}
 
 
-def rsk(pi):
-    return InsertionAlgorithm.hecke(pi.oneline)
+def rsk(pi, n=None):
+    if n is None:
+        n = pi.rank
+    oneline = list(pi.oneline)
+    while len(oneline) < n:
+        oneline += [len(oneline) + 1]
+    return InsertionAlgorithm.hecke(oneline)
 
 
 def des_m(pi):
@@ -329,14 +334,16 @@ def print_molecular_correspondence(n=8):
             i = 0
             for v in mapping:
                 w = mapping[v]
+                w = w * Permutation.longest_element(n)
                 t, _ = rsk(v)
-                s += ['\n&\n'.join([wstr(v), t.tex(), wstr(w)])]
+                p, q = rsk(w, n)
+                s += ['\n&\n'.join([wstr(v), t.tex(), wstr(w), p.tex(), q.tex()])]
                 i += 1
                 if i * t.max_row() >= 24:
-                    s += ['\n\\end{tabular} \\newpage \\begin{tabular}{ccc}\nM & Tableau & N \\\\ \\hline ']
+                    s += ['\n\\end{tabular} \\newpage \\begin{tabular}{ccccc}\nM & Tableau &  N & & \\\\ \\hline ']
                     i = 0
             s = '\n \\\\ \\\\ \n'.join(s)
-            ans += ['\\begin{tabular}{ccc}\nM & Tableau & N \\\\ \\hline \\\\ \\\\ \n' + s + '\n\\end{tabular}']
+            ans += ['\\begin{tabular}{ccccc}\nM & Tableau &   N & & \\\\ \\hline \\\\ \\\\ \n' + s + '\n\\end{tabular}']
 
     ans = '\n\n\\newpage\n\n'.join(ans + [''])
     with open('/Users/emarberg/Dropbox/projects/affine-transitions/notes/eric_notes/examples.tex', 'w') as f:
