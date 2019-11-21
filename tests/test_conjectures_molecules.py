@@ -334,7 +334,7 @@ def print_molecular_correspondence(n=8):
             i = 0
             for v in mapping:
                 w = mapping[v]
-                w = w * Permutation.longest_element(n)
+                # w = w * Permutation.longest_element(n)
                 t, _ = rsk(v)
                 p, q = rsk(w, n)
                 s += ['\n&\n'.join([wstr(v), t.tex(), wstr(w), p.tex(), q.tex()])]
