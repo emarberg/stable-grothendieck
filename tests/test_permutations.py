@@ -200,12 +200,14 @@ def test_involutions():
         Permutation(1, -2)
     }
 
-    assert set(Permutation.involutions(5)) == {
-        w for w in Permutation.all(5) if w.inverse() == w
+    n = 6
+    assert set(Permutation.involutions(n)) == {
+        w for w in Permutation.all(n) if w.inverse() == w
     }
-    assert set(Permutation.involutions(5, True)) == {
-        w for w in Permutation.all(5, True) if w.inverse() == w
+    assert set(Permutation.involutions(n, True)) == {
+        w for w in Permutation.all(n, True) if w.inverse() == w
     }
+    assert len(set(Permutation.involutions(n))) == len(list(Permutation.involutions(n)))
 
     assert set(Permutation.fpf_involutions(4)) == {
         Permutation(2, 1, 4, 3),

@@ -145,9 +145,8 @@ class Permutation:
         if n % 2 != 0 and fpf:
             return
 
-        def create(delta, fixed):
+        def create(delta, fixed, numbers):
             w = Permutation()
-            numbers = [i for i in range(1, n + 1) if i not in fixed]
             for i in range(len(delta)):
                 w *= cls.transposition(numbers[0], numbers[delta[i]])
                 numbers = numbers[1:delta[i]] + numbers[delta[i] + 1:]
@@ -156,15 +155,19 @@ class Permutation:
         if not signed:
             for k in [0] if fpf else range(n, -1, -2):
                 for fixed in itertools.combinations(range(1, n + 1), k):
+                    numbers = [i for i in range(1, n + 1) if i not in fixed]
+                    seen = set()
                     queue = [tuple(range(n - k - 1, 0, -2))]
                     while queue:
                         delta, queue = queue[0], queue[1:]
-                        yield create(delta, fixed)
-                        queue += [
-                            delta[:i] + (delta[i] - 1,) + delta[i + 1:]
-                            for i in range(len(delta))
-                            if delta[i] > 1
-                        ]
+                        yield create(delta, fixed, numbers)
+
+                        for i in range(len(delta)):
+                            if delta[i] > 1:
+                                newdelta = delta[:i] + (delta[i] - 1,) + delta[i + 1:]
+                                if newdelta not in seen:
+                                    queue.append(newdelta)
+                                    seen.add(newdelta)
         else:
             for w in cls.involutions(n, False):
                 a = [i for i in range(1, n + 1) if i <= w(i)]

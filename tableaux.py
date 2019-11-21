@@ -49,6 +49,7 @@ class Tableau:
                 assert type(v) == int
                 return (v,)
 
+        assert all(i > 0 and j > 0 for i, j in mapping)
         self.boxes = {(i, j): tuplize(i, j) for i, j in mapping}
         self._sorting_word = tuple(
             (2 * v if v > 0 else -1 - 2 * v)
@@ -162,6 +163,12 @@ class Tableau:
                 if minval < maxval or (maxval == minval and minval % 2 == 0):
                     return False
         return True
+
+    def is_standard(self):
+        if not self.is_semistandard():
+            return False
+        val = [abs(x) for i, j, value in self for x in value]
+        return tuple(sorted(val)) == tuple(range(1, len(val) + 1))
 
     def crystal_reading_word(self):
         columns = defaultdict(dict)
@@ -281,6 +288,7 @@ class Tableau:
         return ans
 
     def add(self, i, j, v):
+        assert i > 0 and j > 0
         mapping = self.boxes.copy()
         if (i, j) not in self:
             mapping[(i, j)] = v

@@ -8,6 +8,44 @@ from collections import defaultdict
 MAPPING_CACHE = {}
 
 
+def irsk(pi, n=None):
+    if n is None:
+        n = pi.rank
+    cycles = sorted([(pi(i), i) for i in range(1, n + 1) if i <= pi(i)])
+    tab = Tableau()
+    for b, a in cycles:
+        if a == b:
+            tab = tab.add(1, tab.max_column() + 1, a)
+        else:
+            p, q = InsertionAlgorithm.hecke(tab.row_reading_word() + (a,))
+            i, j = q.find(len(q))[0]
+            while j > 1 and (i + 1, j - 1) not in p:
+                j = j - 1
+            tab = p.add(i + 1, j, b)
+    return tab
+
+
+def irsk_inverse(tab):
+    return Permutation(*InsertionAlgorithm.inverse_hecke(tab, tab)[0])
+
+
+def dual_irsk(pi, n=None):
+    if n is None:
+        n = pi.rank
+    cycles = sorted([(pi(i), i) for i in range(1, n + 1) if i <= pi(i)])
+    tab = Tableau()
+    for b, a in cycles:
+        if a == b:
+            tab = tab.add(tab.max_row() + 1, 1, a)
+        else:
+            p, q = InsertionAlgorithm.hecke(tab.row_reading_word() + (a,))
+            i, j = q.find(len(q))[0]
+            while i > 1 and (i - 1, j + 1) not in p:
+                i = i - 1
+            tab = p.add(i, j + 1, b)
+    return tab.transpose()
+
+
 def rsk(pi, n=None):
     if n is None:
         n = pi.rank
@@ -15,6 +53,58 @@ def rsk(pi, n=None):
     while len(oneline) < n:
         oneline += [len(oneline) + 1]
     return InsertionAlgorithm.hecke(oneline)
+
+
+def print_mn_operators(n=8):
+    def wstr(w):
+        return ' $\\barr{c}' + str(w) + ' \\\\ ' + w.oneline_repr() + ' \\earr$ '
+
+    ans = []
+    for n in range(2, n + 1, 2):
+        for mu in Partition.generate(n):
+            s = []
+            i = 0
+            for t in Tableau.standard(mu):
+                u = dual_irsk(irsk_inverse(t), n).transpose()
+                s += ['\n&\n'.join([t.tex(), u.tex()])]
+                i += 1
+                if i * t.max_row() >= 24:
+                    s += ['\n\\end{tabular} \\newpage \\begin{tabular}{ccccc}  Tableau &  Tableau \\\\ \\hline ']
+                    i = 0
+            s = '\n \\\\ \\\\ \n'.join(s)
+            ans += ['\\begin{tabular}{ccccc} Tableau &  Tableau \\\\ \\hline \\\\ \\\\ \n' + s + '\n\\end{tabular}']
+
+    ans = '\n\n\\newpage\n\n'.join(ans + [''])
+    with open('/Users/emarberg/Dropbox/projects/affine-transitions/notes/eric_notes/examples.tex', 'w') as f:
+        f.write(ans)
+        f.close()
+
+
+def test_irsk(n=6):
+    for w in Permutation.involutions(n):
+        p, q = rsk(w)
+        t = irsk(w)
+        print(w)
+        print(p)
+        print(q)
+        print(t)
+        assert t == p == q
+
+
+def test_dual_irsk(n=9):
+    seen = {}
+    for w in Permutation.involutions(n):
+        t = dual_irsk(w, n)
+        assert t.is_standard()
+        shape = Partition.transpose(t.shape())
+        print(w)
+        print(t)
+        print(shape)
+        print()
+        print()
+        assert len([x for x in shape if x % 2 != 0]) == len([i for i in range(1, n + 1) if w(i) == i])
+        assert t not in seen
+        seen[t] = w
 
 
 def des_m(pi):
@@ -337,7 +427,7 @@ def print_molecular_correspondence(n=8):
                 # w = w * Permutation.longest_element(n)
                 t, _ = rsk(v)
                 p, q = rsk(w, n)
-                s += ['\n&\n'.join([wstr(v), t.tex(), wstr(w), p.tex(), q.tex()])]
+                s += ['\n&\n'.join([wstr(v), t.tex(), wstr(w), dual_irsk(w).tex()])]
                 i += 1
                 if i * t.max_row() >= 24:
                     s += ['\n\\end{tabular} \\newpage \\begin{tabular}{ccccc}\nM & Tableau &  N & & \\\\ \\hline ']
@@ -354,7 +444,10 @@ def print_molecular_correspondence(n=8):
 def test_molecular_correspondence(n=8):
     for mu in Partition.generate(n, even_parts=True):
         mu = Partition.transpose(mu)
-        construct_molecular_correspondence(mu)
+        mapping = construct_molecular_correspondence(mu)
+        for v in mapping:
+            w = mapping[v]
+            assert irsk(v) == dual_irsk(w)
 
 
 def test_get_molecules_n(n=8):
