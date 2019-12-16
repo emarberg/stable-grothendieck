@@ -405,6 +405,18 @@ class SymmetricPolynomial(Vector):
             return Vector()
 
     @classmethod
+    def gp_expansion(cls, f):  # noqa
+        if f:
+            t = max(f.highest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            ans = cls.gp_expansion(f - c * cls.dual_stable_grothendieck_p(n, mu))
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
     def GP_expansion(cls, f):  # noqa
         if f:
             t = max(f.lowest_degree_terms())

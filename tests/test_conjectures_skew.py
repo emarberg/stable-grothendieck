@@ -1,4 +1,4 @@
-from utils import G, GP, GQ, GS
+from utils import G, GP, GQ, GS, gp, gq
 from symmetric import SymmetricPolynomial
 from tableaux import Partition
 from vectors import Vector
@@ -63,36 +63,39 @@ def test_skew_GP_positivity(): # noqa
             assert all(c > 0 for c in normalized.values())
 
 
+def is_binary_power(i):
+    return len(list(filter(lambda x: x == '1', bin(i)))) == 1
+
+
+def sgn(mu, nu):
+    boxes = sorted({
+        (i + 1, i + j) for i in range(len(mu)) for j in range(mu[i] + 1, nu[i] + 1)
+    })
+    sgn = 1
+    for i in range(len(boxes)):
+        _, j = boxes[i]
+        sgn *= -1 if i > 0 and boxes[i - 1][1] == j else 1
+    return sgn
+
+
+def zero_one_tuples(n):
+    if n == 0:
+        yield ()
+        return
+    for i in range(2**n):
+        ans = tuple(map(int, list(bin(i))[2:]))
+        yield (n - len(ans)) * (0,) + ans
+
+
 @pytest.mark.slow
 def test_GQ_to_GP_expansion(): # noqa
-    def is_binary_power(i):
-        return len(list(filter(lambda x: x == '1', bin(i)))) == 1
-
-    def sgn(mu, nu):
-        boxes = sorted({
-            (i + 1, i + j) for i in range(len(mu)) for j in range(mu[i] + 1, nu[i] + 1)
-        })
-        sgn = 1
-        for i in range(len(boxes)):
-            _, j = boxes[i]
-            sgn *= -1 if i > 0 and boxes[i - 1][1] == j else 1
-        return sgn
-
-    def zero_one_tuples(n):
-        if n == 0:
-            yield ()
-            return
-        for i in range(2**n):
-            ans = tuple(map(int, list(bin(i))[2:]))
-            yield (n - len(ans)) * (0,) + ans
-
     for mu in Partition.all(25, strict=True):
         print('mu =', mu)
         print()
         print(Partition.printable(mu, shifted=True))
         print()
         n = len(mu)
-        q = GQ(mu, n)
+        q = GQ(n, mu)
         expansion = SymmetricPolynomial.GP_expansion(q)
         normalized = Vector({
             tuple(nu[i] - mu[i] for i in range(len(mu))):
@@ -116,6 +119,38 @@ def test_GQ_to_GP_expansion(): # noqa
         }
         print('  expected =', expected)
         assert set(expansion) == expected
+        print()
+        print()
+
+
+@pytest.mark.slow
+def test_gq_to_gp_expansion(): # noqa
+    for mu in Partition.all(25, strict=True):
+        print('mu =', mu)
+        print()
+        print(Partition.printable(mu, shifted=True))
+        print()
+        n = len(mu)
+        q = gq(n, mu)
+        expansion = SymmetricPolynomial.gp_expansion(q)
+        print('  mu =', mu, 'n =', n)
+        print('  expansion =', expansion)
+        assert all(len(nu) == len(mu) for nu in expansion)
+        assert all(Partition.contains(mu, nu) for nu in expansion)
+        # assert all(c % 2**(len(mu) - sum(nu) + sum(mu)) == 0 for nu, c in expansion.items())
+        assert all(is_binary_power(abs(c)) for c in expansion.values())
+        expected = {}
+        for a in zero_one_tuples(len(mu)):
+            if not all(mu[i - 1] - a[i - 1] > mu[i] - a[i] for i in range(1, len(a))):
+                continue
+            if not all(mu[i] - a[i] > 0 for i in range(len(a))):
+                continue
+            nu = Partition.trim(tuple(mu[i] - a[i] for i in range(len(a))))
+            coeff = 2**(len(nu) - sum(a)) * sgn(nu, mu) * (-1)**sum(a)
+            assert coeff != 0
+            expected[nu] = coeff
+        print('  expected =', expected)
+        assert expansion == Vector(expected)
         print()
         print()
 
