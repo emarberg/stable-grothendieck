@@ -168,6 +168,15 @@ class SymmetricMonomial:
 
 
 class SymmetricPolynomial(Vector):
+    def __init__(self, dictionary={}, printer=None, multiplier=None):
+        self.dictionary = {key: value for key, value in dictionary.items() if value}
+        self.printer = printer
+
+        def m(a, b):
+            for mu, coeff in SymmetricMonomial._multiply(a, b).items():
+                yield SymmetricMonomial(a.order(), mu), coeff
+
+        self.multiplier = m
 
     def __eq__(self, other):
         if type(other) == int:

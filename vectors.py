@@ -1,13 +1,16 @@
+from polynomials import Polynomial
+
 
 class Vector:
 
-    def __init__(self, dictionary={}, printer=None):
+    def __init__(self, dictionary={}, printer=None, multiplier=None):
         self.dictionary = {key: value for key, value in dictionary.items() if value}
         self.printer = printer
+        self.multiplier = multiplier
 
     @classmethod
-    def base(cls, key, printer=None):
-        return cls({key: 1}, printer)
+    def base(cls, key, printer=None, multiplier=None):
+        return cls({key: 1}, printer, multiplier)
 
     def keys(self):
         return self.dictionary.keys()
@@ -49,7 +52,11 @@ class Vector:
             return self
         if type(other) == type(self):
             keys = self.keys() | other.keys()
-            return self.__class__({key: self[key] + other[key] for key in keys}, self.printer or other.printer)
+            return self.__class__(
+                {key: self[key] + other[key] for key in keys},
+                self.printer or other.printer,
+                self.multiplier or other.multiplier
+            )
         else:
             return other.__radd__(self)
 
@@ -58,19 +65,32 @@ class Vector:
             return self
         if type(other) == type(self):
             keys = self.keys() | other.keys()
-            return self.__class__({key: self[key] - other[key] for key in keys}, self.printer or other.printer)
+            return self.__class__(
+                {key: self[key] - other[key] for key in keys},
+                self.printer or other.printer,
+                self.multiplier or other.multiplier
+            )
         else:
             return other.__rsub__(self)
 
     def __mul__(self, other):
-        if type(other) == int:
-            return self.__class__({key: self[key] * other for key in self.keys()}, self.printer)
+        if type(other) in [int, Polynomial]:
+            return self.__class__(
+                {key: self[key] * other for key in self.keys()},
+                self.printer,
+                self.multiplier
+            )
         elif type(other) == type(self):
-            ans = self.__class__(printer=self.printer or other.printer)
+            ans = {}
             for a, x in self.items():
                 for b, y in other.items():
-                    ans += (x * y) * (a * b)
-            return ans
+                    for m, coeff in self.multiplier(a, b) if self.multiplier else [(a * b, 1)]:
+                        ans[m] = ans.get(m, 0) + x * y * coeff
+            return self.__class__(
+                ans,
+                self.printer or other.printer,
+                self.multiplier or other.multiplier
+            )
         else:
             return self * self.base(other)
 
@@ -94,6 +114,8 @@ class Vector:
         return len(self) == 0
 
     def _repr_coeff(self, coeff, key):
+        if type(coeff) == Polynomial and len(coeff) > 1:
+            return ' + (%s)*' % str(coeff)
         if key == '' and coeff > 0:
             return ' + %s' % coeff
         if key == '' and coeff < 0:

@@ -140,6 +140,9 @@ class Polynomial:
 
     __radd__ = __add__
 
+    def __len__(self):
+        return len(self.coeffs)
+
     def __neg__(self):
         return self * (-1)
 
