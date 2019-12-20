@@ -1,6 +1,7 @@
-from polynomials import Polynomial
+from polynomials import Polynomial, X
 from symmetric import SymmetricPolynomial
 from tableaux import Partition
+from polynomials import beta as BETA # noqa
 import pytest
 
 
@@ -86,14 +87,14 @@ def kernel(n, v):
     for i in range(1, v + 1):
         for j in range(1, v + 1):
             a = x(i) * y(j)
-            base = Polynomial.one() - x(i) + x(i) * y(j)
+            base = 1 + BETA * x(i) + x(i) * y(j)
             term = Polynomial.one()
             for e in range(1, n + 1):
                 term += a**e
             base *= term
             term = Polynomial.one()
             for e in range(1, n + 1):
-                term += x(i)**e
+                term += (-BETA * x(i))**e
             base *= term
             t = (t * base).truncate(n)
     return t

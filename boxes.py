@@ -1,5 +1,5 @@
 from vectors import Vector
-from polynomials import Polynomial
+from polynomials import Polynomial, X
 
 
 def r(i):
@@ -32,6 +32,47 @@ def box_operator_relations(tup):
 
 
 class BoxOperator:
+    def filter(self, n):
+        def multiplicities(tup):
+            d = {}
+            for i in tup[1:]:
+                i = abs(i)
+                d[i] = d.get(i, 0) + 1
+            return d
+
+        ans = BoxOperator()
+        ans.vector = Vector({
+            tup: coeff
+            for tup, coeff in self.vector.items()
+            if not any(v - (n - i) > 1 for i, v in multiplicities(tup).items())
+        }, printer=box_operator_printer, multiplier=box_operator_multipler)
+        return ans
+
+    @classmethod
+    def print_commutator(cls, n):
+        s = str(cls.commutator(n))
+        print()
+        terms = sorted(s.split(' + ('), key=lambda x: sorted(x.split(')*')[0].replace('-x', 'x').replace('-', '+').split(' + ')[0].replace('y', 'x').split(' '), reverse=True))
+        print('\n   ' + '\n\n + ('.join(terms) + '\n')
+        print('terms:', len(terms))
+        print()
+
+    @classmethod
+    def commutator(cls, n):
+        x, y = X(1), X(-1)
+
+        lhs = BoxOperator(0)
+        for i in range(n, -n - 1, -1):
+            lhs *= 1 + BoxOperator(0, i) * x
+
+        rhs = BoxOperator(0)
+        for i in range(n, -n - 1, -1):
+            rhs *= 1 + BoxOperator(0, i) * y
+
+        ans = lhs * rhs - rhs * lhs
+        ans = ans.filter(n)
+        return ans
+
     def __init__(self, *args):
         if len(args) == 1 and type(args[0]) in [list, tuple]:
             args = args[0]
@@ -43,16 +84,35 @@ class BoxOperator:
         return repr(self.vector)
 
     def __add__(self, other):
+        other = BoxOperator(0) * other if type(other) in [int, Polynomial] else other
         assert type(other) == BoxOperator
         ans = BoxOperator()
         ans.vector = self.vector + other.vector
         return ans
 
+    def __radd__(self, other):
+        other = BoxOperator(0) * other if type(other) in [int, Polynomial] else other
+        assert type(other) == BoxOperator
+        ans = BoxOperator()
+        ans.vector = other.vector + self.vector
+        return ans
+
     def __sub__(self, other):
+        other = BoxOperator(0) * other if type(other) in [int, Polynomial] else other
         assert type(other) == BoxOperator
         ans = BoxOperator()
         ans.vector = self.vector - other.vector
         return ans
+
+    def __rsub__(self, other):
+        other = BoxOperator(0) * other if type(other) in [int, Polynomial] else other
+        assert type(other) == BoxOperator
+        ans = BoxOperator()
+        ans.vector = other.vector - self.vector
+        return ans
+
+    def __neg__(self):
+        return 0 - self
 
     def __mul__(self, other):
         ans = BoxOperator()
@@ -84,5 +144,7 @@ class BoxOperator:
         return self * other
 
     def __eq__(self, other):
+        if type(other) != BoxOperator and other == 0:
+            return self.vector == 0
         assert type(other) == BoxOperator
         return self.vector == other.vector

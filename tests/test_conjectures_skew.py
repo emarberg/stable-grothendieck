@@ -1,7 +1,8 @@
-from utils import G, GP, GQ, GS, gp, gq
+from utils import G, GP, GQ, GS, gp, gq, g
 from symmetric import SymmetricPolynomial
 from tableaux import Partition
 from vectors import Vector
+from polynomials import beta as BETA # noqa
 import pytest
 
 
@@ -153,6 +154,80 @@ def test_gq_to_gp_expansion(): # noqa
         assert expansion == Vector(expected)
         print()
         print()
+
+
+def _schur_expansion(n, function, shifted=True): # noqa
+    for mu in Partition.all(n, strict=shifted):
+        n = len(mu)
+        p = function(n, mu)
+        expansion = SymmetricPolynomial.schur_expansion(p)
+        expansion = {nu: coeff * (-1)**(sum(mu) - sum(nu)) for nu, coeff in expansion.items()}
+        print('mu =', mu)
+        print()
+        print(Partition.printable(mu, shifted=shifted))
+        print()
+        print('  mu =', mu, 'n =', n)
+        print('  expansion =', expansion)
+        print()
+        assert all(v > 0 for v in expansion.values())
+
+
+def _dual_grothendieck_expansion(n, function, shifted=True, unsigned=True): # noqa
+    for mu in Partition.all(n, strict=shifted):
+        n = len(mu)
+        p = function(n, mu)
+        ansion = SymmetricPolynomial.dual_grothendieck_expansion(p)
+        if unsigned:
+            expansion = {
+                nu: coeff * (-1)**abs(sum(mu) - sum(nu))
+                for nu, coeff in ansion.items()
+            }
+        else:
+            expansion = ansion
+        print('mu =', mu)
+        print()
+        print(Partition.printable(mu, shifted=shifted))
+        print()
+        print('  mu =', mu, 'n =', n)
+        print('  expansion =', ansion)
+        print('  unsigned expansion =', expansion)
+        print()
+        assert all(v > 0 for v in expansion.values())
+
+
+def test_gp_to_schur_expansion(): # noqa
+    _schur_expansion(8, gp)
+
+
+def test_gp_to_schur_expansion(): # noqa
+    _schur_expansion(8, gq)
+
+
+def test_G_to_g_expansion(): # noqa
+    _dual_grothendieck_expansion(8, G, False, unsigned=False)
+
+
+def test_GQ_to_g_expansion(): # noqa
+    _dual_grothendieck_expansion(8, GQ, unsigned=False)
+
+
+def test_GP_to_g_expansion(): # noqa
+    _dual_grothendieck_expansion(8, GP, unsigned=False)
+
+
+def test_gq_to_g_expansion(): # noqa
+    assert gq(2, (3, 1)) == \
+        -4 * (BETA**2) * (-1)**2 * g(2, (2,)) + \
+        2 * BETA * (-1) * g(2, (2, 1)) + \
+        4 * g(2, (2, 2)) + \
+        4 * g(2, (3, 1))
+
+def test_gp_to_g_expansion(): # noqa
+    assert gp(2, (3, 1)) == \
+        -(BETA**2) * (-1)**2 * g(2, (2,)) + \
+        BETA * (-1) * g(2, (2, 1)) + \
+        g(2, (2, 2)) + \
+        g(2, (3, 1))
 
 
 @pytest.mark.slow

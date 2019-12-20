@@ -3,6 +3,7 @@ from symmetric import SymmetricPolynomial, SymmetricMonomial
 from words import Word
 from vectors import Vector
 from tableaux import Partition, Tableau
+from polynomials import beta as BETA # noqa
 from collections import defaultdict
 
 HECKE_CACHE = defaultdict(list)
@@ -651,7 +652,7 @@ class Permutation:
         ans = Vector()
         ell = self.length
         for w in self.get_hecke_words(degree_bound, n):
-            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
+            ans += BETA**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
         return self._symmetrize(ans, n)
 
     def signed_involution_stable_grothendieck(self, n, degree_bound=None):
@@ -659,7 +660,7 @@ class Permutation:
         ans = Vector()
         ell = self.involution_length
         for w in self.get_involution_hecke_words(degree_bound, n):
-            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.unimodal_zeta)
+            ans += BETA**(len(w) - ell) * Word.quasisymmetrize(w, Word.unimodal_zeta)
         return self._symmetrize(ans, n)
 
     def symplectic_stable_grothendieck(self, n, degree_bound=None):
@@ -667,7 +668,7 @@ class Permutation:
         ans = Vector()
         ell = self.fpf_involution_length
         for w in self.get_symplectic_hecke_words(degree_bound, n):
-            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
+            ans += BETA**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
         return self._symmetrize(ans, n)
 
     def involution_stable_grothendieck(self, n, degree_bound=None):
@@ -675,7 +676,7 @@ class Permutation:
         ans = Vector()
         ell = self.involution_length
         for w in self.get_involution_hecke_words(degree_bound, n):
-            ans += (-1)**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
+            ans += BETA**(len(w) - ell) * Word.quasisymmetrize(w, Word.decreasing_zeta)
         return self._symmetrize(ans, n)
 
     @property

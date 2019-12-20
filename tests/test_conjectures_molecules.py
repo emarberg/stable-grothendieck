@@ -91,7 +91,7 @@ def test_irsk(n=6):
         assert t == p == q
 
 
-def test_dual_irsk(n=9):
+def test_dual_irsk(n=7):
     seen = {}
     for w in Permutation.involutions(n):
         t = dual_irsk(w, n)

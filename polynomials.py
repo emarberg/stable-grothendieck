@@ -234,7 +234,9 @@ class Polynomial:
         #     return "s"
         # if i == 8:
         #     return "r"
-        if i >= 0:
+        if i == 0:
+            return 'β'
+        elif i > 0:
             return "x_" + str(i)
         else:
             return "y_" + str(-i)
@@ -288,3 +290,6 @@ class Polynomial:
     @classmethod
     def y(cls, i):
         return cls.monomial(-i)
+
+
+beta = X(0)

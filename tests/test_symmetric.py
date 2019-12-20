@@ -3,29 +3,30 @@ from tableaux import Tableau, Partition
 from polynomials import Polynomial, X
 from utils import G, GQ, GP, G_doublebar, GP_doublebar, GQ_doublebar
 import itertools
+from polynomials import beta as BETA # noqa
 import pytest
 
 
 def test_doublebar():
-    assert  G(1, (), (1,)) == 0
-    assert  G_doublebar(1, (), (1,)) == 0
+    assert G(1, (), (1,)) == 0
+    assert G_doublebar(1, (), (1,)) == 0
 
-    assert  GP(1, (), (1,)) == 0
-    assert  GP_doublebar(1, (), (1,)) == 0
+    assert GP(1, (), (1,)) == 0
+    assert GP_doublebar(1, (), (1,)) == 0
 
-    assert  GQ(1, (), (1,)) == 0
-    assert  GQ_doublebar(1, (), (1,)) == 0
+    assert GQ(1, (), (1,)) == 0
+    assert GQ_doublebar(1, (), (1,)) == 0
 
 
 def test_multipeak_formula():
     """
     Tests that explicit summation formula for
 
-      K^{(-1)}_{(2,1)}(x_1, x_2, ..., x_N)
+      K^{(beta)}_{(2,1)}(x_1, x_2, ..., x_N)
 
     is the same as
 
-      GQ^{(-1)}_{(2,1)}(x_1, x_2, ... ,x_N)
+      GQ^{(beta)}_{(2,1)}(x_1, x_2, ... ,x_N)
 
     """
     mu = (2, 1)
@@ -33,16 +34,16 @@ def test_multipeak_formula():
         ans = 0
         for n in range(2, N + 1):
             for i in itertools.combinations(range(1, N + 1), n):
-                term = 1 if (n - 3) % 2 == 0 else -1
+                term = BETA**(n - 3)
                 for j in range(n):
                     x = X(i[j])
-                    term *= (2 * x - x**2)
+                    term *= (2 * x + BETA * x**2)
                 sigma = (n - 1) * (n - 2) // 2
                 for j in range(n):
                     for k in range(j + 1, n):
                         x = X(i[j])
                         y = X(i[k])
-                        sigma -= (x + y - x * y)
+                        sigma += BETA * (x + y + BETA * x * y)
                 print(i, term * sigma)
                 ans += term * sigma
         bns = GQ(N, mu).polynomial()
@@ -70,7 +71,7 @@ def test_overline_multipeak_formula():
         ans = 0
         for n in range(2, N + 1):
             for i in itertools.combinations(range(1, N + 1), n):
-                term = 1 if (n - 3) % 2 == 0 else -1
+                term = BETA**(n - 3)
                 for t in range(n):
                     term *= X(i[t])
                 for j in range(n):
@@ -79,11 +80,11 @@ def test_overline_multipeak_formula():
                         y = X(i[k])
                         pi = 1
                         if j + 1 == k:
-                            pi *= -(x + y - x * y)
+                            pi *= BETA * (x + y + BETA * x * y)
                         else:
-                            pi *= (1 - x) * (1 - y)
+                            pi *= (1 + BETA * x) * (1 + BETA * y)
                             for t in range(j + 1, k):
-                                pi *= (2 - X(i[t]))
+                                pi *= (2 + BETA * X(i[t]))
                         print(i, j, k, term * pi)
                         print()
                         ans += term * pi
@@ -208,7 +209,7 @@ def test_slow_dual_stable_grothendieck():
         print(t)
     g = SymmetricPolynomial._slow_dual_stable_grothendieck(n, mu)
     print(g)
-    assert g == SymmetricMonomial(n, (1, 1)) + SymmetricMonomial(n, (2,)) + 2 * SymmetricMonomial(n, (1, 1, 1)) + SymmetricMonomial(n, (2, 1))
+    assert g == -BETA * SymmetricMonomial(n, (1, 1)) - BETA * SymmetricMonomial(n, (2,)) + 2 * SymmetricMonomial(n, (1, 1, 1)) + SymmetricMonomial(n, (2, 1))
 
 
 def test_slow_dual_stable_grothendieck_pq():
@@ -241,7 +242,7 @@ def test_slow_dual_stable_grothendieck_pq():
     print(g)
     print(h)
     print()
-    assert g == SymmetricMonomial(n, (1, 1)) + SymmetricMonomial(n, (2,)) + 2 * SymmetricMonomial(n, (1, 1, 1)) + SymmetricMonomial(n, (2, 1))
+    assert g == -BETA * SymmetricMonomial(n, (1, 1)) + -BETA * SymmetricMonomial(n, (2,)) + 2 * SymmetricMonomial(n, (1, 1, 1)) + SymmetricMonomial(n, (2, 1))
 
     n = 5
     mu = (3, 2)
