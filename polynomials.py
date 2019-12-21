@@ -49,6 +49,11 @@ class Polynomial:
         assert type(o) == int
         return Polynomial({k: v % o for k, v in self.coeffs.items() if v % o != 0})
 
+    def __truediv__(self, o):
+        assert type(o) == int
+        assert all(v % o == 0 for v in self.coeffs.values())
+        return Polynomial({k: v // o for k, v in self.coeffs.items()})
+
     def __floordiv__(self, o):
         assert type(o) == int
         return Polynomial({k: v // o for k, v in self.coeffs.items() if v // o != 0})

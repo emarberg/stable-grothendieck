@@ -100,7 +100,7 @@ def test_GQ_to_GP_expansion(): # noqa
         expansion = SymmetricPolynomial.GP_expansion(q)
         normalized = Vector({
             tuple(nu[i] - mu[i] for i in range(len(mu))):
-            c * sgn(mu, nu) * (-1)**(sum(nu) - sum(mu)) / 2**(len(mu) - sum(nu) + sum(mu))
+            c * sgn(mu, nu) * BETA**(sum(nu) - sum(mu)) / 2**(len(mu) - sum(nu) + sum(mu))
             for nu, c in expansion.items()
         })
         unsigned = all(c > 0 for c in normalized.values())
@@ -111,7 +111,6 @@ def test_GQ_to_GP_expansion(): # noqa
         assert all(len(nu) == len(mu) for nu in expansion)
         assert all(Partition.contains(nu, mu) for nu in expansion)
         assert all(c % 2**(len(mu) - sum(nu) + sum(mu)) == 0 for nu, c in expansion.items())
-        assert all(is_binary_power(abs(c)) for c in expansion.values())
         assert unsigned
         expected = {
             tuple(mu[i] + a[i] for i in range(len(a)))
@@ -126,7 +125,7 @@ def test_GQ_to_GP_expansion(): # noqa
 
 @pytest.mark.slow
 def test_gq_to_gp_expansion(): # noqa
-    for mu in Partition.all(25, strict=True):
+    for mu in Partition.all(15, strict=True):
         print('mu =', mu)
         print()
         print(Partition.printable(mu, shifted=True))
@@ -139,7 +138,6 @@ def test_gq_to_gp_expansion(): # noqa
         assert all(len(nu) == len(mu) for nu in expansion)
         assert all(Partition.contains(mu, nu) for nu in expansion)
         # assert all(c % 2**(len(mu) - sum(nu) + sum(mu)) == 0 for nu, c in expansion.items())
-        assert all(is_binary_power(abs(c)) for c in expansion.values())
         expected = {}
         for a in zero_one_tuples(len(mu)):
             if not all(mu[i - 1] - a[i - 1] > mu[i] - a[i] for i in range(1, len(a))):
@@ -147,7 +145,7 @@ def test_gq_to_gp_expansion(): # noqa
             if not all(mu[i] - a[i] > 0 for i in range(len(a))):
                 continue
             nu = Partition.trim(tuple(mu[i] - a[i] for i in range(len(a))))
-            coeff = 2**(len(nu) - sum(a)) * sgn(nu, mu) * (-1)**sum(a)
+            coeff = 2**(len(nu) - sum(a)) * sgn(nu, mu) * BETA**sum(a)
             assert coeff != 0
             expected[nu] = coeff
         print('  expected =', expected)
@@ -156,27 +154,11 @@ def test_gq_to_gp_expansion(): # noqa
         print()
 
 
-def _schur_expansion(n, function, shifted=True): # noqa
+def _expansion(n, function, expand, shifted=True, unsigned=True): # noqa
     for mu in Partition.all(n, strict=shifted):
         n = len(mu)
         p = function(n, mu)
-        expansion = SymmetricPolynomial.schur_expansion(p)
-        expansion = {nu: coeff * (-1)**(sum(mu) - sum(nu)) for nu, coeff in expansion.items()}
-        print('mu =', mu)
-        print()
-        print(Partition.printable(mu, shifted=shifted))
-        print()
-        print('  mu =', mu, 'n =', n)
-        print('  expansion =', expansion)
-        print()
-        assert all(v > 0 for v in expansion.values())
-
-
-def _dual_grothendieck_expansion(n, function, shifted=True, unsigned=True): # noqa
-    for mu in Partition.all(n, strict=shifted):
-        n = len(mu)
-        p = function(n, mu)
-        ansion = SymmetricPolynomial.dual_grothendieck_expansion(p)
+        ansion = expand(p)
         if unsigned:
             expansion = {
                 nu: coeff * (-1)**abs(sum(mu) - sum(nu))
@@ -190,9 +172,18 @@ def _dual_grothendieck_expansion(n, function, shifted=True, unsigned=True): # no
         print()
         print('  mu =', mu, 'n =', n)
         print('  expansion =', ansion)
-        print('  unsigned expansion =', expansion)
+        if unsigned:
+            print('  unsigned expansion =', expansion)
         print()
         assert all(v > 0 for v in expansion.values())
+
+
+def _schur_expansion(n, function, shifted=True): # noqa
+    _expansion(n, function, SymmetricPolynomial.schur_expansion, shifted)
+
+
+def _dual_grothendieck_expansion(n, function, shifted=True, unsigned=True): # noqa
+    _expansion(n, function, SymmetricPolynomial.dual_grothendieck_expansion, shifted, unsigned)
 
 
 def test_gp_to_schur_expansion(): # noqa
@@ -204,7 +195,7 @@ def test_gp_to_schur_expansion(): # noqa
 
 
 def test_G_to_g_expansion(): # noqa
-    _dual_grothendieck_expansion(8, G, False, unsigned=False)
+    _dual_grothendieck_expansion(8, G, shifted=False, unsigned=False)
 
 
 def test_GQ_to_g_expansion(): # noqa
@@ -254,8 +245,8 @@ def test_dewitt_conjecture(n=5):
             if n < len(a) and n < len(b):
                 continue
 
-            gs = GS(a, n)
-            gq = GQ(b, n)
+            gs = GS(n, a)
+            gq = GQ(n, b)
             print('GS =', gs)
             print()
             print('GQ =', gq)
