@@ -45,6 +45,14 @@ class Polynomial:
     def __init__(self, coeffs={}):
         self.coeffs = coeffs
 
+    def __mod__(self, o):
+        assert type(o) == int
+        return Polynomial({k: v % o for k, v in self.coeffs.items() if v % o != 0})
+
+    def __floordiv__(self, o):
+        assert type(o) == int
+        return Polynomial({k: v // o for k, v in self.coeffs.items() if v // o != 0})
+
     def truncate(self, degree_bound):
         return self.__class__({
             mon: coeff

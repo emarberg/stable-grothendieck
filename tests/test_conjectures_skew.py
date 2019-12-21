@@ -18,7 +18,7 @@ def test_staircase_grothendieck_GP_positivity(): # noqa
             f = G(n, delta, nu)
             expansion = SymmetricPolynomial.GP_expansion(f)
             normalized = Vector({
-                lam: c * (-1)**(sum(lam) - sum(delta) + sum(nu))
+                lam: c * BETA**(sum(lam) - sum(delta) + sum(nu))
                 for lam, c in expansion.items()
             })
             print('G_{%s/%s}(x_%s) =' % (delta, nu, n), normalized)
@@ -28,7 +28,7 @@ def test_staircase_grothendieck_GP_positivity(): # noqa
 
 @pytest.mark.slow
 def test_skew_GQ_positivity(): # noqa
-    k = 15
+    k = 10
     for mu in Partition.all(k, strict=True):
         for nu in Partition.all(k, strict=True):
             if not Partition.contains(mu, nu):
@@ -37,7 +37,7 @@ def test_skew_GQ_positivity(): # noqa
             f = GQ(n, mu, nu)
             expansion = SymmetricPolynomial.GQ_expansion(f)
             normalized = Vector({
-                lam: c * (-1)**(sum(lam) - sum(mu) + sum(nu))
+                lam: c * BETA**(sum(lam) - sum(mu) + sum(nu))
                 for lam, c in expansion.items()
             })
             print('GQ_{%s/%s}(x_%s) =' % (mu, nu, n), normalized)
@@ -47,7 +47,7 @@ def test_skew_GQ_positivity(): # noqa
 
 @pytest.mark.slow
 def test_skew_GP_positivity(): # noqa
-    k = 15
+    k = 10
     for mu in Partition.all(k, strict=True):
         for nu in Partition.all(k, strict=True):
             if not Partition.contains(mu, nu):
@@ -56,7 +56,7 @@ def test_skew_GP_positivity(): # noqa
             f = GP(n, mu, nu)
             expansion = SymmetricPolynomial.GP_expansion(f)
             normalized = Vector({
-                lam: c * (-1)**(sum(lam) - sum(mu) + sum(nu))
+                lam: c * BETA**(sum(lam) - sum(mu) + sum(nu))
                 for lam, c in expansion.items()
             })
             print('GP_{%s/%s}(x_%s) =' % (mu, nu, n), normalized)

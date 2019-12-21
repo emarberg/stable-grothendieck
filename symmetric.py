@@ -441,7 +441,7 @@ class SymmetricPolynomial(Vector):
             assert g[t] == 2**len(mu)
             assert c % 2**len(mu) == 0
             c = c // 2**len(mu)
-            ans = cls.GQ_expansion(f - c * g)
+            ans = cls.gq_expansion(f - c * g)
             return ans + Vector({mu: c})
         else:
             return Vector()
@@ -477,9 +477,11 @@ class SymmetricPolynomial(Vector):
             n = t.n
             c = f[t]
             mu = t.index()
+            g = cls.stable_grothendieck_q(n, mu)
+            assert g[t] == 2**len(mu)
             assert c % 2**len(mu) == 0
             c = c // 2**len(mu)
-            ans = cls.GQ_expansion(f - c * cls.stable_grothendieck_q(n, mu))
+            ans = cls.GQ_expansion(f - c * g)
             return ans + Vector({mu: c})
         else:
             return Vector()
