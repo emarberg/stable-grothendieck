@@ -145,12 +145,12 @@ class Tableau:
             c += 1
         return True
 
-    def is_semistandard(self):
+    def is_semistandard(self, diagonal_primes=False):
         def dbl(v):
             return (2 * v) if v > 0 else (-1 - 2 * v)
 
         for i, j, values in self:
-            if min(values) < 0 and i == j:
+            if i == j and not diagonal_primes and min(values) < 0:
                 return False
 
             maxval = max({dbl(v) for v in values})
@@ -311,6 +311,12 @@ class Tableau:
         if len(mapping[(i, j)]) == 0:
             del mapping[(i, j)]
         return self.__class__(mapping)
+
+    def set(self, i, j, v):
+        if (i, j) in self:
+            return self.replace(i, j, v)
+        else:
+            return self.add(i, j, v)
 
     def replace(self, i, j, v):
         assert (i, j) in self

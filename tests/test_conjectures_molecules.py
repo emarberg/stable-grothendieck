@@ -43,7 +43,92 @@ def dual_irsk(pi, n=None):
             while i > 1 and (i - 1, j + 1) not in p:
                 i = i - 1
             tab = p.add(i, j + 1, b)
-    return tab.transpose()
+    return tab
+
+
+def _dual_irsk_inverse_helper(tab):
+    if len(tab) == 0:
+        return []
+
+    n = max(tab.values())
+    i, j = tab.find(n)[0]
+
+    if j == 1:
+        return _dual_irsk_inverse_helper(tab.remove(i, j)) + [(n, n)]
+    else:
+        tab = tab.remove(i, j)
+        j = j - 1
+
+        i = 1
+        while (i + 1, j) in tab:
+            i += 1
+
+        a = tab.get(i, j)
+        tab = tab.remove(i, j)
+        while i > 1:
+            i = i - 1
+            j = 1
+            while (i, j + 1) in tab and tab.get(i, j + 1) < a:
+                j += 1
+            a, tab = tab.get(i, j), tab.set(i, j, a)
+
+        return _dual_irsk_inverse_helper(tab) + [(a, n)]
+
+
+def dual_irsk_inverse(tab):
+    ans = Permutation()
+    for a, b in _dual_irsk_inverse_helper(tab):
+        if a != b:
+            ans *= Permutation.transposition(a, b)
+    return ans
+
+
+def test_dual_irsk_inverse(n=6):
+    for w in Permutation.involutions(n):
+        tab = dual_irsk(w, n)
+        v = dual_irsk_inverse(tab)
+        assert v == w
+
+
+def print_involution_operation(n=6):
+    for w in Permutation.involutions(n):
+        tab = irsk(w).transpose()
+        v = dual_irsk_inverse(tab)
+        print(w, '->', v)
+        print(tab)
+        print()
+        print()
+        print()
+        print()
+
+
+def print_tableau_operation(n=6):
+    mapping = {}
+    for mu in Partition.generate(n):
+        for tab in Tableau.standard(mu):
+            w = irsk_inverse(tab)
+            ntab = dual_irsk(w, sum(mu)).transpose()
+            mapping[tab] = ntab
+            print(tab)
+            print('w =', w)
+            print(ntab)
+            #lines = str(tab).split('\n')
+            #nlines = str(ntab).split('\n')
+            #assert len(lines) == len(nlines)
+            #print('\n'.join([lines[i] + ' -> ' + nlines[i] for i in range(len(lines))]))
+            print()
+            print()
+            print()
+            print()
+    orders = {}
+    for tab in mapping:
+        o = 1
+        x = mapping[tab]
+        while x != tab:
+            o += 1
+            x = mapping[x]
+        orders[tab] = o
+    return orders, mapping
 
 
 def rsk(pi, n=None):

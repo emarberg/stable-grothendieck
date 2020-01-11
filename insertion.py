@@ -11,6 +11,94 @@ HSTATE_CACHE = {}
 class InsertionAlgorithm:
 
     @classmethod
+    def unprime_diagonal(cls, tableau):
+        i = 1
+        while (i, i) in tableau:
+            u = tableau.get(i, i, unpack=False)
+            if len(u) > 1 and min(u) < 0:
+                v = sorted(-x for x in u if x < 0)
+                w = sorted(x for x in u if x > 0)
+
+                if not (len(v) == 1 and v[0] > max(w)):
+                    newvalue = tuple(sorted([v[0]] + [x for x in w if x < v[0]]))
+                    addvalue = tuple(sorted([-x for x in v[1:]] + [x for x in w if v[0] <= x]))
+
+                    tableau = tableau.set(i, i, newvalue)
+                    j = i + 1
+                    while addvalue:
+                        tableau, addvalue = cls.setvalued_column_insert(tableau, addvalue, j)
+                        j += 1
+            i += 1
+        return tableau
+
+    @classmethod
+    def setvalued_column_insert(cls, tableau, setvalue, column):
+        def encode(it):
+            return sorted([(-1 - 2 * v if v < 0 else 2 * v) for v in it])
+
+        def decode(it):
+            return tuple(sorted([-(x + 1) // 2 if x % 2 != 0 else x // 2 for x in it]))
+
+        def bump_location(boxes, value):
+            for i in range(len(boxes)):
+                for j in range(len(boxes[i])):
+                    if value <= boxes[i][j] and value % 2 == 0:
+                        return (i, j)
+                    if value < boxes[i][j] and value % 2 != 0:
+                        return (i, j)
+            return (len(boxes), 0)
+        #
+        if (1, column) not in tableau:
+            return tableau.set(1, column, tuple(sorted(setvalue))), None
+        #
+        nrows = 1
+        while (nrows + 1, column) in tableau:
+            nrows += 1
+        #
+        bound = [
+            max(encode(tableau.get(i + 1, column - 1, unpack=False)))
+            if (i + 1, column - 1) in tableau
+            else 0
+            for i in range(nrows + 1)
+        ]
+        #
+        boxes = [encode(tableau.get(i + 1, column, unpack=False)) for i in range(nrows)]
+        values = encode(setvalue)
+        #
+        bumps = []
+        for v in values:
+            (i, j) = bump_location(boxes, v)
+            if bumps and bumps[-1][0] == i:
+                bumps[-1][-1] += [v]
+            else:
+                bumps += [[i, j, [v]]]
+        #
+        ans = []
+        for i, j, val in reversed(bumps):
+            if i == len(boxes):
+                boxes += [val]
+                continue
+            v, b = val[0], boxes[i][j]
+            ans = boxes[i][j:] + ans
+            add = [v] + [
+                u for u in val[1:]
+                if u <= b and
+                not (0 != bound[i + 1] < u or (0 != bound[i + 1] == u and u % 2 == 0))
+            ]
+            left = val[len(add):]
+            boxes[i][j:] = add
+            #
+            if left:
+                if i + 1 == len(boxes):
+                    boxes += [[]]
+                boxes[i + 1] = left + boxes[i + 1]
+        #
+        for i, box in enumerate(boxes):
+            tup = decode(box)
+            tableau = tableau.set(i + 1, column, tup)
+        return tableau, decode(ans)
+
+    @classmethod
     def _check_record(cls, word, record, multisetvalued=True):
         record = tuple(range(1, len(word) + 1)) if record is None else record
         assert len(word) == len(record)
