@@ -181,7 +181,7 @@ def test_dual_irsk(n=7):
     for w in Permutation.involutions(n):
         t = dual_irsk(w, n)
         assert t.is_standard()
-        shape = Partition.transpose(t.shape())
+        shape = t.shape() # Partition.transpose(t.shape())
         print(w)
         print(t)
         print(shape)
@@ -532,7 +532,7 @@ def test_molecular_correspondence(n=8):
         mapping = construct_molecular_correspondence(mu)
         for v in mapping:
             w = mapping[v]
-            assert irsk(v) == dual_irsk(w)
+            assert irsk(v).transpose() == dual_irsk(w)
 
 
 def test_get_molecules_n(n=8):
