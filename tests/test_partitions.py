@@ -100,3 +100,15 @@ def test_subpartitions():
     assert set(Partition.subpartitions([1, 1], True)) == {(), (1,)}
     assert set(Partition.subpartitions([2, 1], True)) == {(), (1,), (2,), (2, 1)}
     assert len(list(Partition.subpartitions([2, 1], True))) == 4
+
+
+def test_find_shifted_corners():
+    mu = (3, 2, 1)
+    assert Partition.find_shifted_inner_corner(mu, 0) == 3
+    assert Partition.find_shifted_inner_corner(mu, 1) is None
+    assert Partition.find_shifted_inner_corner(mu, 2) is None
+
+    assert Partition.find_shifted_outer_corner(mu, 0) is None
+    assert Partition.find_shifted_outer_corner(mu, 1) is None
+    assert Partition.find_shifted_outer_corner(mu, 2) is None
+    assert Partition.find_shifted_outer_corner(mu, 3) == 1

@@ -11,7 +11,17 @@ class HashableDict(dict):
         return d
 
 
-def X(i):
+def X(i=None):
+    if i is None:
+        i = Polynomial.MAX_INT
+    assert i >= 0
+    return Polynomial.x(i)
+
+
+def Y(i=None):
+    if i is None:
+        i = Polynomial.MIN_INT
+    assert i <= 0
     return Polynomial.x(i)
 
 
@@ -38,6 +48,9 @@ class Polynomial:
 
 
     """
+
+    MAX_INT = 2**64 - 1
+    MIN_INT = -MAX_INT
 
     def __bool__(self):
         return not self.is_zero()
@@ -249,6 +262,10 @@ class Polynomial:
         #     return "r"
         if i == 0:
             return 'β'
+        elif i == cls.MAX_INT:
+            return 'x'
+        elif i == cls.MIN_INT:
+            return 'y'
         elif i > 0:
             return "x_" + str(i)
         else:

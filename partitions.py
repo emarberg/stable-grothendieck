@@ -7,11 +7,30 @@ PARTITIONS = {}
 class Partition:
 
     @classmethod
+    def add(cls, mu, row):
+        if row <= len(mu):
+            mu = list(mu)
+            mu[row - 1] += 1
+            return tuple(mu)
+        elif row == len(mu) + 1:
+            mu = tuple(mu) + (1,)
+            return mu
+        raise Exception
+
+    @classmethod
     def shape(cls, mu):
         ans = set()
         for i, a in enumerate(mu):
             for j in range(a):
                 ans.add((i + 1, j + 1))
+        return ans
+
+    @classmethod
+    def shifted_shape(cls, mu):
+        ans = set()
+        for i, a in enumerate(mu):
+            for j in range(a):
+                ans.add((i + 1, i + j + 1))
         return ans
 
     @classmethod
@@ -45,14 +64,33 @@ class Partition:
         raise Exception
 
     @classmethod
+    def find_shifted_outer_corner(cls, mu, diagonal):
+        shape = cls.shifted_shape(mu)
+        i, j = 1, 1 + diagonal
+        while (i, j) in shape:
+            i, j = i + 1, j + 1
+        if (i == 1 or (i - 1, j) in shape) and (i == j or (i, j - 1) in shape):
+            return i
+        return None
+
+    @classmethod
+    def find_shifted_inner_corner(cls, mu, diagonal):
+        shape = cls.shifted_shape(mu)
+        i, j = 0, diagonal
+        while (i + 1, j + 1) in shape:
+            i, j = i + 1, j + 1
+        if (i, j) not in shape:
+            return None
+        if (i + 1, j) in shape or (i, j + 1) in shape:
+            return None
+        return i
+
+    @classmethod
     def remove_shifted_inner_corners(cls, mu):
         rows = []
         for i in range(1, len(mu) + 1):
-            try:
-                cls.remove_shifted_inner_corner(mu, i)
+            if cls.remove_shifted_inner_corner(mu, i) is not None:
                 rows += [i]
-            except:
-                continue
         for k in range(len(rows) + 1):
             for subset in itertools.combinations(rows, k):
                 ans = mu
@@ -72,7 +110,6 @@ class Partition:
             return mu[:-1] + (mu[-1] - 1,)
         elif row == len(mu) and mu[-1] == 1:
             return mu[:-1]
-        raise Exception
 
     @classmethod
     def complement(cls, n, mu):
@@ -107,6 +144,10 @@ class Partition:
     @classmethod
     def is_partition(cls, mu):
         return all(mu[i - 1] >= mu[i] for i in range(1, len(mu))) and (mu == () or mu[-1] >= 0)
+
+    @classmethod
+    def is_strict(cls, mu):
+        return cls.is_strict_partition(mu)
 
     @classmethod
     def is_strict_partition(cls, mu):

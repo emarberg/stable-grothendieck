@@ -4,7 +4,7 @@ from tableaux import Tableau
 unprime = InsertionAlgorithm.unprime_diagonal
 
 
-def test_unprime(n=4, mu=(4, 1)):
+def test_unprime(n=3, mu=(4, 2)):
     u = list(Tableau.semistandard_shifted_marked_setvalued(n, mu, diagonal_primes=True))
     mapping = {}
     for t in u:
@@ -23,9 +23,11 @@ def test_unprime(n=4, mu=(4, 1)):
             for x in mapping[tt]:
                 print(x)
                 print(x.boxes)
+                print()
+            print()
+            print()
         else:
             mapping[tt] = [t]
-    assert not any(len(v) > 1 for v in mapping.values())
 
 
 def test_instance():
