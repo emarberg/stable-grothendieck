@@ -52,6 +52,9 @@ class Polynomial:
     MAX_INT = 2**64 - 1
     MIN_INT = -MAX_INT
 
+    def factor(self):
+        pass
+
     def __bool__(self):
         return not self.is_zero()
 

@@ -6,6 +6,8 @@ PARTITIONS = {}
 
 class Partition:
 
+    FRENCH = True
+
     @classmethod
     def add(cls, mu, row):
         if row <= len(mu):
@@ -125,8 +127,39 @@ class Partition:
     def printable(cls, mu, shifted=False):
         s = []
         for i, a in enumerate(mu):
-            s = [(i * '  ' if shifted else '') + a * '* '] + s
+            b = [(i * '  ' if shifted else '') + a * '* ']
+            s = (b + s) if cls.FRENCH else (s + b)
+        if s:
+            m = max(map(len, s))
+            s = [line + (m - len(line)) * ' ' for line in s]
         return '\n'.join(s)
+
+    @classmethod
+    def printables(cls, *args):
+        return cls._printables(list(args))
+
+    @classmethod
+    def shifted_printables(cls, *args):
+        return cls._printables(list(args), shifted=True)
+
+    @classmethod
+    def _printables(cls, partitions, shifted=False):
+        gap = '   ->    '
+        lines = []
+        for mu in partitions:
+            diagram = cls.printable(mu, shifted).split('\n')
+            if lines:
+                m = max(len(lines), len(diagram))
+                if len(lines) < m:
+                    b = (m - len(lines)) * [len(lines[0]) * ' ']
+                    lines = (b + lines) if cls.FRENCH else (lines + b)
+                if len(diagram) < m:
+                    b = (m - len(diagram)) * [(len(diagram[0]) if diagram else 0) * ' ']
+                    diagram = (b + diagram) if cls.FRENCH else (diagram + b)
+                lines = [lines[i] + gap + diagram[i] for i in range(m)]
+            else:
+                lines = diagram
+        return '\n'.join(lines)
 
     @classmethod
     def trim(cls, mu):

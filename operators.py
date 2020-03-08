@@ -1,6 +1,7 @@
 from vectors import Vector
-from polynomials import Polynomial, X, Y
+from polynomials import X, Y
 from partitions import Partition
+from collections import defaultdict
 
 
 beta = X(0)
@@ -110,7 +111,69 @@ def operator_C(n, var=xvar):  # noqa
     return op
 
 
-AR = operator_AR
-AL = operator_AL
-R = operator_R
-C = operator_C
+def _extract(expr, n, coefficients, differences):
+    for nu, coeff in expr.items():
+        coefficients[nu][n] = coeff
+        if coeff != 0 and coefficients[nu].get(n - 1, 0) != 0:
+            differences[nu] += [coeff - coefficients[nu][n - 1]]
+
+
+def compare(max_size_of_partitions, number_of_values_of_n, op1, op2):
+    for mu in Partition.all(max_size_of_partitions, strict=True):
+        s = mu[0] if mu else 0
+        coefficients = defaultdict(dict)
+        differences = defaultdict(list)
+        for n in range(s, number_of_values_of_n + s):
+            lhs = op1(n)(op2(n)(mu))
+            rhs = op2(n)(op1(n)(mu))
+            _extract(rhs - lhs, n, coefficients, differences)
+
+        if coefficients:
+            print()
+            print('mu =', mu)
+            print()
+            for nu in sorted(coefficients, reverse=True):
+                k = max(mu[0] if mu else 0, nu[0] if nu else 0)
+                if k >= number_of_values_of_n + s:
+                    continue
+                print('  mu =', mu, '--> nu =', nu, ': coefficient of nu in op2(op1(mu)) - op1(op2(mu)) is')
+                print()
+                for n in range(k, number_of_values_of_n + s):
+                    c = coefficients[nu].get(n, 0)
+                    print('    n =', n, ':', c)
+                print()
+            print()
+            input('continue (press any key)')
+
+
+def compare_AL_R_versus_R_AL(max_size_of_partitions, number_of_values_of_n):
+    sb = 'x / (1 + %s)' % str(beta)
+    for mu in Partition.all(max_size_of_partitions, strict=True):
+        print()
+        print('mu =', mu)
+        print()
+        s = mu[0] if mu else 0
+        coefficients = defaultdict(dict)
+        differences = defaultdict(list)
+        for n in range(s, number_of_values_of_n + s):
+            op_AL = operator_AL(n)  # noqa
+            op_R = operator_R(n)  # noqa
+            lhs = op_AL(op_R(mu))
+            rhs = op_R(op_AL(mu))
+            _extract(rhs - lhs, n, coefficients, differences)
+        for nu in sorted(coefficients):
+            k = max(mu[0] if mu else 0, nu[0] if nu else 0)
+            print('  mu =', mu, '--> nu =', nu, ': coefficient of nu in R_n(AL_n(mu)) - AL_n(R_n(mu)) is')
+            print()
+            n = number_of_values_of_n + s - 1
+            f = sum([(-beta)**i for i in range(n + 1 - k)]) * X()
+            c = coefficients[nu].get(n, 0)
+            e = (c - f)
+            if e:
+                print('    ', e, '+', sb)
+            else:
+                print('    ', sb)
+            print()
+        print()
+        input('continue (press any key)')
+
