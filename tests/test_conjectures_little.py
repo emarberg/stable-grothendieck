@@ -1395,7 +1395,7 @@ def test_grassmannian():
 def test_inv_grassmannian():
     w = Permutation.get_inv_grassmannian(4, 3, 1)
     t = Permutation.transposition
-    assert w == t(1, 5) * t(2, 6) * t(4, 7)
+    assert w == t(3, 7) * t(2, 6) * t(1, 4)
     assert w.involution_shape() == (4, 3, 1)
 
     shapes = set(Partition.subpartitions([5, 3, 1], True))
@@ -1408,7 +1408,7 @@ def test_fpf_grassmannian():
     w = Permutation.get_fpf_grassmannian(4, 3, 1)
     t = Permutation.transposition
 
-    assert w == t(1, 6) * t(2, 7) * t(4, 8) * t(3, 5)
+    assert w == t(1, 5) * t(2, 7) * t(3, 8) * t(4, 6)
     assert w.fpf_involution_shape() == (4, 3, 1)
 
     shapes = set(Partition.subpartitions([6, 4, 2], True))
@@ -2021,7 +2021,6 @@ def test_inv_conversion_to_permutation(rank=5):
         return tuple(ans + bns)
 
     for w in Permutation.inv_grassmannians(rank):
-        w = w.star()
         mu = w.involution_shape()
         print(mu, '=', 'shape(', w, ')')
         print()

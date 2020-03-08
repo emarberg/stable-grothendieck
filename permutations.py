@@ -300,18 +300,22 @@ class Permutation:
         ans = Permutation()
         for i in range(len(mu)):
             ans *= Permutation.transposition(1 + mu[0] - mu[i], i + 1 + mu[0])
+        w0 = Permutation.longest_element(len(mu) + (mu[0] if mu else 0))
+        ans = w0 * ans * w0
         return ans
 
     @classmethod
     def get_fpf_grassmannian(cls, *mu):
         assert Partition.is_strict_partition(mu)
         ans = Permutation()
-        o = 1 if mu and (len(mu) + 1 + mu[0]) % 2 != 0 else 0
+        o = 1 if (mu and (len(mu) + 1 + mu[0]) % 2 != 0) else 0
         for i in range(len(mu)):
             ans *= Permutation.transposition(o + 1 + mu[0] - mu[i], o + i + 2 + mu[0])
         while not ans.is_fpf_involution():
             f = [i for i in range(1, ans.rank + 2) if ans(i) == i]
             ans *= Permutation.transposition(f[0], f[1])
+        w0 = Permutation.longest_element(o + 1 + len(mu) + (mu[0] if mu else 0))
+        ans = w0 * ans * w0
         return ans
 
     def fpf_involution_shape(self):

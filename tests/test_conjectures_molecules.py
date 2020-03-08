@@ -532,7 +532,7 @@ def test_molecular_correspondence(n=8):
         mapping = construct_molecular_correspondence(mu)
         for v in mapping:
             w = mapping[v]
-            assert irsk(v) == dual_irsk(w).transpose()
+            assert irsk(v).transpose() == dual_irsk(w)
 
 
 def test_get_molecules_n(n=8):
