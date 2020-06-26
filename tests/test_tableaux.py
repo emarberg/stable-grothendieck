@@ -1,4 +1,18 @@
 from tableaux import Tableau, MarkedReversePlanePartition
+from partitions import Partition
+
+
+def test_from_string(m=4):
+    for n in range(m):
+        for mu in Partition.generate(n, strict=True):
+            for t in Tableau.semistandard_shifted_marked(n, mu):
+                u = Tableau(str(t))
+                if u != t:
+                    print(t)
+                    print(u)
+                    print(t.boxes, u.boxes)
+                    print()
+                assert Tableau(str(t)) == t
 
 
 def test_row_reading_word():

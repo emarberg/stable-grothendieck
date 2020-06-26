@@ -6,7 +6,7 @@ PARTITIONS = {}
 
 class Partition:
 
-    FRENCH = True
+    FRENCH = False
 
     @classmethod
     def add(cls, mu, row):
