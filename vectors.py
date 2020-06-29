@@ -116,18 +116,21 @@ class Vector:
     def _repr_coeff(self, coeff, key):
         if type(coeff) == Polynomial and len(coeff) > 1:
             return ' + (%s)*' % str(coeff)
-        if key == '' and coeff > 0:
-            return ' + %s' % coeff
-        if key == '' and coeff < 0:
-            return ' - %s' % -coeff
-        if coeff == 1:
-            return ' + '
-        elif coeff == -1:
-            return ' - '
-        elif coeff > 0:
-            return ' + %s*' % coeff
-        else:
-            return ' - %s*' % -coeff
+        try:
+            if key == '' and coeff > 0:
+                return ' + %s' % coeff
+            if key == '' and coeff < 0:
+                return ' - %s' % -coeff
+            if coeff == 1:
+                return ' + '
+            elif coeff == -1:
+                return ' - '
+            elif coeff > 0:
+                return ' + %s*' % coeff
+            else:
+                return ' - %s*' % -coeff
+        except TypeError:
+            return ' + (%s)*' % str(coeff)
 
     def _print_sorted(self, sorted_items):
         base = ''.join(self._repr_coeff(value, key) + key for key, value in sorted_items)

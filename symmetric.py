@@ -503,11 +503,12 @@ class SymmetricPolynomial(Vector):
             return Vector()
 
     @classmethod
-    def _slow_vectorize(cls, n, tableaux, signs=None):
+    def _slow_vectorize(cls, n, tableaux, signs=None, check=True):
         dictionary = defaultdict(int)
         for tab in tableaux:
             dictionary[tab.weight(n)] += 1
-        assert all(dictionary[Partition.sort(alpha)] == dictionary[alpha] for alpha in dictionary)
+        if check:
+            assert all(dictionary[Partition.sort(alpha)] == dictionary[alpha] for alpha in dictionary)
         return SymmetricPolynomial({
             SymmetricMonomial(n, alpha): coeff * (signs if signs else 1)**sum(alpha)
             for alpha, coeff in dictionary.items()
@@ -591,3 +592,42 @@ class SymmetricPolynomial(Vector):
             Tableau.semistandard_marked_rpp(num_variables, mu, nu, diagonal_nonprimes=True),
             -BETA**-1
         )
+
+    @classmethod
+    def _diag_vector(cls, rpp):
+        ans = []
+        i, j = (1, 1)
+        while (i, j) in rpp:
+            ans.append(abs(rpp.get(i, j, unpack=True)))
+            i, j = (i + 1, j + 1)
+        return tuple(ans)
+
+    @classmethod
+    def _slow_refined_dual_stable_grothendieck_p(cls, num_variables, mu, nu=()):
+        dictionary = defaultdict(list)
+        for t in Tableau.semistandard_marked_rpp(num_variables, mu, nu, diagonal_nonprimes=False):
+            dictionary[cls._diag_vector(t)].append(t)
+        mapping = {}
+        for t in dictionary:
+            mapping[t] = (-BETA)**(sum(mu) - sum(nu)) * cls._slow_vectorize(
+                num_variables,
+                dictionary[t],
+                -BETA**-1,
+                check=False,
+            )
+        return Vector(mapping)
+
+    @classmethod
+    def _slow_refined_dual_stable_grothendieck_q(cls, num_variables, mu, nu=()):
+        dictionary = defaultdict(list)
+        for t in Tableau.semistandard_marked_rpp(num_variables, mu, nu, diagonal_nonprimes=True):
+            dictionary[cls._diag_vector(t)].append(t)
+        mapping = {}
+        for t in dictionary:
+            mapping[t] = (-BETA)**(sum(mu) - sum(nu)) * cls._slow_vectorize(
+                num_variables,
+                dictionary[t],
+                -BETA**-1,
+                check=False,
+            )
+        return Vector(mapping)

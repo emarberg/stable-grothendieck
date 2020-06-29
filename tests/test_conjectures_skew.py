@@ -178,6 +178,36 @@ def _expansion(n, function, expand, shifted=True, unsigned=True): # noqa
         assert all(v > 0 for v in expansion.values())
 
 
+@pytest.mark.slow
+def test_refined_gq_to_gp_expansion(k=12): # noqa
+    for mu in Partition.all(k, strict=True):
+        print('mu =', mu)
+        print()
+        print(Partition.printable(mu, shifted=True))
+        print()
+        n = len(mu)
+        q = SymmetricPolynomial._slow_refined_dual_stable_grothendieck_q(n, mu)
+        expected = {}
+        for a in zero_one_tuples(len(mu)):
+            if not all(mu[i - 1] - a[i - 1] > mu[i] - a[i] for i in range(1, len(a))):
+                continue
+            if not all(mu[i] - a[i] > 0 for i in range(len(a))):
+                continue
+            nu = Partition.trim(tuple(mu[i] - a[i] for i in range(len(a))))
+            coeff = 2**(len(nu) - sum(a)) * sgn(nu, mu) * BETA**sum(a)
+            assert coeff != 0
+            expected[nu] = coeff
+        print('  expected =', expected)
+        expected = sum([
+            coeff * SymmetricPolynomial._slow_refined_dual_stable_grothendieck_p(n, nu)
+            for (nu, coeff) in expected.items()
+        ])
+        print('           =', expected)
+        assert q == expected
+        print()
+        print()
+
+
 def _schur_expansion(n, function, shifted=True): # noqa
     _expansion(n, function, SymmetricPolynomial.schur_expansion, shifted)
 
