@@ -40,6 +40,9 @@ def nchoosek(m, k):
 class Tableau:
 
     def __init__(self, mapping={}):
+        if type(mapping) == str:
+            mapping = self.decode_string_input(mapping)
+
         def tuplize(i, j):
             v = mapping[(i, j)]
             if type(v) == tuple:
@@ -56,6 +59,25 @@ class Tableau:
             for b in sorted(self.boxes) for v in self.boxes[b]
         )
         self._string_array = None
+
+    @classmethod
+    def decode_string_input(cls, s):
+        def decode(cell):
+            for x in cell.split(','):
+                if x:
+                    yield -int(x[:-1]) if x[-1] == '\'' else int(x)
+
+        mapping = {}
+        s = s.strip().replace('\n', ';')
+        for i, row in enumerate(s.split(';')):
+            j = 0
+            for cell in row.strip().split(' '):
+                cell = cell.strip()
+                if cell:
+                    if cell != '.':
+                        mapping[(i + 1, j + 1)] = tuple(decode(cell))
+                    j += 1
+        return mapping
 
     def __eq__(self, other):
         assert type(other) == type(self)
@@ -312,6 +334,9 @@ class Tableau:
             del mapping[(i, j)]
         return self.__class__(mapping)
 
+    def contains_box(self, i, j):
+        return (i, j) in self.boxes
+
     def set(self, i, j, v):
         if (i, j) in self:
             return self.replace(i, j, v)
@@ -355,11 +380,11 @@ class Tableau:
             v = tuple(sorted(set(self.get(i, j)) - {n, -n}))
             return self.remove(i, j).add(i, j, v), record
 
-    def max_row(self):
-        return max([i for i, j in self.boxes]) if self.boxes else 0
+    def max_row(self, col=None):
+        return max([0] + [i for i, j in self.boxes if (col is None or j == col)])
 
-    def max_column(self):
-        return max([j for i, j in self.boxes]) if self.boxes else 0
+    def max_column(self, row=None):
+        return max([0] + [j for i, j in self.boxes if (row is None or i == row)])
 
     def shape(self):
         ans = []
@@ -367,13 +392,19 @@ class Tableau:
             ans += [len([j for i_, j, v in self if i == i_])]
         return tuple(ans)
 
+    def setvalued_excess(self):
+        return sum([len(v) - 1 for _, _, v in self])
+
+    def rpp_excess(self):
+        return sum([(i, j) for i, j, v in self if v is self.get(i + 1, j)])
+
     COLUMN_SPACING_OFFSET = 2
 
     @property
     def string_array(self):
         if self._string_array is None:
             boxes = {
-                k: ''.join([
+                k: ','.join([
                     str(-x) + '\'' if x < 0 else str(x)
                     for x in sorted(v, key=lambda x:(abs(x), x))
                 ]) for k, v in self.boxes.items()}
@@ -389,14 +420,14 @@ class Tableau:
             for i in range(1, self.max_row() + 1):
                 row = []
                 for j in range(1, self.max_column() + 1):
-                    row += [pad(boxes.get((i, j), ''), j)]
+                    row += [pad(boxes.get((i, j), '.'), j)]
                 array += [row]
             self._string_array = array
         return self._string_array
 
     def __repr__(self):
-        # array = self.string_array  # english
-        array = reversed(self.string_array)  # french
+        array = self.string_array  # english
+        # array = reversed(self.string_array)  # french
         return '\n\n' + '\n'.join([' '.join(line) for line in array]) + '\n\n'
 
     def weight(self, n):
