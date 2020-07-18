@@ -253,3 +253,42 @@ class Partition:
 
         for nu in _subpartitions(mu, strict):
             yield cls.trim(nu)
+
+    @classmethod
+    def _rims_helper(cls, border):
+        if border:
+            (a, b), next_border = border[0], border[1:]
+            # skip (a, b)
+            while next_border and next_border[0][0] == a:
+                next_border = next_border[1:]
+            for ans in cls._rims_helper(next_border):
+                yield ans
+            # include (a, b)
+            ans, next_border = [(a, b)], border[1:]
+            while next_border and next_border[0][1] == b:
+                ans.append(next_border[0])
+                next_border = next_border[1:]
+            for bns in cls._rims_helper(next_border):
+                yield ans + bns
+        else:
+            yield []
+
+    @classmethod
+    def rims(cls, mu, first_row_bound=1):
+        assert cls.is_strict_partition(mu)
+        mu = cls.trim(mu) + (0,)
+        mu = (mu[0],) + mu
+        border = []
+        for i in range(len(mu) - 1, 0, -1):
+            border += [(i, i + mu[i] + j) for j in range(mu[i - 1] - mu[i])]
+        border += [(1, 1 + mu[0])]
+
+        for r in cls._rims_helper(border):
+            if border[-1] in r:
+                for i in range(first_row_bound):
+                    yield tuple(r + [(1, 1 + mu[0] + j) for j in range(1, i + 1)])
+            else:
+                yield tuple(r)
+
+
+
