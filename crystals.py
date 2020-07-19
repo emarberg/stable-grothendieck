@@ -74,7 +74,7 @@ class CrystalMixin:
 
 class TableauCrystalGenerator(CrystalMixin):
 
-    DIRECTORY = '/Users/emarberg/Desktop/crystals/tableaux/'
+    DIRECTORY = '/Users/emarberg/examples/crystals/tableaux/'
 
     def _filename(self, j):
         mu = ''.join([str(i) for i in self.mu])
@@ -129,7 +129,7 @@ class TableauCrystalGenerator(CrystalMixin):
 
 class ShiftedCrystalGenerator(CrystalMixin):
 
-    DIRECTORY = '/Users/emarberg/Desktop/crystals/shifted/'
+    DIRECTORY = '/Users/emarberg/examples/crystals/shifted/'
 
     @property
     def SUBDIRECTORY(self):
@@ -311,7 +311,7 @@ class MRT_Symplectic_ShiftedCrystalGenerator(MRTShiftedCrystalGenerator): # noqa
 
 class WordCrystalGenerator(CrystalMixin):
 
-    DIRECTORY = '/Users/emarberg/Desktop/crystals/words/'
+    DIRECTORY = '/Users/examples/Desktop/crystals/words/'
 
     def _filename(self, j):
         w = ''.join([str(i) for i in self.oneline])

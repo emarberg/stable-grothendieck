@@ -289,6 +289,3 @@ class Partition:
                     yield tuple(r + [(1, 1 + mu[0] + j) for j in range(1, i + 1)])
             else:
                 yield tuple(r)
-
-
-
