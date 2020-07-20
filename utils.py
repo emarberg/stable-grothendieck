@@ -1,5 +1,6 @@
 from symmetric import SymmetricPolynomial
 from permutations import Permutation
+from polynomials import beta # noqa
 
 
 def schur(num_variables, mu, nu=()):
@@ -86,3 +87,17 @@ GQ_doublebar = grothendieck_Q_doublebar
 g = dual_grothendieck
 gp = dual_grothendieck_P
 gq = dual_grothendieck_Q
+
+schur_expansion = SymmetricPolynomial.schur_expansion
+
+G_expansion = SymmetricPolynomial.grothendieck_expansion
+g_expansion = SymmetricPolynomial.dual_grothendieck_expansion
+
+gp_expansion = SymmetricPolynomial.gp_expansion
+gq_expansion = SymmetricPolynomial.gq_expansion
+
+GP_expansion = SymmetricPolynomial.GP_expansion
+GQ_expansion = SymmetricPolynomial.GQ_expansion
+
+P_expansion = SymmetricPolynomial.P_expansion
+Q_expansion = SymmetricPolynomial.Q_expansion

@@ -3,6 +3,7 @@ from words import Word
 from partitions import Partition
 from collections import defaultdict
 from operator import itemgetter
+import itertools
 
 COUNT_SEMISTANDARD_CACHE = {}
 COUNT_SEMISTANDARD_MARKED_CACHE = {}
@@ -26,6 +27,9 @@ SHIFTED_VERTICAL_STRIPS_CACHE = {}
 RPP_HORIZONTAL_STRIPS_CACHE = {}
 SHIFTED_RPP_HORIZONTAL_STRIPS_CACHE = {}
 SHIFTED_RPP_VERTICAL_STRIPS_CACHE = {}
+
+KOG_CACHE = {}
+KLG_CACHE = {}
 
 
 def nchoosek(m, k):
@@ -426,8 +430,8 @@ class Tableau:
         return self._string_array
 
     def __repr__(self):
-        array = self.string_array  # english
-        # array = reversed(self.string_array)  # french
+        # array = self.string_array  # english
+        array = reversed(self.string_array)  # french
         return '\n\n' + '\n'.join([' '.join(line) for line in array]) + '\n\n'
 
     def weight(self, n):
@@ -964,6 +968,99 @@ class Tableau:
                                 for (i, j) in aug2:
                                     tab = tab.add(i, j, -max_entry)
                                 ans.add(tab)
+        return ans
+
+    @cached_value(KOG_CACHE)
+    def _KOG_helper(cls, n, cells_filled, cells_left):  # noqa
+        assert n >= 0
+        if len(cells_left) == 0 and n > 0:
+            return []
+        elif len(cells_left) > 0 and n == 0:
+            return []
+        elif len(cells_left) == n == 0:
+            return [cells_filled]
+        else:
+            corners = {
+                (i, j) for (i, j) in cells_left
+                if (i, j + 1) not in cells_left and (i + 1, j) not in cells_left and
+                not any(
+                    k1 <= i and j <= l1 and k1 <= k2 and l2 <= l1 and a1 < a2
+                    for (k1, l1, a1) in cells_filled
+                    for (k2, l2, a2) in cells_filled
+                )
+            }
+            ans = []
+            for k in range(1, len(corners) + 1):
+                for subset in itertools.combinations(corners, k):
+                    new_cells = cells_filled + tuple((i, j, n) for (i, j) in subset)
+                    new_left = tuple(sorted(set(cells_left) - set(subset)))
+                    ans.extend(cls._KOG_helper(n - 1, new_cells, new_left))
+            return ans
+
+    @classmethod
+    def KOG(cls, content_max, mu):  # noqa
+        for shape in Partition.rims(mu, content_max):
+            for tab in cls._KOG_helper(content_max, (), shape):
+                yield Tableau({(i, j): a for (i, j, a) in tab})
+
+    @classmethod
+    def _add_rim(cls, mu, tab):
+        nu = list(mu) + [0]
+        for (i, j, _) in tab:
+            nu[i - 1] += 1
+        return Partition.trim(nu)
+
+    @classmethod
+    def KOG_by_shape(cls, content_max, mu):  # noqa
+        ans = defaultdict(list)
+        for tab in cls.KOG(content_max, mu):
+            nu = cls._add_rim(mu, tab)
+            ans[nu].append(tab)
+        return ans
+
+    @cached_value(KLG_CACHE)
+    def _KLG_helper(cls, n, cells_filled, cells_left):  # noqa
+        if len(cells_left) == 0 and n > 0:
+            return []
+        elif len(cells_left) > 0 and n == 0:
+            return []
+        elif len(cells_left) == n == 0:
+            return [cells_filled]
+        else:
+            corners = {
+                (i, j) for (i, j) in cells_left
+                if (i, j + 1) not in cells_left and (i + 1, j) not in cells_left and
+                (i != j or n > 0) and
+                not any(
+                    k <= i and j <= l and a < 0
+                    for (k, l, a) in cells_filled
+                ) and (n < 0 or not any(
+                    i <= k and l <= j
+                    for (k, l, _) in cells_filled
+                ))
+            }
+            ans = []
+            s = 1 if (n < 0 and not any(a == -n for (_, _, a) in cells_filled)) else 0
+            for k in range(s, len(corners) + 1):
+                for subset in itertools.combinations(corners, k):
+                    new_cells = cells_filled + tuple((i, j, n) for (i, j) in subset)
+                    new_left = tuple(sorted(set(cells_left) - set(subset)))
+                    new_n = -n if n > 0 else -n - 1
+                    ans.extend(cls._KLG_helper(new_n, new_cells, new_left))
+            return ans
+
+    @classmethod
+    def KLG(cls, content_max, mu):  # noqa
+        for shape in Partition.rims(mu, content_max + 1):
+            for tab in cls._KLG_helper(content_max, (), shape):
+                yield Tableau({(i, j): a for (i, j, a) in tab})
+
+    @classmethod
+    def KLG_by_shape(cls, content_max, mu):  # noqa
+        ans = defaultdict(list)
+        for tab in cls.KLG(content_max, mu):
+            nu = cls._add_rim(mu, tab)
+            ans[nu].append(tab)
         return ans
 
     @classmethod

@@ -286,6 +286,6 @@ class Partition:
         for r in cls._rims_helper(border):
             if border[-1] in r:
                 for i in range(first_row_bound):
-                    yield tuple(r + [(1, 1 + mu[0] + j) for j in range(1, i + 1)])
+                    yield tuple(sorted(r + [(1, 1 + mu[0] + j) for j in range(1, i + 1)]))
             else:
-                yield tuple(r)
+                yield tuple(sorted(r))
