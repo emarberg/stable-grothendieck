@@ -163,27 +163,43 @@ def test_KLG():  # noqa
     }
 
 
-@pytest.mark.slow
 def test_GP_pieri(): # noqa
-    for mu in Partition.all(10, strict=True):
-        for p in [1, 2, 3]:
-            print(mu, p)
+    for mu in Partition.all(6, strict=True):
+        for p in [0, 1, 2]:
             ans = Vector()
             for nu, tabs in Tableau.KOG_by_shape(p, mu).items():
                 ans += Vector({nu: utils.beta**(sum(nu) - sum(mu) - p) * len(tabs)})
+            f = utils.GP(len(mu) + 1, mu) * utils.GP(len(mu) + 1, (p,))
+            assert ans == utils.GP_expansion(f)
 
+
+def test_GQ_pieri(): # noqa
+    for mu in Partition.all(6, strict=True):
+        for p in [0, 1, 2]:
+            ans = Vector()
+            for nu, tabs in Tableau.KLG_by_shape(p, mu).items():
+                ans += Vector({nu: utils.beta**(sum(nu) - sum(mu) - p) * len(tabs)})
+            f = utils.GQ(len(mu) + 1, mu) * utils.GQ(len(mu) + 1, (p,))
+            assert ans == utils.GQ_expansion(f)
+
+
+@pytest.mark.slow
+def test_GP_pieri_slow(): # noqa
+    for mu in Partition.all(10, strict=True):
+        for p in [1, 2, 3]:
+            ans = Vector()
+            for nu, tabs in Tableau.KOG_by_shape(p, mu).items():
+                ans += Vector({nu: utils.beta**(sum(nu) - sum(mu) - p) * len(tabs)})
             f = utils.GP(len(mu) + 1, mu) * utils.GP(len(mu) + 1, (p,))
             assert ans == utils.GP_expansion(f)
 
 
 @pytest.mark.slow
-def test_GQ_pieri(): # noqa
+def test_GQ_pieri_slow(): # noqa
     for mu in Partition.all(10, strict=True):
         for p in [1, 2, 3]:
-            print(mu, p)
             ans = Vector()
             for nu, tabs in Tableau.KLG_by_shape(p, mu).items():
                 ans += Vector({nu: utils.beta**(sum(nu) - sum(mu) - p) * len(tabs)})
-
             f = utils.GQ(len(mu) + 1, mu) * utils.GQ(len(mu) + 1, (p,))
             assert ans == utils.GQ_expansion(f)
