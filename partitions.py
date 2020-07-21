@@ -1,7 +1,9 @@
+from cached import cached_value
 from collections import defaultdict
 import itertools
 
 PARTITIONS = {}
+RIM_CACHE = {}
 
 
 class Partition:
@@ -195,6 +197,7 @@ class Partition:
 
     @classmethod
     def skew(cls, mu, nu, shifted=False):
+        """Assumes nu is contained in mu."""
         ans = set()
         for i, part in enumerate(mu):
             subpart = nu[i] if i < len(nu) else 0
@@ -254,24 +257,26 @@ class Partition:
         for nu in _subpartitions(mu, strict):
             yield cls.trim(nu)
 
-    @classmethod
-    def _rims_helper(cls, border):
+    @cached_value(RIM_CACHE)
+    def _rims_helper(cls, border):  # noqa
         if border:
+            ret = []
             (a, b), next_border = border[0], border[1:]
             # skip (a, b)
             while next_border and next_border[0][0] == a:
                 next_border = next_border[1:]
             for ans in cls._rims_helper(next_border):
-                yield ans
+                ret.append(ans)
             # include (a, b)
             ans, next_border = [(a, b)], border[1:]
             while next_border and next_border[0][1] == b:
                 ans.append(next_border[0])
                 next_border = next_border[1:]
             for bns in cls._rims_helper(next_border):
-                yield ans + bns
+                ret.append(ans + bns)
+            return ret
         else:
-            yield []
+            return [[]]
 
     @classmethod
     def rims(cls, mu, first_row_bound=1):
@@ -282,10 +287,19 @@ class Partition:
         for i in range(len(mu) - 1, 0, -1):
             border += [(i, i + mu[i] + j) for j in range(mu[i - 1] - mu[i])]
         border += [(1, 1 + mu[0])]
-
+        border = tuple(border)
         for r in cls._rims_helper(border):
             if border[-1] in r:
                 for i in range(first_row_bound):
                     yield tuple(sorted(r + [(1, 1 + mu[0] + j) for j in range(1, i + 1)]))
             else:
                 yield tuple(sorted(r))
+
+    @classmethod
+    def rim_terminal_part(cls, rim):
+        t = tuple(sorted(rim, key=lambda x: (-x[0], x[1])))[-3:]
+        if len(t) >= 2 and t[-2][0] != t[-1][0] and t[-2][1] != t[-1][1]:
+            t = t[-1:]
+        if len(t) == 3 and t[0][0] != t[1][0] and t[0][1] != t[1][1]:
+            t = t[1:]
+        return t

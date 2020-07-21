@@ -163,6 +163,20 @@ def test_KLG():  # noqa
     }
 
 
+def test_fast_KOG(): # noqa
+    for mu in Partition.all(7, strict=True):
+        for p in range(7):
+            counts = Tableau.KOG_counts_by_shape(p, mu)
+            tabs = Tableau.KOG_by_shape(p, mu)
+            print(mu, p)
+            print(counts)
+            print(tabs)
+            print()
+            assert set(counts) == set(tabs)
+            for nu in counts:
+                assert counts[nu] == len(tabs[nu])
+
+
 def test_GP_pieri(): # noqa
     for mu in Partition.all(6, strict=True):
         for p in [0, 1, 2]:
@@ -174,7 +188,7 @@ def test_GP_pieri(): # noqa
 
 
 def test_GQ_pieri(): # noqa
-    for mu in Partition.all(6, strict=True):
+    for mu in Partition.all(5, strict=True):
         for p in [0, 1, 2]:
             ans = Vector()
             for nu, tabs in Tableau.KLG_by_shape(p, mu).items():

@@ -30,6 +30,10 @@ SHIFTED_RPP_VERTICAL_STRIPS_CACHE = {}
 
 KOG_CACHE = {}
 KLG_CACHE = {}
+KOG_COUNTS = {}
+KLG_COUNTS = {}
+KOG_COUNTS_HELPER = {}
+KLG_COUNTS_HELPER = {}
 
 
 def nchoosek(m, k):
@@ -1006,7 +1010,7 @@ class Tableau:
     @classmethod
     def _add_rim(cls, mu, tab):
         nu = list(mu) + [0]
-        for (i, j, _) in tab:
+        for (i, j) in (tab.boxes if type(tab) == Tableau else tab):
             nu[i - 1] += 1
         return Partition.trim(nu)
 
@@ -1016,6 +1020,44 @@ class Tableau:
         for tab in cls.KOG(content_max, mu):
             nu = cls._add_rim(mu, tab)
             ans[nu].append(tab)
+        return ans
+
+    @cached_value(KOG_COUNTS_HELPER)
+    def _KOG_count_helper(cls, p, rim): # noqa
+        if len(rim) == 0:
+            return 1 if p == 0 else 0
+        if p <= 0:
+            return 0
+        term = Partition.rim_terminal_part(rim)
+        if len(term) == 2 and p == 1:
+            return 0
+        elif len(term) == 2:
+            left = tuple(a for a in rim if a not in term)
+            x = cls._KOG_count_helper(p, left)
+            y = cls._KOG_count_helper(p - 1, left)
+            z = cls._KOG_count_helper(p - 2, left)
+            c = 2 if p > 2 else 1
+            return x + (1 + c) * y + c * z
+        else:
+            left = tuple(a for a in rim if a != term[-1])
+            x = cls._KOG_count_helper(p, left)
+            y = cls._KOG_count_helper(p - 1, left)
+            c = 2 if p > 1 else 1
+            if len(term) == 1:
+                return c * (x + y)
+            if len(term) == 3 and term[0][0] != term[-1][0] and term[0][1] != term[-1][1]:
+                return x + y
+            if len(term) == 3:
+                return y
+
+    @cached_value(KOG_COUNTS)
+    def KOG_counts_by_shape(cls, content_max, mu): # noqa
+        ans = {}
+        for rim in Partition.rims(mu, content_max):
+            count = cls._KOG_count_helper(content_max, rim)
+            if count:
+                nu = cls._add_rim(mu, rim)
+                ans[nu] = count
         return ans
 
     @cached_value(KLG_CACHE)
