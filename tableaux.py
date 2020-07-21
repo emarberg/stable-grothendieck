@@ -1105,6 +1105,48 @@ class Tableau:
             ans[nu].append(tab)
         return ans
 
+    @cached_value(KLG_COUNTS_HELPER)
+    def _KLG_count_helper(cls, p, rim): # noqa
+        if len(rim) == 0:
+            return 1 if p == 0 else 0
+        if p <= 0:
+            return 0
+        term = Partition.rim_terminal_part(rim)
+        if len(term) == 2:
+            left = tuple(a for a in rim if a not in term)
+            x = cls._KLG_count_helper(p, left)
+            y = cls._KLG_count_helper(p - 1, left)
+            z = cls._KLG_count_helper(p - 2, left)
+            if p >= 2:
+                c = 1 if term[0][0] == term[0][1] else 2
+                return x + 3 * y + c * z
+            elif p == 1:
+                if term[0][0] == term[0][1] == term[1][0]:
+                    return 0
+                else:
+                    return x + y
+        else:
+            left = tuple(a for a in rim if a != term[-1])
+            x = cls._KLG_count_helper(p, left)
+            y = cls._KLG_count_helper(p - 1, left)
+            if len(term) == 1:
+                c = 1 if term[0][0] == term[0][1] else 2
+                return 2 * x + c * y
+            if len(term) == 3 and term[0][0] != term[-1][0] and term[0][1] != term[-1][1]:
+                return x + y
+            if len(term) == 3:
+                return y
+
+    @cached_value(KLG_COUNTS)
+    def KLG_counts_by_shape(cls, content_max, mu): # noqa
+        ans = {}
+        for rim in Partition.rims(mu, content_max + 1):
+            count = cls._KLG_count_helper(content_max, rim)
+            if count:
+                nu = cls._add_rim(mu, rim)
+                ans[nu] = count
+        return ans
+
     @classmethod
     def semistandard_shifted_setvalued(cls, max_entry, mu, nu=(), diagonal_primes=True):
         return cls.semistandard_shifted_marked_setvalued(max_entry, mu, nu, diagonal_primes)
