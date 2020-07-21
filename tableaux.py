@@ -1117,12 +1117,17 @@ class Tableau:
             x = cls._KLG_count_helper(p, left)
             y = cls._KLG_count_helper(p - 1, left)
             z = cls._KLG_count_helper(p - 2, left)
-            if p >= 2:
-                c = 1 if term[0][0] == term[0][1] else 2
-                return x + 3 * y + c * z
+            if p > 2:
+                return x + 3 * y + 2 * z
+            elif p == 2 and term[0][0] == term[0][1]:
+                return 1
+            elif p == 2:
+                return x + 3 * y + 2 * z
             elif p == 1:
                 if term[0][0] == term[0][1] == term[1][0]:
                     return 0
+                elif term[0][0] == term[0][1] == term[1][1]:
+                    return 1
                 else:
                     return x + y
         else:
@@ -1130,8 +1135,10 @@ class Tableau:
             x = cls._KLG_count_helper(p, left)
             y = cls._KLG_count_helper(p - 1, left)
             if len(term) == 1:
-                c = 1 if term[0][0] == term[0][1] else 2
-                return 2 * x + c * y
+                if p == 1 and term[0][0] == term[0][1]:
+                    return 1
+                else:
+                    return 2 * x + 2 * y
             if len(term) == 3 and term[0][0] != term[-1][0] and term[0][1] != term[-1][1]:
                 return x + y
             if len(term) == 3:
