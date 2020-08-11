@@ -177,6 +177,10 @@ class Partition:
         return ans
 
     @classmethod
+    def get(cls, mu, i):
+        return mu[i - 1] if 0 <= i - 1 < len(mu) else 0
+
+    @classmethod
     def is_partition(cls, mu):
         return all(mu[i - 1] >= mu[i] for i in range(1, len(mu))) and (mu == () or mu[-1] >= 0)
 
@@ -303,3 +307,204 @@ class Partition:
         if len(t) == 3 and t[0][0] != t[1][0] and t[0][1] != t[1][1]:
             t = t[1:]
         return t
+
+    @classmethod
+    def add_box_to_row(cls, p, row):
+        parts = [cls.get(p, i) + (1 if i == row else 0) for i in range(1, max(len(p), row) + 1)]
+        return Partition.trim(parts)
+
+    @classmethod
+    def add_box_to_column(cls, p, col, shift):
+        shape = cls.shifted_shape(p) if shift else cls.shape(p)
+        a = [i for (i, j) in shape if j == col]
+        row = max(a) + 1 if a else 1
+        shape.add((row, col))
+        if shift:
+            assert all((i, j - 1) in shape or i == j for (i, j) in shape)
+        else:
+            assert all((i, j - 1) in shape or j == 1 for (i, j) in shape)
+        parts = []
+        for (i, j) in shape:
+            while i - 1 >= len(parts):
+                parts += [0]
+            parts[i - 1] += 1
+        return Partition.trim(parts)
+
+    @classmethod
+    def union(cls, p, q):
+        parts = [max(cls.get(p, i), cls.get(q, i)) for i in range(1, max(len(p), len(q)) + 1)]
+        return Partition.trim(parts)
+
+    @classmethod
+    def shifted_growth_diagram(cls, dictionary, m=None, n=None):
+        def shdiff(nu, lam):
+            return next(iter(cls.skew(nu, lam, shifted=True)))
+
+        dictionary = {(a, i + 1) for i, a in enumerate(dictionary)} if type(dictionary) in [list, tuple] else dictionary
+        dictionary = {k: 1 for k in dictionary} if type(dictionary) == set else dictionary
+        n = max([0] + [i for i, _ in dictionary]) if n is None else n
+        m = max([0] + [j for _, j in dictionary]) if m is None else m
+
+        g = [[tuple() for _ in range(m + 1)] for _ in range(n + 1)]
+        edges = [[False for _ in range(m + 1)] for _ in range(n + 1)]
+        corners = [[None for _ in range(m + 1)] for _ in range(n + 1)]
+        reasons = [['' for _ in range(m + 1)] for _ in range(n + 1)]
+
+        for i in range(1, n + 1):
+            for j in range(1, m + 1):
+                v = dictionary.get((i, j), 0)
+                assert v in [0, 1]
+                lam, nu, mu = g[i - 1][j - 1], g[i - 1][j], g[i][j - 1]
+                if v == 1 and cls.get(lam, 1) == cls.get(mu, 1):
+                    # case (1)
+                    gamma = cls.add_box_to_row(mu, row=1)
+                    reasons[i][j] = '01'
+                elif v == 1:
+                    # case (2)
+                    assert cls.get(lam, 1) + 1 == cls.get(mu, 1)
+                    gamma = mu
+                    corners[i][j] = 1
+                    reasons[i][j] = '02'
+                elif mu == lam:
+                    # case (3a)
+                    gamma = nu
+                    edges[i][j] = edges[i - 1][j]
+                    corners[i][j] = corners[i - 1][j]
+                    reasons[i][j] = '03a'
+                elif nu == lam and not edges[i - 1][j] and corners[i - 1][j] is None:
+                    # case (3b)
+                    gamma = mu
+                    reasons[i][j] = '03b'
+                elif not cls.contains(mu, nu):
+                    # case (4)
+                    gamma = cls.union(nu, mu)
+                    edges[i][j] = edges[i - 1][j]
+                    reasons[i][j] = '04'
+                elif lam != nu:
+                    a, b = shdiff(nu, lam)
+                    row = {(x, y) for (x, y) in cls.skew(mu, lam, shifted=True) if x == a + 1}
+                    col = {(x, y) for (x, y) in cls.skew(mu, lam, shifted=True) if y == b + 1}
+
+                    if not edges[i - 1][j] and a != b:
+                        if len(row) == 0:
+                            # case (5)
+                            gamma = cls.add_box_to_row(mu, a + 1)
+                            reasons[i][j] = '05'
+                        else:
+                            # case (6)
+                            # print('case 6')
+                            gamma = mu
+                            corners[i][j] = a + 1
+                            reasons[i][j] = '06'
+                    else:
+                        if len(col) == 0:
+                            # case (7)
+                            gamma = cls.add_box_to_column(mu, b + 1, shift=True)
+                            edges[i][j] = True
+                            reasons[i][j] = '07'
+                        else:
+                            # case (8)
+                            gamma = mu
+                            edges[i][j] = True
+                            corners[i][j] = b + 1
+                            reasons[i][j] = '08'
+                elif lam == nu and not edges[i - 1][j]:
+                    a = corners[i - 1][j]
+                    b = cls.get(nu, a) + a - 1
+                    skew = cls.skew(mu, lam, shifted=True)
+                    if (a, b + 1) not in skew and (a + 1, b) not in skew:
+                        # case (9)
+                        gamma = mu
+                        corners[i][j] = a
+                        reasons[i][j] = '09'
+                    elif (a + 1, b) in skew:
+                        # case (10)
+                        gamma = mu
+                        corners[i][j] = a + 1
+                        reasons[i][j] = '10'
+                    elif (a, b + 1) in skew:
+                        if any(x == a + 1 for (x, y) in skew):
+                            # case (??)
+                            gamma = mu
+                            corners[i][j] = a + 1
+                            reasons[i][j] = '??a'
+                        elif a == b:
+                            # case (12)
+                            gamma = mu
+                            edges[i][j] = True
+                            corners[i][j] = b + 1
+                            reasons[i][j] = '12'
+                        else:
+                            # case (11)
+                            gamma = cls.add_box_to_row(mu, a + 1)
+                            reasons[i][j] = '11'
+                    else:
+                        raise Exception
+
+                elif lam == nu and edges[i - 1][j]:
+                    b = corners[i - 1][j]
+                    a = max([x for (x, y) in cls.shifted_shape(nu) if y == b])
+                    skew = cls.skew(mu, lam, shifted=True)
+
+                    if (a, b + 1) not in skew and (a + 1, b) not in skew:
+                        # case (13)
+                        gamma = mu
+                        corners[i][j] = b
+                        edges[i][j] = True
+                        reasons[i][j] = '13'
+                    elif (a, b + 1) in skew:
+                        # case (14)
+                        gamma = mu
+                        corners[i][j] = b + 1
+                        edges[i][j] = True
+                        reasons[i][j] = '14'
+                    elif (a + 1, b) in skew:
+                        if any(y == b + 1 for (x, y) in skew):
+                            # case (??)
+                            gamma = mu
+                            corners[i][j] = b + 1
+                            edges[i][j] = True
+                            reasons[i][j] = '??b'
+                        else:
+                            # case (15)
+                            gamma = cls.add_box_to_column(mu, b + 1, shift=True)
+                            edges[i][j] = True
+                            reasons[i][j] = '15'
+                    else:
+                        raise Exception
+                else:
+                    raise Exception
+                g[i][j] = gamma
+
+        return g, edges, corners, reasons
+
+    @classmethod
+    def growth_diagram(cls, dictionary, m=None, n=None):
+        dictionary = {k: 1 for k in dictionary} if type(dictionary) == set else dictionary
+        n = max([0] + [i for i, _ in dictionary]) if n is None else n
+        m = max([0] + [j for _, j in dictionary]) if m is None else m
+        g = [[tuple() for _ in range(m + 1)] for _ in range(n + 1)]
+        for i in range(1, n + 1):
+            for j in range(1, m + 1):
+                carry, k = dictionary.get((i, j), 0), 1
+                rho, mu, nu = g[i - 1][j - 1], g[i - 1][j], g[i][j - 1]
+                lam = []
+                while True:
+                    v = max(cls.get(mu, k), cls.get(nu, k)) + carry
+                    if v == 0:
+                        break
+                    lam.append(v)
+                    carry, k = min(cls.get(mu, k), cls.get(nu, k)) - cls.get(rho, k), k + 1
+                g[i][j] = Partition.trim(lam)
+        return g
+
+    @classmethod
+    def print_growth_diagram(cls, g):
+        g = cls.growth_diagram(g) if type(g) != list else g
+        g = [[str(mu) for mu in row] for row in g]
+        m = max([6] + [len(mu) for row in g for mu in row])
+        g = [[mu + (m - len(mu)) * ' ' for mu in row] for row in g]
+        print()
+        for row in reversed(g):
+            print(' '.join(row))
+        print()

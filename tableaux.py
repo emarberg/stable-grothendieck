@@ -308,6 +308,14 @@ class Tableau:
     def serialize(self):
         return self.boxes
 
+    def last_box_in_row(self, row):
+        cols = [c for (i, c) in self.boxes if i == row]
+        return max(cols) if cols else None
+
+    def last_box_in_column(self, col):
+        rows = [r for (r, j) in self.boxes if j == col]
+        return max(rows) if rows else None
+
     def find(self, v):
         return [(i, j) for i, j, values in self if v in values]
 
@@ -1173,6 +1181,35 @@ class Tableau:
                 yield thisdiff
         else:
             yield diff
+
+    @classmethod
+    def from_shifted_growth_diagram(cls, growth, edges, corners):
+        def shdiff(nu, lam):
+            return next(iter(Partition.skew(nu, lam, shifted=True)))
+
+        p, q = Tableau(), Tableau()
+        n, m = len(growth) - 1, len(growth[0]) - 1 if growth else 0
+
+        for i in range(1, n + 1):
+            mu, nu = growth[i][m], growth[i - 1][m]
+            for a, b in Partition.skew(mu, nu, shifted=True):
+                p = p.add(a, b, i)
+
+        for i in range(1, m + 1):
+            mu, nu = growth[n][i], growth[n][i - 1]
+            v = -i if edges[n][i] else i
+            j = corners[n][i]
+            if mu != nu:
+                a, b = shdiff(mu, nu)
+                q = q.add(a, b, v)
+            elif v < 0:
+                x = q.last_box_in_column(j)
+                q = q.add(x, j, v)
+            else:
+                x = q.last_box_in_row(j)
+                q = q.add(j, x, v)
+
+        return p, q
 
 
 class ReversePlanePartition(Tableau):

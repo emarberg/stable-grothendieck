@@ -54,8 +54,10 @@ def test_shifted_growth_diagram():
     assert c == ctest
 
     p, q = Tableau.from_shifted_growth_diagram(g, e, c)
+    pp, qq = InsertionAlgorithm.orthogonal_hecke(w)
     print(p)
     print(q)
+    assert p == pp and q == qq
 
     w = (4, 5, 1, 2, 3, 4, 6, 5, 6, 4)
     g, e, c, r = Partition.shifted_growth_diagram(w)
@@ -65,18 +67,34 @@ def test_shifted_growth_diagram():
     Partition.print_growth_diagram(r)
 
     p, q = Tableau.from_shifted_growth_diagram(g, e, c)
+    pp, qq = InsertionAlgorithm.orthogonal_hecke(w)
     print(p)
     print(q)
+    assert p == pp and q == qq
+
+    w = (1, 3, 2, 5, 6, 4, 3, 5, 2, 4, 5, 6)
+    g, e, c, r = Partition.shifted_growth_diagram(w)
+    Partition.print_growth_diagram(g)
+    Partition.print_growth_diagram(e)
+    Partition.print_growth_diagram(c)
+    Partition.print_growth_diagram(r)
+
+    p, q = Tableau.from_shifted_growth_diagram(g, e, c)
+    pp, qq = InsertionAlgorithm.orthogonal_hecke(w)
+    print(p)
+    print(q)
+    assert p == pp and q == qq
 
 
 def test_shifted_growth_words(n=4):
+    c = True
     reasons = set()
     for a in Permutation.involutions(n):
         for w in a.get_involution_words():
-            p, q, = InsertionAlgorithm.orthogonal_hecke(w)
+            print(w)
+            p, q = InsertionAlgorithm.orthogonal_hecke(w)
             g, e, c, r = Partition.shifted_growth_diagram(w)
             reasons |= set([x for row in r for x in row])
-            print(w)
             Partition.print_growth_diagram(g)
             Partition.print_growth_diagram(e)
             Partition.print_growth_diagram(c)
