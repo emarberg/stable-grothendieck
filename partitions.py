@@ -392,7 +392,6 @@ class Partition:
                             reasons[i][j] = '05'
                         else:
                             # case (6)
-                            # print('case 6')
                             gamma = mu
                             corners[i][j] = a + 1
                             reasons[i][j] = '06'
@@ -413,7 +412,7 @@ class Partition:
                     b = cls.get(nu, a) + a - 1
                     skew = cls.skew(mu, lam, shifted=True)
                     if (a, b + 1) not in skew and (a + 1, b) not in skew:
-                        # case (9)
+                        # case (9) --
                         gamma = mu
                         corners[i][j] = a
                         reasons[i][j] = '09'
@@ -447,7 +446,7 @@ class Partition:
                     skew = cls.skew(mu, lam, shifted=True)
 
                     if (a, b + 1) not in skew and (a + 1, b) not in skew:
-                        # case (13)
+                        # case (13) --
                         gamma = mu
                         corners[i][j] = b
                         edges[i][j] = True

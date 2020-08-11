@@ -85,6 +85,19 @@ def test_shifted_growth_diagram():
     print(q)
     assert p == pp and q == qq
 
+    w = (3, 2, 1)
+    g, e, c, r = Partition.shifted_growth_diagram(w)
+    Partition.print_growth_diagram(g)
+    Partition.print_growth_diagram(e)
+    Partition.print_growth_diagram(c)
+    Partition.print_growth_diagram(r)
+
+    p, q = Tableau.from_shifted_growth_diagram(g, e, c)
+    pp, qq = InsertionAlgorithm.orthogonal_hecke(w)
+    print(p)
+    print(q)
+    assert p == pp and q == qq
+
 
 def test_shifted_growth_words(n=4):
     c = True
@@ -95,13 +108,13 @@ def test_shifted_growth_words(n=4):
             p, q = InsertionAlgorithm.orthogonal_hecke(w)
             g, e, c, r = Partition.shifted_growth_diagram(w)
             reasons |= set([x for row in r for x in row])
-            Partition.print_growth_diagram(g)
-            Partition.print_growth_diagram(e)
-            Partition.print_growth_diagram(c)
-            print(p)
-            print(q)
+            # Partition.print_growth_diagram(g)
+            # Partition.print_growth_diagram(e)
+            # Partition.print_growth_diagram(c)
+            # print(p)
+            # print(q)
             pp, qq = Tableau.from_shifted_growth_diagram(g, e, c)
-            print(pp)
-            print(qq)
+            # print(pp)
+            # print(qq)
             assert p == pp and q == qq
     print(sorted(reasons))
