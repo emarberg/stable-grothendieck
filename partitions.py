@@ -5,6 +5,9 @@ import itertools
 PARTITIONS = {}
 RIM_CACHE = {}
 
+DECOMPOSE_RIM_CACHE = {}
+DECOMPOSE_VSTRIP_CACHE = {}
+
 
 class Partition:
 
@@ -260,6 +263,50 @@ class Partition:
 
         for nu in _subpartitions(mu, strict):
             yield cls.trim(nu)
+
+    @cached_value(DECOMPOSE_VSTRIP_CACHE)
+    def decompose_shifted_shape_by_vertical_strips(cls, mu): # noqa
+        mu = cls.trim(mu)
+        if mu == ():
+            return [()]
+
+        i = 0
+        while i < len(mu) and mu[i] + i == mu[0]:
+            i += 1
+
+        return [
+            cls.trim(mu[:a] + tuple(mu[b] - 1 for b in range(a, i)) + nu)
+            for a in range(i + 1)
+            for nu in cls.decompose_shifted_shape_by_vertical_strips(mu[i:])
+        ]
+
+        # ans = [cls.trim(mu)]
+        # lam = tuple(a + i for i, a in enumerate(ans[0]))
+        # i = 0
+        # while i < len(lam):
+        #     j = i + 1
+        #     while j < len(lam) and lam[i] == lam[j]:
+        #         j += 1
+        #     ans = [
+        #         cls.trim(nu[:i + k] + tuple(nu[a] - 1 for a in range(i + k, j)) + nu[j:])
+        #         for k in range(j - i + 1)
+        #         for nu in ans
+        #     ]
+        #     i = j
+        # return ans
+
+    @cached_value(DECOMPOSE_RIM_CACHE)
+    def decompose_shifted_shape_by_rims(cls, mu): # noqa
+        mu = cls.trim(mu)
+        if mu == ():
+            return [()]
+        ans = []
+        for nu in cls.decompose_shifted_shape_by_rims(mu[1:]):
+            a = (nu[0] + 1) if nu else 0
+            b = mu[1] if len(mu) > 1 else 0
+            for a in range(max(a, b), mu[0] + 1):
+                ans.append(cls.trim((a,) + nu))
+        return ans
 
     @cached_value(RIM_CACHE)
     def _rims_helper(cls, border):  # noqa

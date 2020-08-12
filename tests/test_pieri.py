@@ -3,6 +3,105 @@ from partitions import Partition
 from vectors import Vector
 import pytest
 import utils
+import time
+from collections import defaultdict
+
+
+def pairs_lhs(n):
+    lhs = defaultdict(list)
+    for nu in Partition.all(n, strict=True):
+        for lam in Partition.decompose_shifted_shape_by_rims(nu):
+            for mu in Partition.decompose_shifted_shape_by_vertical_strips(lam):
+                if len(mu) == len(lam):
+                    lhs[(nu, mu)].append(lam)
+    return lhs
+
+
+def pairs_rhs(n):
+    rhs = defaultdict(list)
+    for nu in Partition.all(n, strict=True):
+        for lam in Partition.decompose_shifted_shape_by_vertical_strips(nu):
+            if len(lam) == len(nu):
+                for mu in Partition.decompose_shifted_shape_by_rims(lam):
+                    rhs[(nu, mu)].append(lam)
+    return rhs
+
+
+def seconds(t):
+    return str(int(1000 * t) / 1000.0)
+
+
+def pairs_io(n=5):
+    assert 0 <= n < 256
+
+    def tobytes(nu, lam, mu):
+        return bytes(nu + (0,) + lam + (0,) + mu + (0,))
+
+    def frombytes(b, i):
+        nu = []
+        while i < len(b) and b[i] != 0:
+            nu.append(b[i])
+            i += 1
+        i += 1
+        lam = []
+        while i < len(b) and b[i] != 0:
+            lam.append(b[i])
+            i += 1
+        i += 1
+        mu = []
+        while i < len(b) and b[i] != 0:
+            mu.append(b[i])
+            i += 1
+        i += 1
+        return tuple(nu), tuple(lam), tuple(mu), i
+
+    def read(filename):
+        print()
+        print('Trying to read from `%s`' % filename)
+        t0 = time.time()
+        with open(filename, 'rb') as file:
+            b = bytearray(file.read())
+        print('* Opened file in %s seconds' % seconds(time.time() - t0))
+        ans = defaultdict(list)
+        i = 0
+        while i < len(b):
+            nu, lam, mu, i = frombytes(b, i)
+            ans[(nu, mu)].append(lam)
+        print('* Succeeded in %s seconds' % seconds(time.time() - t0))
+        print()
+        return ans
+
+    def write(file, ans):
+        t0 = time.time()
+        b = bytearray()
+        for nu, mu in ans:
+            for lam in ans[(nu, mu)]:
+                b += tobytes(nu, lam, mu)
+        print('* Writing to file `%s`' % file)
+        with open(file, 'wb') as f:
+            f.write(b)
+        print('* Succeeded in %s seconds' % seconds(time.time() - t0))
+        print()
+
+    directory = '/Users/emarberg/examples/gpq/'
+    lfile = directory + 'rims_then_strips_%s.b' % n
+    rfile = directory + 'strips_then_rims_%s.b' % n
+
+    try:
+        lhs = read(lfile)
+    except FileNotFoundError:
+        print('* Failed, computing instead')
+        lhs = pairs_lhs(n)
+        write(lfile, lhs)
+
+    try:
+        rhs = read(rfile)
+    except FileNotFoundError:
+        print('* Failed, computing instead')
+        rhs = pairs_rhs(n)
+        write(rfile, rhs)
+
+    return lhs, rhs
 
 
 def test_rims():

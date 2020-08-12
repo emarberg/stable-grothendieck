@@ -112,3 +112,19 @@ def test_find_shifted_corners():
     assert Partition.find_shifted_outer_corner(mu, 1) is None
     assert Partition.find_shifted_outer_corner(mu, 2) is None
     assert Partition.find_shifted_outer_corner(mu, 3) == 1
+
+
+def test_decompose_shifted_shape_by_vertical_strips():
+    f = Partition.decompose_shifted_shape_by_vertical_strips
+    assert set(f(())) == {()}
+    assert set(f((1,))) == {(), (1,)}
+    assert set(f((2, 1))) == {(1,), (2,), (2, 1)}
+    assert set(f((3, 1))) == {(2,), (2, 1), (3,), (3, 1)}
+
+
+def test_decompose_shifted_shape_by_rims():
+    f = Partition.decompose_shifted_shape_by_rims
+    assert set(f(())) == {()}
+    assert set(f((1,))) == {(), (1,)}
+    assert set(f((2, 1))) == {(1,), (2,), (2, 1)}
+    assert set(f((3, 1))) == {(3, 1), (3,), (2, 1), (2,), (1,)}
