@@ -30,8 +30,13 @@ SHIFTED_RPP_VERTICAL_STRIPS_CACHE = {}
 
 KOG_CACHE = {}
 KLG_CACHE = {}
+
 KOG_COUNTS = {}
+KOG_MAPS = {}
+
 KLG_COUNTS = {}
+KLG_MAPS = {}
+
 KOG_COUNTS_HELPER = {}
 KLG_COUNTS_HELPER = {}
 
@@ -1030,6 +1035,11 @@ class Tableau:
             ans[nu].append(tab)
         return ans
 
+    @cached_value(KOG_COUNTS)
+    def KOG_counts(cls, nu, mu, p):  # noqa
+        rim = tuple(sorted(Partition.skew(nu, mu, shifted=True)))
+        return cls._KOG_count_helper(p, rim)
+
     @cached_value(KOG_COUNTS_HELPER)
     def _KOG_count_helper(cls, p, rim): # noqa
         if len(rim) == 0:
@@ -1058,7 +1068,7 @@ class Tableau:
             if len(term) == 3:
                 return y
 
-    @cached_value(KOG_COUNTS)
+    @cached_value(KOG_MAPS)
     def KOG_counts_by_shape(cls, content_max, mu): # noqa
         ans = {}
         for rim in Partition.rims(mu, content_max):
@@ -1152,7 +1162,7 @@ class Tableau:
             if len(term) == 3:
                 return y
 
-    @cached_value(KLG_COUNTS)
+    @cached_value(KLG_MAPS)
     def KLG_counts_by_shape(cls, content_max, mu): # noqa
         ans = {}
         for rim in Partition.rims(mu, content_max + 1):
@@ -1161,6 +1171,11 @@ class Tableau:
                 nu = cls._add_rim(mu, rim)
                 ans[nu] = count
         return ans
+
+    @cached_value(KLG_COUNTS)
+    def KLG_counts(cls, nu, mu, p):  # noqa
+        rim = tuple(sorted(Partition.skew(nu, mu, shifted=True)))
+        return cls._KLG_count_helper(p, rim)
 
     @classmethod
     def semistandard_shifted_setvalued(cls, max_entry, mu, nu=(), diagonal_primes=True):

@@ -6,6 +6,41 @@ import utils
 import time
 from collections import defaultdict
 
+LCACHE = {}
+RCACHE = {}
+
+
+def columns(lam, mu):
+    return len({j for (i, j) in Partition.skew(lam, mu, True)})
+
+
+def lvector(dictionary, nu, mu, p_max):
+    ans = LCACHE.get((nu, mu), [])
+    if len(ans) >= p_max:
+        return ans[:p_max]
+    for p in range(len(ans), p_max):
+        v = 0
+        for lam in dictionary[(nu, mu)]:
+            c = sum(lam) - sum(mu)
+            v += 2 ** (len(mu) - c) * (-1) ** (columns(lam, mu) + c) * Tableau.KOG_counts(nu, lam, p)
+        ans.append(v)
+    LCACHE[(nu, mu)] = ans
+    return ans
+
+
+def rvector(dictionary, nu, mu, p_max):
+    ans = RCACHE.get((nu, mu), [])
+    if len(ans) >= p_max:
+        return ans[:p_max]
+    for p in range(len(ans), p_max):
+        v = 0
+        for lam in dictionary[(nu, mu)]:
+            c = sum(nu) - sum(lam)
+            v += 2 ** (len(lam) - c) * (-1) ** (columns(nu, lam) + c) * Tableau.KLG_counts(lam, mu, p)
+        ans.append(v)
+    RCACHE[(nu, mu)] = ans
+    return ans
+
 
 def pairs_lhs(n):
     lhs = defaultdict(list)
@@ -25,6 +60,22 @@ def pairs_rhs(n):
                 for mu in Partition.decompose_shifted_shape_by_rims(lam):
                     rhs[(nu, mu)].append(lam)
     return rhs
+
+
+def lvectors(n, p):
+    ans = {}
+    dictionary = pairs_lhs(n)
+    for (nu, mu) in dictionary:
+        ans[(nu, mu, p)] = lvector(dictionary, nu, mu, p)
+    return ans
+
+
+def rvectors(n, p):
+    ans = {}
+    dictionary = pairs_rhs(n)
+    for (nu, mu) in dictionary:
+        ans[(nu, mu, p)] = rvector(dictionary, nu, mu, p)
+    return ans
 
 
 def seconds(t):
