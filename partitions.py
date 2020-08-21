@@ -11,7 +11,7 @@ DECOMPOSE_VSTRIP_CACHE = {}
 
 class Partition:
 
-    FRENCH = False
+    FRENCH = True
 
     @classmethod
     def add(cls, mu, row):
@@ -129,10 +129,11 @@ class Partition:
         return Partition.sort(dictionary.values(), trim=True)
 
     @classmethod
-    def printable(cls, mu, shifted=False):
+    def printable(cls, nu, mu=None, shifted=False):
         s = []
-        for i, a in enumerate(mu):
-            b = [(i * '  ' if shifted else '') + a * '* ']
+        for i, a in enumerate(nu):
+            x = 0 if mu is None else cls.get(mu, i + 1)
+            b = [(i * '  ' if shifted else '') + x * '. ' + (a - x) * '* ']
             s = (b + s) if cls.FRENCH else (s + b)
         if s:
             m = max(map(len, s))
@@ -203,6 +204,30 @@ class Partition:
             return mu
 
     @classmethod
+    def from_skew(cls, positions, shifted=False):
+        nu, mu = [], []
+        i = 1
+        while any(a >= i for (a, b) in positions):
+            row = [(a, b) for (a, b) in positions if a == i]
+            if row:
+                mu.append(min([b for (a, b) in positions if a == i]) - 1 - (i - 1 if shifted else 0))
+                nu.append(max([b for (a, b) in positions if a == i]) - (i - 1 if shifted else 0))
+            else:
+                mu.append(-1)
+                nu.append(-1)
+            i += 1
+        nu.append(0)
+        mu.append(0)
+        for i in range(len(nu) - 2, -1, -1):
+            if nu[i] == -1:
+                nu[i] = nu[i + 1] + (1 if shifted else 0)
+                mu[i] = nu[i]
+        nu, mu = cls.trim(nu), cls.trim(mu)
+        while len(nu) == len(mu):
+            nu, mu = cls.trim([a - 1 for a in nu]), cls.trim([a - 1 for a in mu])
+        return nu, mu
+
+    @classmethod
     def skew(cls, mu, nu, shifted=False):
         """Assumes nu is contained in mu."""
         ans = set()
@@ -264,6 +289,25 @@ class Partition:
         for nu in _subpartitions(mu, strict):
             yield cls.trim(nu)
 
+    @classmethod
+    def decrement_one(cls, nu):
+        i = 0
+        while i + 1 < len(nu) and nu[i] - 1 <= nu[i + 1]:
+            i += 1
+        return cls.trim(nu[:i] + (nu[i] - 1,) + nu[i + 1:])
+
+    @classmethod
+    def decrement_strict(cls, nu):
+        if nu == ():
+            return nu
+        i = 0
+        mu = list(cls.trim(nu))
+        mu[i] -= 1
+        while i + 1 < len(mu) and 0 < mu[i] == mu[i + 1]:
+            i += 1
+            mu[i] -= 1
+        return cls.trim(mu)
+
     @cached_value(DECOMPOSE_VSTRIP_CACHE)
     def decompose_shifted_shape_by_vertical_strips(cls, mu): # noqa
         mu = cls.trim(mu)
@@ -279,21 +323,6 @@ class Partition:
             for a in range(i + 1)
             for nu in cls.decompose_shifted_shape_by_vertical_strips(mu[i:])
         ]
-
-        # ans = [cls.trim(mu)]
-        # lam = tuple(a + i for i, a in enumerate(ans[0]))
-        # i = 0
-        # while i < len(lam):
-        #     j = i + 1
-        #     while j < len(lam) and lam[i] == lam[j]:
-        #         j += 1
-        #     ans = [
-        #         cls.trim(nu[:i + k] + tuple(nu[a] - 1 for a in range(i + k, j)) + nu[j:])
-        #         for k in range(j - i + 1)
-        #         for nu in ans
-        #     ]
-        #     i = j
-        # return ans
 
     @cached_value(DECOMPOSE_RIM_CACHE)
     def decompose_shifted_shape_by_rims(cls, mu): # noqa
