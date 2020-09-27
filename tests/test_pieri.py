@@ -46,6 +46,9 @@ class RowVector:
     def __rmul__(self, other):
         return self * other
 
+    def __neg__(self):
+        return RowVector([-i for i in self.row])
+
     def __rshift__(self, n):
         assert type(n) == int and n >= 0
         return RowVector(n * [0] + self.row[:self.size - n])
@@ -68,13 +71,13 @@ class RowVector:
         return hash(tuple(self.row))
 
     def __repr__(self):
-        m = max(1 + max([0] + [len(str(i)) for i in self.row]), 5)
+        m = max(1 + max([0] + [len(str(i)) for i in self.row]), 6)
 
         def pad(i):
             s = str(i)
-            return s + (m - len(s)) * ' '
+            return (m - len(s)) * ' ' + s + ','
 
-        return '[ ' + (''.join([pad(i) for i in self.row])).strip() + ' ]'
+        return 'RowVector([ ' + (''.join([pad(i) for i in self.row])) + ' ])'
 
     def copy(self):
         return RowVector(self.row.copy())
@@ -98,7 +101,53 @@ class RowVector:
         print()
 
     @classmethod
+    def zero(cls, length):
+        row = length * [0]
+        return cls(row)
+
+    @classmethod
+    def elementary(cls, index, length, coeff=1):
+        row = length * [0]
+        row[index] = coeff
+        return cls(row)
+
+    @classmethod
     def solve(cls, vectors, target, integral=False):
+        n = len(vectors)
+        i = [_ for _ in range(n) if target == vectors[_]]
+        if i:
+            return [cls.elementary(i[0], n)]
+        i = [
+            (a, b)
+            for a in range(n)
+            for b in range(a + 1, n)
+            if vectors[a] + vectors[b] == target]
+        if i:
+            a, b = i[0]
+            return [cls.elementary(a, n) + cls.elementary(b, n)]
+        i = [
+            (a, b, c)
+            for a in range(n)
+            for b in range(a + 1, n)
+            for c in range(b + 1, n)
+            if vectors[a] + vectors[b] + vectors[c] == target]
+        if i:
+            a, b, c = i[0]
+            return [cls.elementary(a, n) + cls.elementary(b, n) + cls.elementary(c, n)]
+        i = [
+            (a, b, c, d)
+            for a in range(n)
+            for b in range(a + 1, n)
+            for c in range(b + 1, n)
+            for d in range(c + 1, n)
+            if vectors[a] + vectors[b] + vectors[c] + vectors[d] == target]
+        if i:
+            a, b, c, d = i[0]
+            return [cls.elementary(a, n) + cls.elementary(b, n) + cls.elementary(c, n) + cls.elementary(d, n)]
+        i = [_ for _ in range(n) if target == -vectors[_]]
+        if i:
+            return [cls.elementary(i[0], n, -1)]
+
         def find_nonzero(arr, j):
             for i in range(j, len(arr[j])):
                 if arr[j][i] != 0:
@@ -108,7 +157,10 @@ class RowVector:
             a = arr[j][i]
             b = arr[j][k]
             if b != 0:
-                lcm = int(numpy.lcm(a, b))
+                try:
+                    lcm = int(numpy.lcm(a, b))
+                except:
+                    return []
                 for t in range(len(arr)):
                     arr[t].row[k] = arr[t][k] * (lcm // b) - arr[t][i] * (lcm // a)
 
@@ -163,7 +215,7 @@ def split(nu, mu):
             i += 1
         rest = {(a, b) for (a, b) in skew if (a <= i or b >= j)}
         split_nu, split_mu = Partition.from_skew(rest, shifted=False)
-        diagonal = any(a == b for (a, b) in skew)
+        diagonal = min(min([abs(a - b) for (a, b) in skew]), 1)
         SPLIT_CACHE[(nu, mu)] = (split_nu, split_mu, diagonal)
     return SPLIT_CACHE[(nu, mu)]
 
@@ -212,7 +264,12 @@ def lvector(nu, mu, p_max):
         v = 0
         for lam in lshapes(nu, mu):
             c = sum(lam) - sum(mu)
-            d = Tableau.KOG_counts(nu, lam, p) if p == 0 else 2 * Tableau.KOG_counts(nu, lam, p) + Tableau.KOG_counts(nu, lam, p + 1)
+
+            if p == 0:
+                d = Tableau.KOG_counts(nu, lam, p) * (-1 if columns(nu, mu) == 1 else 1)
+            else:
+                d = 2 * Tableau.KOG_counts(nu, lam, p) + Tableau.KOG_counts(nu, lam, p + 1)
+
             v += 2 ** (len(mu) - c) * (-1) ** (columns(lam, mu) + c) * d
         ans.append(v)
     LCACHE[(nu, mu)] = ans
@@ -228,6 +285,10 @@ def rvector(nu, mu, p_max):
         for lam in rshapes(nu, mu):
             c = sum(nu) - sum(lam)
             v += 2 ** (len(lam) - c) * (-1) ** (columns(nu, lam) + c) * Tableau.KLG_counts(lam, mu, p)
+
+        if p == 0 and columns(nu, mu) == 1:
+            v *= -1
+
         ans.append(v)
     RCACHE[(nu, mu)] = ans
     return ans
@@ -270,7 +331,7 @@ def is_reducible(nu, mu):
         return True
     if any(nu[i] + 1 < mu[i - 1] for i in range(1, len(nu))):
         return True
-    if sum(nu) - sum(mu) <= 5:
+    if sum(nu) - sum(mu) <= 0:
         return True
     # if Partition.get(nu, 1) <= Partition.get(mu, 1) + 1:
     #    return True
@@ -288,12 +349,12 @@ def is_reducible(nu, mu):
         return True
 
 
-def deep_dive(nu, mu):
+def deep_dive(nu=(6, 5, 3, 2, 1), mu=(4, 3, 2, 1)):
     split_nu, split_mu, diagonal = split(nu, mu)
     print()
     print('TYPE:')
     print()
-    print(split_nu, split_mu)
+    print(split_nu, split_mu, diagonal)
     print()
     print(Partition.printable(split_nu, split_mu, shifted=False))
     print()
@@ -306,22 +367,46 @@ def deep_dive(nu, mu):
     m = sum(nu) - sum(mu) + 2
     target = lvector(nu, mu, m)
 
-    print(target)
+    nu1, mu1 = Partition.decrement_one(nu), mu
+    nu2, mu2 = Partition.decrement_one(Partition.decrement_one(nu)), mu
+    nu3, mu3 = Partition.decrement_one(Partition.decrement_one(Partition.decrement_one(nu))), Partition.decrement_one(mu)
+    nu4, mu4 = Partition.trim(nu[1:]), Partition.trim(mu[1:])
+    nu5, mu5 = Partition.trim(nu[2:]), Partition.trim(mu[2:])
+    nu6, mu6 = tuple(i - 1 for i in nu), tuple(i - 1 for i in mu)
+
+    print(Partition.printable(nu1, mu1, shifted=True), '\n')
+    print(Partition.printable(nu2, mu2, shifted=True), '\n')
+    print(Partition.printable(nu3, mu3, shifted=True), '\n')
+    print(Partition.printable(nu4, mu4, shifted=True), '\n')
+    print(Partition.printable(nu5, mu5, shifted=True), '\n')
+
+    m = sum(nu) - sum(mu) + 2
+
+    print('nu =', nu, '; mu =', mu)
+    print()
+    print(Partition.printable(nu, mu, shifted=True))
     print()
 
-    vectors = []
-    for (nu2, mu2) in [
-        ((4, 2, 1), (2, 1)),
-        ((3, 2, 1), (2, 1)),
-    ]:
-        v = lvector(nu2, mu2, m)
-        w = lvector(nu2, mu2, m) >> 1
-        print(v, nu2, mu2)
-        print(w)
-        print()
-        print(Partition.printable(nu2, mu2, shifted=True))
-        print()
-        vectors += [v, w]
+    v = [
+        lvector(nu1, mu1, m),
+        lvector(nu1, mu1, m) >> 1,
+        lvector(nu2, mu2, m),
+        lvector(nu2, mu2, m) >> 1,
+        lvector(nu3, mu3, m),
+        lvector(nu3, mu3, m) >> 1,
+        lvector(nu4, mu4, m),
+        lvector(nu4, mu4, m) >> 1,
+        lvector(nu5, mu5, m),
+        lvector(nu5, mu5, m) >> 1,
+        lvector(nu5, mu5, m) >> 2,
+    ]
+    print('target =')
+    print(target)
+    print()
+    RowVector.print_matrix(v)
+    print()
+    print('partial solutions =', RowVector.solve(v, target, integral=False))
+    print()
     # for mu2 in Partition.subpartitions(mu, strict=True):
     #     for nu2 in Partition.subpartitions(nu, strict=True):
     #         if (nu, mu) != (nu2, mu2) and Partition.contains(nu2, mu2):
@@ -335,13 +420,25 @@ def deep_dive(nu, mu):
     #             print(Partition.printable(nu2, mu2, shifted=True))
     #             print()
     #             vectors += [v, w]
-    print('solutions:', RowVector.solve(vectors, target))
 
 
 def test_all(n=6):
+    def inspect(w, target, good, unique=None):
+        sort = sorted(good, key=lambda x: -unique[x]) if unique else good
+        for g in sort:
+            a = w[0] * g[0]
+            for i in range(1, len(g)):
+                a += w[i] * g[i]
+            if target == a:
+                yield g
+
     types = {}
     success = [0, 0]
-    unique = set()
+
+    unique = {}
+
+    refined_unique = defaultdict(list)
+    good = set()
     for nu in Partition.all(n, strict=True):
         for mu in set(lshapes(nu)) | set(rshapes(nu)):
             if is_reducible(nu, mu):
@@ -352,71 +449,99 @@ def test_all(n=6):
             types[triple].append((nu, mu))
 
     for (split_nu, split_mu, diagonal) in types:
+        # if (split_nu, split_mu) != ((3, 1, 1, 1), ()):
+        #    continue
         target = RowVector()
-        w = [RowVector() for i in range(11)]
+        w = [RowVector() for i in range(9)]
 
         # print(10 * '\n')
         domain = types[(split_nu, split_mu, diagonal)]
-        for (nu, mu) in domain:
-            if mu == ():
-                continue
 
+        # if len(domain) <= 2:
+        #     continue
+
+        for (nu, mu) in domain:
             nu1, mu1 = Partition.decrement_one(nu), mu
-            nu2, mu2 = Partition.decrement_one(nu), Partition.decrement_one(mu)
-            nu3, mu3 = Partition.decrement_one(Partition.decrement_one(nu)), Partition.decrement_one(mu)
+            # nu2, mu2 = Partition.decrement_one(Partition.decrement_one(nu)), mu
+            # nu3, mu3 = Partition.decrement_one(Partition.decrement_one(nu)), Partition.decrement_one(mu)
             nu4, mu4 = Partition.trim(nu[1:]), Partition.trim(mu[1:])
             nu5, mu5 = Partition.trim(nu[2:]), Partition.trim(mu[2:])
+            nu6, mu6 = Partition.trim(nu[3:]), Partition.trim(mu[3:])
 
             m = sum(nu) - sum(mu) + 2
 
-            target |= lvector(nu, mu, m)
+            v = lvector(nu, mu, m)
+            target |= v
 
-            w[0] |= lvector(nu1, mu1, m)
-            w[1] |= lvector(nu1, mu1, m) >> 1
+            w[0] |= lvector(nu4, mu4, m)
+            w[1] |= lvector(nu4, mu4, m) >> 1
+            w[2] |= lvector(nu4, mu4, m) >> 2
 
-            w[2] |= lvector(nu2, mu2, m)
-            w[3] |= lvector(nu2, mu2, m) >> 1
+            w[3] |= lvector(nu5, mu5, m)
+            w[4] |= lvector(nu5, mu5, m) >> 1
+            w[5] |= lvector(nu5, mu5, m) >> 2
 
-            w[4] |= lvector(nu3, mu3, m)
-            w[5] |= lvector(nu3, mu3, m) >> 1
+            w[6] |= lvector(nu1, mu1, m)
+            w[7] |= lvector(nu1, mu1, m) >> 1
+            w[8] |= lvector(nu1, mu1, m) >> 2
 
-            w[6] |= lvector(nu4, mu4, m)
-            w[7] |= lvector(nu4, mu4, m) >> 1
+            # v = RowVector.elementary(1, len(v))
+            # w[9] |= v
 
-            w[8] |= lvector(nu5, mu5, m)
-            w[9] |= lvector(nu5, mu5, m) >> 1
-            w[10] |= lvector(nu5, mu5, m) >> 2
-            assert lvector(nu, mu, m) == rvector(nu, mu, m)
+            # w[9] |= lvector(nu6, mu6, m)
+            # w[10] |= lvector(nu6, mu6, m) >> 1
+            # w[11] |= lvector(nu6, mu6, m) >> 2
 
-        solved = RowVector.solve(w, target)
-        # if solved:
-        #     solved = solved[0]
-        #     while not all(type(t) == int and abs(t) <= 2 for t in solved):
-        #         keep = {i for i in range(len(w)) if type(solved[i]) == int and abs(solved[i]) <= 2}
-        #         w = [w[i] for i in keep]
-        #         test = RowVector.solve(w, target)
-        #         if test:
-        #             solved = test[0]
-        #         else:
-        #             break
-        if solved: # and all(type(t) == int and abs(t) <= 2 for t in solved):
+            # w[8] |= lvector(nu2, mu2, m)
+            # w[9] |= lvector(nu2, mu2, m) >> 1
+
+            # w[10] |= lvector(nu3, mu3, m)
+            # w[11] |= lvector(nu3, mu3, m) >> 1
+
+            # w[12] |= lvector(nu6, mu6, m)
+            # w[13] |= lvector(nu6, mu6, m) >> 1
+
+            try:
+                assert lvector(nu, mu, m) == rvector(nu, mu, m)
+            except:
+                print(Partition.printable(nu, mu, shifted=True), '\n')
+                print(lvector(nu, mu, m), '==', rvector(nu, mu, m))
+                input('')
+
+        k = 1
+        solved = list(inspect(w, k * target, good, unique))
+        if not solved:
+            solved = [k * x for x in RowVector.solve(w, target)]
+            if solved:
+                integral = [RowVector([int(a) for a in solved[0]])]
+                if inspect(w, k * target, integral):
+                    solved = integral
+
+        if solved:  # and all(type(t) == int for t in solved[0]):
             solved = solved[0]
             success[0] += 1
-            unique.add(solved)
-            if len(domain) > 1:
-                print(len(domain), ':', solved)
-            continue
+            unique[solved] = unique.get(solved, 0) + 1
+            for (nu, mu) in domain:
+                x = sum(nu) - sum(mu)
+            refined_unique[solved].append((split_nu, split_mu, diagonal, domain, w, target))
+            # if len(domain) > 1:
+            #    print(len(domain), ':', solved, diagonal)
+            if all(type(i) == int for i in solved):
+                good.add(solved)
+            if solved[-1] == 0:
+                continue
         else:
             success[1] += 1
             for (nu, mu) in domain:
-                if mu == ():
-                    continue
+                # if mu == ():
+                #    continue
 
                 nu1, mu1 = Partition.decrement_one(nu), mu
-                nu2, mu2 = Partition.decrement_one(nu), Partition.decrement_one(mu)
-                nu3, mu3 = Partition.decrement_one(Partition.decrement_one(nu)), Partition.decrement_one(mu)
+                # nu2, mu2 = Partition.decrement_one(Partition.decrement_one(nu)), mu
+                # nu3, mu3 = Partition.decrement_one(Partition.decrement_one(nu)), Partition.decrement_one(mu)
                 nu4, mu4 = Partition.trim(nu[1:]), Partition.trim(mu[1:])
                 nu5, mu5 = Partition.trim(nu[2:]), Partition.trim(mu[2:])
+                # nu6, mu6 = Partition.decrement_one(Partition.decrement_one(nu)), mu
 
                 m = sum(nu) - sum(mu) + 2
 
@@ -425,18 +550,29 @@ def test_all(n=6):
                 print(Partition.printable(nu, mu, shifted=True))
                 print()
 
+                # print(Partition.printable(nu1, mu1, shifted=True), '\n')
+                # print(Partition.printable(nu2, mu2, shifted=True), '\n')
+                # print(Partition.printable(nu3, mu3, shifted=True), '\n')
+                # print(Partition.printable(nu4, mu4, shifted=True), '\n')
+                # print(Partition.printable(nu5, mu5, shifted=True), '\n')
+                # print(Partition.printable(nu6, mu6, shifted=True), '\n')
+
                 v = [
-                    lvector(nu1, mu1, m),
-                    lvector(nu1, mu1, m) >> 1,
-                    lvector(nu2, mu2, m),
-                    lvector(nu2, mu2, m) >> 1,
-                    lvector(nu3, mu3, m),
-                    lvector(nu3, mu3, m) >> 1,
                     lvector(nu4, mu4, m),
                     lvector(nu4, mu4, m) >> 1,
+                    lvector(nu4, mu4, m) >> 2,
                     lvector(nu5, mu5, m),
                     lvector(nu5, mu5, m) >> 1,
                     lvector(nu5, mu5, m) >> 2,
+                    lvector(nu1, mu1, m),
+                    lvector(nu1, mu1, m) >> 1,
+                    lvector(nu1, mu1, m) >> 2,
+                    # lvector(nu2, mu2, m),
+                    # lvector(nu2, mu2, m) >> 1,
+                    # lvector(nu3, mu3, m),
+                    # lvector(nu3, mu3, m) >> 1,
+                    # lvector(nu6, mu6, m),
+                    # lvector(nu6, mu6, m) >> 1,
                 ]
                 print('target =')
                 print(lvector(nu, mu, m))
@@ -449,6 +585,12 @@ def test_all(n=6):
                 # for u in unique:
                 #     print('*', u)
 
+        RowVector.print_matrix(w)
+        RowVector.print_matrix([target])
+
+        print(Partition.printable(nu, mu, shifted=True), '\n')
+        print(Partition.printable(nu1, mu1, shifted=True), '\n')
+
         print()
         print('TYPE:')
         print()
@@ -459,8 +601,35 @@ def test_all(n=6):
         print()
         print(solved)
         print()
-        input('')
+        # input('')
         print(10 * '\n')
+    print()
+
+    for u in sorted(unique, key=lambda x: -unique[x]):
+        print(u, ':', unique[u])
+        for (split_nu, split_mu, diagonal, domain, w, target) in refined_unique[u][:10]:
+            # RowVector.print_matrix(w)
+            # RowVector.print_matrix([target])
+            print()
+            print('type:', split_nu, split_mu, diagonal)
+            print()
+            print(Partition.printable(split_nu, split_mu, shifted=False))
+            print()
+            # i = 1
+            # for nu, mu in domain:
+            #     print(i, 'of', len(domain), '\n')
+            #     print(Partition.printable(nu, mu, shifted=True))
+            #     print()
+            #     i += 1
+
+    print()
+    print('{')
+    for u in sorted(unique, key=lambda x: unique[x]):
+        print(u, ':', unique[u], ',')  # , unique[u], set(refined_unique[u]))
+    print('}')
+    print()
+    print('unique:', len(unique))
+    print()
     print(success)
 
 
