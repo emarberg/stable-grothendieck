@@ -97,7 +97,7 @@ class RowVector:
     def print_matrix(cls, vectors):
         print()
         for v in vectors:
-            print(v)
+            print(str(v))
         print()
 
     @classmethod
@@ -113,37 +113,46 @@ class RowVector:
 
     @classmethod
     def solve(cls, vectors, target, integral=False):
+        coeffs = [-1, 1]
         n = len(vectors)
-        i = [_ for _ in range(n) if target == vectors[_]]
-        if i:
-            return [cls.elementary(i[0], n)]
         i = [
-            (a, b)
+            (a, c1)
+            for a in range(n)
+            for c1 in coeffs
+            if target == vectors[a]]
+        if i:
+            a, c1 = i[0]
+            return [cls.elementary(a, n, c1)]
+        i = [
+            (a, b, c1, c2)
             for a in range(n)
             for b in range(a + 1, n)
-            if vectors[a] + vectors[b] == target]
+            for c1 in coeffs for c2 in coeffs
+            if c1 * vectors[a] + c2 * vectors[b] == target]
         if i:
-            a, b = i[0]
-            return [cls.elementary(a, n) + cls.elementary(b, n)]
+            a, b, c1, c2 = i[0]
+            return [cls.elementary(a, n, c1) + cls.elementary(b, n, c2)]
         i = [
-            (a, b, c)
+            (a, b, c, c1, c2, c3)
             for a in range(n)
             for b in range(a + 1, n)
             for c in range(b + 1, n)
-            if vectors[a] + vectors[b] + vectors[c] == target]
+            for c1 in coeffs for c2 in coeffs for c3 in coeffs
+            if c1 * vectors[a] + c2 * vectors[b] + c3 * vectors[c] == target]
         if i:
-            a, b, c = i[0]
-            return [cls.elementary(a, n) + cls.elementary(b, n) + cls.elementary(c, n)]
+            a, b, c, c1, c2, c3 = i[0]
+            return [cls.elementary(a, n, c1) + cls.elementary(b, n, c2) + cls.elementary(c, n, c3)]
         i = [
-            (a, b, c, d)
+            (a, b, c, d, c1, c2, c3, c4)
             for a in range(n)
             for b in range(a + 1, n)
             for c in range(b + 1, n)
             for d in range(c + 1, n)
-            if vectors[a] + vectors[b] + vectors[c] + vectors[d] == target]
+            for c1 in coeffs for c2 in coeffs for c3 in coeffs for c4 in coeffs
+            if c1 * vectors[a] + c2 * vectors[b] + c3 * vectors[c] + c4 * vectors[d] == target]
         if i:
-            a, b, c, d = i[0]
-            return [cls.elementary(a, n) + cls.elementary(b, n) + cls.elementary(c, n) + cls.elementary(d, n)]
+            a, b, c, d, c1, c2, c3, c4 = i[0]
+            return [cls.elementary(a, n, c1) + cls.elementary(b, n, c2) + cls.elementary(c, n, c3) + cls.elementary(d, n, c4)]
         i = [_ for _ in range(n) if target == -vectors[_]]
         if i:
             return [cls.elementary(i[0], n, -1)]
@@ -266,11 +275,14 @@ def lvector(nu, mu, p_max):
             c = sum(lam) - sum(mu)
 
             if p == 0:
-                d = Tableau.KOG_counts(nu, lam, p) * (-1 if columns(nu, mu) == 1 else 1)
+                d = Tableau.KOG_counts(nu, lam, p)
             else:
                 d = 2 * Tableau.KOG_counts(nu, lam, p) + Tableau.KOG_counts(nu, lam, p + 1)
+            v += d * 2 ** (len(mu) - c) * (-1) ** (columns(lam, mu) + c)
 
-            v += 2 ** (len(mu) - c) * (-1) ** (columns(lam, mu) + c) * d
+        if p == 0 and columns(nu, mu) == 1:
+            v *= -1
+
         ans.append(v)
     LCACHE[(nu, mu)] = ans
     return ans
@@ -329,10 +341,10 @@ def is_reducible(nu, mu):
         return True
     if any(nu[i] == mu[i] for i in range(len(mu))):
         return True
-    if any(nu[i] + 1 < mu[i - 1] for i in range(1, len(nu))):
-        return True
-    if sum(nu) - sum(mu) <= 0:
-        return True
+#    if any(nu[i] + 1 < mu[i - 1] for i in range(1, len(nu))):
+#        return True
+#    if nu == mu:
+#        return True
     # if Partition.get(nu, 1) <= Partition.get(mu, 1) + 1:
     #    return True
 
@@ -422,31 +434,34 @@ def deep_dive(nu=(6, 5, 3, 2, 1), mu=(4, 3, 2, 1)):
     #             vectors += [v, w]
 
 
+def get_types(n):
+    types = defaultdict(list)
+    for nu in Partition.all(n, strict=True):
+        for mu in set(lshapes(nu)) | set(rshapes(nu)):
+            if is_reducible(nu, mu):
+                continue
+            triple = split(nu, mu)
+            types[triple].append((nu, mu))
+    return types
+
+
 def test_all(n=6):
     def inspect(w, target, good, unique=None):
+        ans = []
         sort = sorted(good, key=lambda x: -unique[x]) if unique else good
         for g in sort:
             a = w[0] * g[0]
             for i in range(1, len(g)):
                 a += w[i] * g[i]
             if target == a:
-                yield g
+                ans.append(g)
+        return ans
 
-    types = {}
+    types = get_types(n)
     success = [0, 0]
-
     unique = {}
-
     refined_unique = defaultdict(list)
     good = set()
-    for nu in Partition.all(n, strict=True):
-        for mu in set(lshapes(nu)) | set(rshapes(nu)):
-            if is_reducible(nu, mu):
-                continue
-            triple = split(nu, mu)
-            if triple not in types:
-                types[triple] = []
-            types[triple].append((nu, mu))
 
     for (split_nu, split_mu, diagonal) in types:
         # if (split_nu, split_mu) != ((3, 1, 1, 1), ()):
@@ -509,7 +524,7 @@ def test_all(n=6):
                 input('')
 
         k = 1
-        solved = list(inspect(w, k * target, good, unique))
+        solved = inspect(w, k * target, good, unique)
         if not solved:
             solved = [k * x for x in RowVector.solve(w, target)]
             if solved:
@@ -608,8 +623,8 @@ def test_all(n=6):
     for u in sorted(unique, key=lambda x: -unique[x]):
         print(u, ':', unique[u])
         for (split_nu, split_mu, diagonal, domain, w, target) in refined_unique[u][:10]:
-            # RowVector.print_matrix(w)
-            # RowVector.print_matrix([target])
+            RowVector.print_matrix(w)
+            RowVector.print_matrix([target])
             print()
             print('type:', split_nu, split_mu, diagonal)
             print()
@@ -631,6 +646,201 @@ def test_all(n=6):
     print('unique:', len(unique))
     print()
     print(success)
+
+
+def summarize_tex(n=6):
+    def inspect(w, target, good, unique=None):
+        ans = []
+        sort = good
+        for solution in sort:
+            g, scalar = solution
+            a = w[0] * g[0]
+            for i in range(1, len(g)):
+                a += w[i] * g[i]
+            if scalar * target == a:
+                ans.append(solution)
+        return ans
+
+    def findsolutions(w, target, good, unique):
+        solved = inspect(w, target, good, unique)
+        if solved:
+            return solved[0]
+        solved = RowVector.solve(w, target)
+        for c in [1, 2, 3]:
+            integral = [(RowVector([int(c * a) for a in s]), c) for s in solved]
+            integral = inspect(w, target, integral)
+            if integral:
+                return integral[0]
+        return solved[0], 1
+
+    def get_target(domain):
+        target = RowVector()
+        w = [RowVector() for i in range(9)]
+        for (nu, mu) in domain:
+            nu1, mu1 = Partition.trim(nu[1:]), Partition.trim(mu[1:])
+            nu2, mu2 = Partition.trim(nu[2:]), Partition.trim(mu[2:])
+            nu3, mu3 = Partition.decrement_one(nu), mu
+
+            m = sum(nu) - sum(mu) + 2
+            v = lvector(nu, mu, m)
+            target |= v
+
+            w[0] |= lvector(nu1, mu1, m)
+            w[1] |= lvector(nu1, mu1, m) >> 1
+            w[2] |= lvector(nu1, mu1, m) >> 2
+
+            w[3] |= lvector(nu2, mu2, m)
+            w[4] |= lvector(nu2, mu2, m) >> 1
+            w[5] |= lvector(nu2, mu2, m) >> 2
+
+            w[6] |= lvector(nu3, mu3, m)
+            w[7] |= lvector(nu3, mu3, m) >> 1
+            w[8] |= lvector(nu3, mu3, m) >> 2
+
+            assert lvector(nu, mu, m) == rvector(nu, mu, m)
+        return target, w
+
+    good = [
+        # manually added
+        (RowVector([0, 0, 0, 3, 2, 0, 1, 1, 0, ]), 1),
+        (RowVector([0, 0, 0, 1, 0, 0, 0, 1, 0, ]), 1),
+        #
+        (RowVector([0, 0, 0, 0, 0, 0, 0, 1, 0, ]), 1),
+        (RowVector([0, 2, 0, 0, 0, 0, 0, 0, 0, ]), 1),
+        (RowVector([0, 1, 0, 0, 1, 0, 0, 0, 0, ]), 1),
+        (RowVector([0, 1, 0, 0, 0, 0, 0, 1, 0, ]), 1),
+        (RowVector([1, 1, 0, 0, 0, 0, 0, 0, 0, ]), 1),
+        (RowVector([0, 0, 0, 0, 0, 0, 1, 1, 0, ]), 1),
+        (RowVector([0, 1, 0, 0, 0, 0, -1, 0, 0, ]), 1),
+        (RowVector([0, 2, 0, 1, 0, 0, 0, 0, 0, ]), 1),
+        (RowVector([3, 2, 0, 0, 0, 0, 0, 0, 0, ]), 1),
+        (RowVector([1, 1, 0, 0, 0, 0, 0, 1, 0, ]), 1),
+        (RowVector([0, 1, 0, 0, 0, 0, 1, 1, 0, ]), 1),
+        (RowVector([3, 2, 0, 0, -2, 0, 0, 0, 0, ]), 1),
+        (RowVector([-1, 1, 0, 0, 1, 0, 0, 1, 0, ]), 1),
+        (RowVector([0, 0, 0, 1, 1, 0, 1, 1, 0, ]), 1),
+        (RowVector([1, 1, 0, 0, 0, 0, 1, 1, 0, ]), 1),
+        (RowVector([1, 1, 0, 1, 0, 0, 0, 1, 0, ]), 1),
+        (RowVector([0, 1, 0, 1, 0, 0, 1, 1, 0, ]), 1),
+        (RowVector([-1, 1, 0, 3, 3, 0, 0, 0, 0, ]), 1),
+        (RowVector([3, 2, 0, -2, -2, 0, 0, 0, 0, ]), 1),
+    ]
+
+    types = get_types(n)
+    refined_unique = defaultdict(list)
+    unique = {}
+    for (split_nu, split_mu, diagonal) in types:
+        domain = types[(split_nu, split_mu, diagonal)]
+        target, w = get_target(domain)
+        solved = findsolutions(w, target, good, unique)
+        unique[solved] = unique.get(solved, 0) + 1
+        refined_unique[solved].append((split_nu, split_mu, diagonal, domain, w, target))
+        if all(type(i) == int for i in solved[0]) and solved not in good:
+            good.append(solved)
+        if solved[1] > 1:
+            print('*', (split_nu, split_mu, diagonal))
+            print(' ', solved)
+            print()
+            RowVector.print_matrix(w)
+            RowVector.print_matrix([target])
+            # input('?')
+
+    def sorter(x):
+        row, scalar = x
+        a = len([i for i in row if i != 0])
+        b = abs(scalar) + sum([abs(i) for i in row])
+        return any(type(i) != int for i in row), scalar, a, b
+
+    print('{')
+    for u in sorted(unique, key=sorter):
+        print(u, ':', unique[u], ',')
+    print('}')
+    print()
+    print('unique:', len(unique))
+    print()
+
+    tokens = [
+        "\\nu', \\mu', p",
+        "\\nu', \\mu', p - 1",
+        "\\nu', \\mu', p - 2",
+        "\\nu'', \\mu'', p",
+        "\\nu'', \\mu'', p - 1",
+        "\\nu'', \\mu'', p - 2",
+        "\\nu^-, \\mu, p",
+        "\\nu^-, \\mu, p - 1",
+        "\\nu^-, \\mu, p - 2",
+        '\\nu, \\mu, p',
+    ]
+    tokens = ['\\Sigma(' + s + ')' for s in tokens]
+
+    def printrec(rowvec, scalar):
+        ans = ''
+        lhs = (str(scalar) if scalar != 1 else '') + tokens[-1]
+        for i, c in enumerate(rowvec[:-1]):
+            if c != 0:
+                ans += ('+ ' if c > 0 else '- ') + (str(abs(c)) if abs(c) != 1 else '') + ' ' + tokens[i]
+        ans = ans[1:] if ans[:1] == '+' else ans
+        return '\\begin{enumerate}\\item[] $' + lhs + ' = ' + ans + '$ \\end{enumerate}\n\n'
+
+    def printtype(split_nu, split_mu, diagonal):
+        lines = []
+        for i in range(1, len(split_nu) + 1):
+            b = Partition.get(split_nu, i)
+            a = Partition.get(split_mu, i)
+            line = ' & '.join(['\\none[\\cdot]' if i < a else '\\ ' for i in range(b)])
+            lines.append(line)
+        ytab = '$\\ytabsmall{\n' + ' \\\\\n'.join(reversed(lines)) + '\n}\\quad$'
+
+        ans = '\\begin{itemize}\\item '
+        ans += ytab
+        # ans += '$\\mu = %s' % str(split_mu) + '$, '
+        # ans += '$\\nu = %s' % str(split_nu) + '$, '
+        ans += 'meets diagonal: {\\tt ' + str(bool(diagonal)) + '}.'
+        ans += ' \\end{itemize}\n'
+        return ans
+
+    directory = '/Users/emarberg/Dropbox/projects/shifted-stable-grothendieck/tex/2 - hopf algebras/draft1/'
+    filename = directory + '_recurrences_.tex'
+    with open(filename, 'w') as f:
+        f.write("""
+The following recurrences are observed for pairs of strict partititions
+$\\mu \\subseteq \\nu \\vdash n$ for $n \\leq %s$.
+I'm only including recurrences that are observed more than once, as there is
+a long tail of probability undetermined cases. Some relevant notation:
+\\begin{itemize}
+\\item If $\\lambda$ is a partition, then form $\\lambda'$ by omitting the first part.
+\\item If $\\lambda$ is a partition, then form $\\lambda'' = (\\lambda')'$ by omitting the first and second part.
+\\item If $\\lambda$ is a nonempty strict partition, then let $\\lambda^-$ be the
+strict partition whose shifted Young diagram is formed from that of $\\lambda$ by
+removing the last box in the last column.
+\\item Let $\\Sigma(\\nu, \\mu, p)$ be either side of \\eqref{eq:desired identity}.
+\\end{itemize}
+Here are the recurrences:
+\\begin{enumerate}""" % str(n))
+
+        index = 1
+        for row, scalar in sorted(unique, key=sorter):
+            count = unique[(row, scalar)]
+            if count <= 1:
+                continue
+            f.write('\\item[(%s)] Observed %s times:\n\n' % (index, count))
+            f.write(printrec(row, scalar))
+            index += 1
+
+        f.write('\\end{enumerate}')
+
+        index = 1
+        for key in sorted(unique, key=sorter):
+            row, scalar = key
+            count = unique[key]
+            if count <= 1:
+                continue
+            f.write('\n\\newpage\n\\subsection{Recurrence %s}\n Observed %s times:\n\n' % (index, count))
+            f.write(printrec(row, scalar))
+            f.write('\\noindent Cases that exhibit this recurrence:')
+            for (split_nu, split_mu, diagonal, domain, w, target) in sorted(refined_unique[key]):
+                f.write(printtype(split_nu, split_mu, diagonal))
+            index += 1
 
 
 def seconds(t):
