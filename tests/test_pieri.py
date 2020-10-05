@@ -224,7 +224,7 @@ def split(nu, mu):
             i += 1
         rest = {(a, b) for (a, b) in skew if (a <= i or b >= j)}
         split_nu, split_mu = Partition.from_skew(rest, shifted=False)
-        diagonal = min(min([abs(a - b) for (a, b) in skew]), 1)
+        diagonal = any(a == b for (a, b) in skew)
         SPLIT_CACHE[(nu, mu)] = (split_nu, split_mu, diagonal)
     return SPLIT_CACHE[(nu, mu)]
 
@@ -340,6 +340,8 @@ def is_reducible(nu, mu):
     if len(nu) == 0:
         return True
     if any(nu[i] == mu[i] for i in range(len(mu))):
+        return True
+    if sum(nu) - sum(mu) <= 3:
         return True
 #    if any(nu[i] + 1 < mu[i - 1] for i in range(1, len(nu))):
 #        return True
@@ -701,16 +703,19 @@ def summarize_tex(n=6):
         return target, w
 
     good = [
+        # worked out cases
+        (RowVector([0, 0, 0, 0, 0, 0, 0, 1, 0, ]), 1),
+        (RowVector([0, 0, 0, 0, 0, 0, 1, 1, 0, ]), 1),
+        (RowVector([0, -1, 0, 0, 0, 0, 0, 0, 0, ]), 1),
+        (RowVector([1, 4, 2, 0, 0, 0, 0, 0, 0, ]), 1),
         # manually added
         (RowVector([0, 0, 0, 3, 2, 0, 1, 1, 0, ]), 1),
         (RowVector([0, 0, 0, 1, 0, 0, 0, 1, 0, ]), 1),
         #
-        (RowVector([0, 0, 0, 0, 0, 0, 0, 1, 0, ]), 1),
         (RowVector([0, 2, 0, 0, 0, 0, 0, 0, 0, ]), 1),
         (RowVector([0, 1, 0, 0, 1, 0, 0, 0, 0, ]), 1),
         (RowVector([0, 1, 0, 0, 0, 0, 0, 1, 0, ]), 1),
         (RowVector([1, 1, 0, 0, 0, 0, 0, 0, 0, ]), 1),
-        (RowVector([0, 0, 0, 0, 0, 0, 1, 1, 0, ]), 1),
         (RowVector([0, 1, 0, 0, 0, 0, -1, 0, 0, ]), 1),
         (RowVector([0, 2, 0, 1, 0, 0, 0, 0, 0, ]), 1),
         (RowVector([3, 2, 0, 0, 0, 0, 0, 0, 0, ]), 1),
@@ -746,10 +751,12 @@ def summarize_tex(n=6):
             # input('?')
 
     def sorter(x):
+        index = ([i for i in range(len(good)) if x == good[i]] + [len(good)])[0]
         row, scalar = x
         a = len([i for i in row if i != 0])
         b = abs(scalar) + sum([abs(i) for i in row])
-        return any(type(i) != int for i in row), scalar, a, b
+        boolean = any(type(i) != int for i in row)
+        return index, boolean, scalar, a, b
 
     print('{')
     for u in sorted(unique, key=sorter):
