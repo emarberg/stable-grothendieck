@@ -58,6 +58,9 @@ class Polynomial:
     def __bool__(self):
         return not self.is_zero()
 
+    def __xor__(self, other):
+        return self + other + X(0) * self * other
+
     def __init__(self, coeffs={}):
         self.coeffs = coeffs
 
