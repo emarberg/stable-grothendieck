@@ -228,6 +228,15 @@ class Partition:
         return nu, mu
 
     @classmethod
+    def successors(cls, mu, strict=False):
+        mu = Partition.trim(mu)
+        for i in range(len(mu)):
+            if i == 0 or mu[i - 1] + (0 if strict else 1) > mu[i] + 1:
+                for nu in cls.successors(mu[i + 1:], strict):
+                    yield Partition.trim(mu[:i] + (mu[i] + 1,) + nu)
+        yield mu
+
+    @classmethod
     def skew(cls, mu, nu, shifted=False):
         """Assumes nu is contained in mu."""
         ans = set()
@@ -236,6 +245,27 @@ class Partition:
             for j in range(subpart, part):
                 ans.add((i + 1, j + 1 + (i if shifted else 0)))
         return ans
+
+    @classmethod
+    def skew_key(cls, mu, nu, shifted=False):
+        skew = cls.skew(mu, nu, shifted)
+        while skew:
+            if all(i > 1 and j > 1 for (i, j) in skew):
+                skew = {(i - 1, j - 1) for (i, j) in skew}
+                continue
+
+            if all(i > 1 for (i, j) in skew) and not (shifted and any(i == j for (i, j) in skew)):
+                skew = {(i - 1, j) for (i, j) in skew}
+                continue
+
+            if all(j > 1 for (i, j) in skew) and not (shifted and any(i == j - 1 for (i, j) in skew)):
+                skew = {(i, j - 1) for (i, j) in skew}
+                continue
+            break
+        return tuple(sorted(skew))
+
+
+
 
     @classmethod
     def contains(cls, bigger, smaller):

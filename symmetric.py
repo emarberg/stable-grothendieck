@@ -190,7 +190,10 @@ class SymmetricPolynomial(Vector):
         return len((self - other).dictionary) == 0
 
     def serialize(self):
-        return {key.serialize(): value for key, value in self.items()}
+        return tuple(sorted([(key.serialize(), value) for key, value in self.items()]))
+
+    def __hash__(self):
+        return hash(self.serialize())
 
     def __repr__(self):
         printer = self.printer or repr

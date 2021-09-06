@@ -94,6 +94,10 @@ class Vector:
         else:
             return self * self.base(other)
 
+    def __floordiv__(self, other):
+        assert type(other) == int
+        return Vector({key: value // other for (key, value) in self.items()})
+
     def __rmul__(self, other):
         return self.__mul__(other)
 
