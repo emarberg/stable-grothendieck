@@ -7,7 +7,9 @@ gp_skew = {}
 gq_skew = {}
 
 
-def substitute(vec, b):
+def substitute(vec, b=None):
+    if b is None:
+        return vec
     return Vector({key: value.substitute(0, b).constant_term() for (key, value) in vec.items()})
 
 
@@ -55,8 +57,8 @@ def expand_search(n, k):
         for nu in partitions:
             if Partition.contains(mu, nu) and not (nu and nu[0] == mu[0]):
                 key = (nu, mu)
-                gp_skew[n][key] = substitute(SymmetricPolynomial.GP_expansion(GP(n, mu, nu)), -2)
-                gq_skew[n][key] = substitute(SymmetricPolynomial.GP_expansion(GQ(n, mu, nu)), -2)
+                gp_skew[n][key] = substitute(SymmetricPolynomial.GP_expansion(GP(n, mu, nu)), None)
+                gq_skew[n][key] = substitute(SymmetricPolynomial.GQ_expansion(GQ(n, mu, nu)), None)
 
 
 
