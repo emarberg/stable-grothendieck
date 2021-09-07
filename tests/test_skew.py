@@ -33,11 +33,15 @@ def search(n, k):
                                 if Partition.contains(a, b) and Partition.skew_key(a, b, True) not in seen:
                                     s += [(gp_expand(GP, n, a, b), a, b)]
                                     seen.add(Partition.skew_key(a, b, True))
-                m = max([len(str(x)) for x, _, _ in s])
-                for x, a, b in s:
-                    print('       ', x, ' ' * (m - len(str(x))), '       ', a, b)
 
-                assert target.is_expressable(*[x for x, _, _ in s])
+                display = [(str(x), a, b) for (x, a, b) in s]
+                width = 48
+                display = [(x if len(x) < width else x[:width] + '...', a, b) for (x, a, b) in display]
+                m = max([len(x) for x, _, _ in display])
+                for i, (x, a, b) in enumerate(display):
+                    print('       ', x, ' ' * (m - len(x)), '       ', a, b, ':', i + 1)
+
+                assert target.is_expressable(*[x[0] for x in s])
 
 
 def expand_search(n, k):
