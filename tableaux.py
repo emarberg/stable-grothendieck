@@ -133,7 +133,7 @@ class Tableau:
     def from_row_reading_word(cls, word):
         subwords = [[]]
         for i, a in enumerate(word):
-            if i == 0 or word[i - 1] < a:
+            if i == 0 or word[i - 1] <= a:
                 subwords[-1].append(a)
             else:
                 subwords.append([a])

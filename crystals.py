@@ -6,6 +6,16 @@ import subprocess
 
 class CrystalMixin:
 
+    def istrings(self, i):
+        ans = [[x] for x in range(len(self)) if self[x].e_crystal_operator(i) is None]
+        for j in range(len(ans)):
+            while True:
+                x = self.f_crystal_operator(ans[j][-1], i)
+                if x is None:
+                    break
+                ans[j].append(x)
+        return ans
+
     def write_dotfile(self, i):
         s = []
         s += ['digraph G {']
@@ -100,11 +110,11 @@ class TableauCrystalGenerator(CrystalMixin):
             if cg.edges:
                 cg.generate()
 
-    def __init__(self, mu, max_entry, multisetvalued=False):
+    def __init__(self, mu, max_entry, multisetvalued=False, setvalued=True):
         assert not multisetvalued
         self.mu = mu
         self.max_entry = max_entry
-        self.tableaux = list(Tableau.semistandard_setvalued(max_entry, mu))
+        self.tableaux = list(Tableau.semistandard(max_entry, mu, setvalued=setvalued))
         self._edges = None
         self._components = None
         self.multisetvalued = multisetvalued
