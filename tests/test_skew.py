@@ -1,6 +1,7 @@
-from utils import GP, GQ, SymmetricPolynomial
+from utils import GP, GQ, SymmetricPolynomial, GP_doublebar, GQ_doublebar, beta
 from partitions import Partition
 from vectors import Vector
+from tests.test_conjectures_skew import zero_one_tuples
 
 
 gp_skew = {}
@@ -54,13 +55,58 @@ def expand_search(n, k):
 
     partitions = list(Partition.all(k, strict=True))
     for mu in partitions:
-        for nu in partitions:
+        for kappa in partitions:
             if Partition.contains(mu, nu) and not (nu and nu[0] == mu[0]):
                 key = (nu, mu)
                 gp_skew[n][key] = substitute(SymmetricPolynomial.GP_expansion(GP(n, mu, nu)), None)
                 gq_skew[n][key] = substitute(SymmetricPolynomial.GQ_expansion(GQ(n, mu, nu)), None)
 
 
+def cols(bigger, smaller):
+    ans = Partition.shifted_shape(bigger) - Partition.shifted_shape(smaller)
+    return (-1) ** len({j for (i, j) in ans})
 
 
+def test_undo_doublebar(n=5, k=5):
+    partitions = list(Partition.all(k, strict=True))
+    for lam in partitions:
+        for mu in partitions:
+            if not Partition.contains(lam, mu):
+                continue
+            lhs = GP(n, lam, mu)
+            rhs = sum([(-beta)**(sum(mu) - sum(nu)) * GP_doublebar(n, lam, nu) for nu in partitions if Partition.contains(mu, nu)])
+            print('GP:', n, lam, mu)
+            assert lhs == rhs
+            lhs = GQ(n, lam, mu)
+            rhs = sum([(-beta)**(sum(mu) - sum(nu)) * GQ_doublebar(n, lam, nu) for nu in partitions if Partition.contains(mu, nu)])
+            print('GQ:', n, lam, mu)
+            assert lhs == rhs
+
+
+def test(n=5, k=5):
+    partitions = list(Partition.all(k, strict=True))
+    for mu in partitions:
+        for kappa in partitions:
+            rhs = 0
+            expected = {
+                tuple(mu[i] + a[i] for i in range(len(a)))
+                for a in zero_one_tuples(len(mu))
+                if all(mu[i - 1] + a[i - 1] > mu[i] + a[i] for i in range(1, len(a)))
+            }
+            for lam in expected:
+                rhs += 2**(len(mu) - sum(lam) + sum(mu)) * cols(lam, mu) * (-beta) ** (sum(lam) - sum(mu)) * GP_doublebar(n, lam, kappa)
+            lhs = 0
+            expected = {
+                tuple(kappa[i] - a[i] for i in range(len(a)))
+                for a in zero_one_tuples(len(kappa))
+                if all(kappa[i - 1] - a[i - 1] > kappa[i] - a[i] for i in range(1, len(a))) and all(0 < kappa[i] - a[i] <= (mu[i] if i < len(mu) else 0) for i in range(len(a)))
+            }
+            for nu in expected:
+                lhs += 2**(len(kappa) - sum(kappa) + sum(nu)) * cols(kappa, nu) * (-beta) ** (sum(kappa) - sum(nu)) * GQ_doublebar(n, mu, nu)
+            if lhs != 0 or rhs != 0:
+                print('n =', n, 'mu =', mu, 'kappa =', kappa)
+                # print()
+                # print(lhs)
+                # print()
+            assert lhs == rhs
 
