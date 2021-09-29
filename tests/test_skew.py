@@ -62,6 +62,15 @@ def expand_search(n, k):
                 gq_skew[n][key] = substitute(SymmetricPolynomial.GQ_expansion(GQ(n, mu, nu)), None)
 
 
+def overlap(bigger, smaller):
+    ans = 0
+    skew = Partition.shifted_shape(bigger, smaller)
+    for (i, j) in skew:
+        if (i + 1, j) in skew:
+            ans += 1
+    return ans
+
+
 def cols(bigger, smaller):
     ans = Partition.shifted_shape(bigger) - Partition.shifted_shape(smaller)
     return (-1) ** len({j for (i, j) in ans})
@@ -110,3 +119,51 @@ def test(n=5, k=5):
                 # print()
             assert lhs == rhs
 
+            if Partition.contains(mu, kappa):
+                lhs = 2**(sum(kappa) + len(kappa)) * GQ_doublebar(n, mu, kappa)
+                rhs = 0
+                expected = {
+                    tuple(mu[i] + a[i] for i in range(len(a)))
+                    for a in zero_one_tuples(len(mu))
+                    if all(mu[i - 1] + a[i - 1] > mu[i] + a[i] for i in range(1, len(a)))
+                }
+                for nu in Partition.subpartitions(kappa, strict=True):
+                    if len(nu) == len(kappa):
+                        for lam in expected:
+                            rhs += 2**(len(mu) + overlap(kappa, nu) + sum(nu) - sum(lam) + sum(mu)) * cols(lam, mu) * (-beta) ** (sum(lam) - sum(mu) + sum(kappa) - sum(nu)) * GP_doublebar(n, lam, nu)
+                print('n =', n, 'mu =', mu, 'kappa =', kappa)
+                print()
+                print(lhs)
+                print(rhs)
+                print()
+                assert lhs == rhs
+
+
+def test_inclusion_excluson(k=5):
+    partitions = list(Partition.all(k, strict=True))
+    for kappa in partitions:
+        ans, queue = Vector(), {kappa: 1}
+        while queue:
+            pop = next(iter(queue))
+            coeff = queue[pop]
+            ans += Vector({pop: coeff})
+            del queue[pop]
+            additions = {
+                tuple(pop[i] - a[i] for i in range(len(a)))
+                for a in zero_one_tuples(len(kappa))
+                if not all(a[i] == 0 for i in range(len(a))) and all(pop[i - 1] - a[i - 1] > pop[i] - a[i] for i in range(1, len(a))) and all(0 < pop[i] - a[i] for i in range(len(a)))
+            }
+            for nu in additions:
+                queue[nu] = queue.get(nu, 0) - cols(pop, nu) * coeff
+        print('kappa =', kappa)
+        print()
+        for nu in ans:
+            print(Partition.printable(kappa, nu, True))
+            print()
+            print('coefficient =', ans[nu])
+            print()
+        print()
+        print(ans)
+        print()
+        print()
+        assert all(ans[nu] == 2**overlap(kappa, nu) for nu in ans)

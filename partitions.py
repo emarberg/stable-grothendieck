@@ -33,12 +33,14 @@ class Partition:
         return ans
 
     @classmethod
-    def shifted_shape(cls, mu):
-        ans = set()
-        for i, a in enumerate(mu):
-            for j in range(a):
-                ans.add((i + 1, i + j + 1))
-        return ans
+    def shifted_shape(cls, mu, nu=None):
+        if nu is None:
+            ans = set()
+            for i, a in enumerate(mu):
+                for j in range(a):
+                    ans.add((i + 1, i + j + 1))
+            return ans
+        return cls.shifted_shape(mu) - cls.shifted_shape(nu)
 
     @classmethod
     def remove_inner_corners(cls, mu):
