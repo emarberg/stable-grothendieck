@@ -167,3 +167,5 @@ def test_inclusion_excluson(k=5):
         print()
         print()
         assert all(ans[nu] == 2**overlap(kappa, nu) for nu in ans)
+        assert set(ans) == {nu for nu in Partition.subpartitions(kappa, strict=True) if len(nu) == len(kappa)}
+#         ans, queue = Vector(), ans.dictionary
