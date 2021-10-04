@@ -169,3 +169,37 @@ def test_inclusion_excluson(k=5):
         assert all(ans[nu] == 2**overlap(kappa, nu) for nu in ans)
         assert set(ans) == {nu for nu in Partition.subpartitions(kappa, strict=True) if len(nu) == len(kappa)}
 #         ans, queue = Vector(), ans.dictionary
+
+
+def test_dual_inclusion_excluson(k=5):
+    partitions = list(Partition.all(k, strict=True))
+    for lam in partitions:
+        for nu in partitions:
+            if not Partition.contains(lam, nu):
+                continue
+            ans, queue = Vector(), {nu: 1}
+            while queue:
+                kappa = next(iter(queue))
+                coeff = queue[kappa]
+                ans += Vector({kappa: coeff})
+                del queue[kappa]
+                additions = {
+                    tuple(kappa[i] + a[i] for i in range(len(a)))
+                    for a in zero_one_tuples(len(kappa))
+                    if not all(a[i] == 0 for i in range(len(a))) and all(kappa[i - 1] + a[i - 1] > kappa[i] + a[i] for i in range(1, len(a))) and all(lam[i] >= kappa[i] + a[i] for i in range(len(a)))
+                }
+                for gam in additions:
+                    queue[gam] = queue.get(gam, 0) - cols(gam, kappa) * coeff
+            print('lambda =', lam, 'nu =', nu)
+            print()
+            for gam in ans:
+                print(Partition.printable(gam, nu, True))
+                print()
+                print('coefficient =', ans[gam])
+                print()
+            print()
+            print(ans)
+            print()
+            print()
+            assert all(ans[g] == 2**overlap(g, nu) for g in ans)
+            assert set(ans) == {g for g in Partition.subpartitions(lam, strict=True) if len(g) == len(nu) and Partition.contains(g, nu)}
