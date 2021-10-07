@@ -394,6 +394,13 @@ class SymmetricPolynomial(Vector):
             return Vector()
 
     @classmethod
+    def omega_schur_expansion(cls, f):
+        return Vector({
+            Partition.transpose(mu): coeff
+            for mu, coeff in cls.schur_expansion(f).items()
+        })
+
+    @classmethod
     def grothendieck_expansion(cls, f):
         if f:
             t = max(f.lowest_degree_terms())
@@ -595,6 +602,54 @@ class SymmetricPolynomial(Vector):
             Tableau.semistandard_marked_rpp(num_variables, mu, nu, diagonal_nonprimes=True),
             -BETA**-1
         )
+
+    @classmethod
+    def _slow_transposed_dual_stable_grothendieck_p(cls, num_variables, mu, nu=()):
+        p = 0
+        for tab in Tableau.semistandard_shifted_marked(num_variables, mu, nu, diagonal_primes=False):
+            m = 1
+            for i in range(1, num_variables + 1):
+                r = len({x for x, y, v in tab if v[0] == i})
+                c = len({y for x, y, v in tab if v[0] == -i})
+                a = len({(x, y) for x, y, v in tab if abs(v[0]) == i})
+                x = Polynomial.x(i)
+                m *= x**(r + c) * (x + 1)**(a - r - c)
+            p += m
+        dictionary = {}
+        for e in p:
+            tup = num_variables * [0]
+            for i in e:
+                tup[i - 1] = e[i]
+            dictionary[tuple(tup)] = p[e]
+        return SymmetricPolynomial({
+            SymmetricMonomial(num_variables, alpha): coeff * (-BETA**-1)**(sum(alpha))
+            for alpha, coeff in dictionary.items()
+            if Partition.is_partition(alpha)
+        }) * (-BETA)**(sum(mu) - sum(nu))
+
+    @classmethod
+    def _slow_transposed_dual_stable_grothendieck_q(cls, num_variables, mu, nu=()):
+        p = 0
+        for tab in Tableau.semistandard_shifted_marked(num_variables, mu, nu):
+            m = 1
+            for i in range(1, num_variables + 1):
+                r = len({x for x, y, v in tab if v[0] == i})
+                c = len({y for x, y, v in tab if v[0] == -i})
+                a = len({(x, y) for x, y, v in tab if abs(v[0]) == i})
+                x = Polynomial.x(i)
+                m *= x**(r + c) * (x + 1)**(a - r - c)
+            p += m
+        dictionary = {}
+        for e in p:
+            tup = num_variables * [0]
+            for i in e:
+                tup[i - 1] = e[i]
+            dictionary[tuple(tup)] = p[e]
+        return SymmetricPolynomial({
+            SymmetricMonomial(num_variables, alpha): coeff * (-BETA**-1)**(sum(alpha))
+            for alpha, coeff in dictionary.items()
+            if Partition.is_partition(alpha)
+        }) * (-BETA)**(sum(mu) - sum(nu))
 
     @classmethod
     def _diag_vector(cls, rpp):
