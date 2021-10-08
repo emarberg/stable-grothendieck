@@ -26,7 +26,7 @@ def test_p(n=4):
             assert ef == eg
 
 
-def test_p(n=4):
+def test_q(n=4):
     lam = tuple([n - i for i in range(n)])
     for mu in Partition.subpartitions(lam, strict=True):
         for nu in Partition.subpartitions(mu, strict=True):
