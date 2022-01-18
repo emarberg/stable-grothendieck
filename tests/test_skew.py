@@ -164,6 +164,31 @@ def test_dual(n=5, k=5):
                 assert lhs == rhs
 
 
+def test_other_dual(n=5, k=5):
+    partitions = list(Partition.all(k, strict=True))
+    for lam in partitions:
+        for kappa in partitions:
+            if Partition.contains(lam, kappa):
+                lhs = 2**sum(lam) * gp(n, lam, kappa)
+                rhs = 0
+                expected = {
+                    tuple(lam[i] - a[i] for i in range(len(a)))
+                    for a in zero_one_tuples(len(lam))
+                    if all(lam[i] - a[i] > 0 for i in range(len(a))) and all(lam[i - 1] - a[i - 1] > lam[i] - a[i] for i in range(1, len(a)))
+                }
+                for mu in expected:
+                    for nu in Partition.subpartitions(mu, strict=True):
+                        if len(nu) == len(kappa) and Partition.contains(nu, kappa):
+                            rhs += 2**(len(nu) - len(mu) + overlap(lam, mu) + sum(kappa) + sum(mu) - sum(nu)) * cols(nu, kappa) * (-beta) ** (sum(lam) - sum(mu) + sum(nu) - sum(kappa)) * gq(n, mu, nu)
+                print('n =', n, 'lambda =', lam, 'kappa =', kappa)
+                if lhs != rhs:
+                    print()
+                    print(lhs)
+                    print(rhs)
+                    print()
+                assert lhs == rhs
+
+
 def test_inclusion_excluson(k=5):
     partitions = list(Partition.all(k, strict=True))
     for kappa in partitions:
