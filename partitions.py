@@ -25,6 +25,15 @@ class Partition:
         raise Exception
 
     @classmethod
+    def from_shape(cls, sh):
+        ans = []
+        for (i, j) in sh:
+            while i > len(ans):
+                ans += [0]
+            ans[i - 1] += 1
+        return tuple(ans)
+
+    @classmethod
     def shape(cls, mu):
         ans = set()
         for i, a in enumerate(mu):
@@ -265,9 +274,6 @@ class Partition:
                 continue
             break
         return tuple(sorted(skew))
-
-
-
 
     @classmethod
     def contains(cls, bigger, smaller):
