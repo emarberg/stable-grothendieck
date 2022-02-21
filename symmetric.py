@@ -456,6 +456,37 @@ class SymmetricPolynomial(Vector):
         else:
             return Vector()
 
+
+    @classmethod
+    def jp_expansion(cls, f):  # noqa
+        if f:
+            t = max(f.highest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            g = cls._slow_transposed_dual_stable_grothendieck_p(n, mu)
+            assert g[t] == 1
+            ans = cls.jp_expansion(f - c * g)
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
+    def jq_expansion(cls, f):  # noqa
+        if f:
+            t = max(f.highest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            g = cls._slow_transposed_dual_stable_grothendieck_q(n, mu)
+            assert g[t] == 2**len(mu)
+            assert c % 2**len(mu) == 0
+            c = c // 2**len(mu)
+            ans = cls.jq_expansion(f - c * g)
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
     @classmethod
     def GP_expansion(cls, f):  # noqa
         if f:

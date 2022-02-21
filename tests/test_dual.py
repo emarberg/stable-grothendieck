@@ -1,7 +1,8 @@
 from symmetric import SymmetricPolynomial
 from partitions import Partition
 from tableaux import Tableau
-from utils import gq, gp, beta
+from utils import gq, gp, beta, jp, jq, jp_expansion, jq_expansion, shifted_ribbon
+from vectors import Vector
 import itertools
 
 
@@ -13,6 +14,51 @@ def subsets(s):
 
 def nchoosek(n, k):
     return len(list(itertools.combinations(range(n), k)))
+
+
+def test_shifted_ribbon_jq(n=10):
+    for alpha in Partition.compositions(n):
+        mu, nu = shifted_ribbon(alpha)
+        shape = Partition.shifted_shape(mu, nu)
+        p = len([
+            (i, j) for (i, j) in shape
+            if ((i, j + 1) in shape and (i + 1, j) in shape) or
+            ((i, j - 1) in shape and (i - 1, j) in shape)
+        ])
+        expansion = jq_expansion(jq(1, mu, nu))
+        expected = Vector({(n - j,): nchoosek(p, j) * beta**j for j in range(p + 1)})
+        print(alpha)
+        print(Tableau({a: 0 for a in shape}))
+        print("corners =", p)
+        print()
+        print(expansion)
+        print(expected)
+        print()
+        print()
+        assert expansion == expected
+
+
+def test_shifted_ribbon_jp(n=10):
+    for alpha in Partition.compositions(n):
+        mu, nu = shifted_ribbon(alpha)
+        shape = Partition.shifted_shape(mu, nu)
+        p = len([
+            (i, j) for (i, j) in shape
+            if ((i, j + 1) in shape and (i + 1, j) in shape) or
+            ((i, j - 1) in shape and (i - 1, j) in shape) or
+            (i == j and (i - 1, j) in shape)
+        ])
+        expansion = jp_expansion(jp(1, mu, nu))
+        expected = Vector({(n - j,): nchoosek(p, j) * beta**j for j in range(p + 1)})
+        print(alpha)
+        print(Tableau({a: 0 for a in shape}))
+        print("corners =", p)
+        print()
+        print(expansion)
+        print(expected)
+        print()
+        print()
+        assert expansion == expected
 
 
 def gp_pieri(mu, p):
@@ -32,7 +78,8 @@ def gp_pieri(mu, p):
             if (Partition.shifted_shape(lam) - shape) | set(a) != set(c):
                 continue
             free = len([(i, j) for (i, j) in c if (i, j - 1) not in c and (i + 1, j) not in c])
-            free = max(free - 1, 0)
+#            free = len([(i, j) for (i, j) in c if (i, j - 1) not in c and (i + 1, j) not in c])
+#            free = max(free - 1, 0)
             if len(c) <= p <= len(c) + free:
                 diff = p - len(c)
                 bet = beta**(sum(mu) + p - sum(lam))
@@ -47,7 +94,7 @@ def test_gp_pieri(n=4, m=10, l=5):
             continue
         f = gp(n, mu)
         for p in range(1, l + 1):
-            g = gp(n, (p,))
+            g = gq(n, (p,))
 
             actual = f * g
 
@@ -61,10 +108,10 @@ def test_gp_pieri(n=4, m=10, l=5):
             # print()
             assert actual == expected
 
-            pieri = {k: 2 * v for k, v in pieri.items()}
-            if p >= 2:
-                for (lam, c) in gp_pieri(mu, p - 1).items():
-                    pieri[lam] = pieri.get(lam, 0) + c * beta
+            # pieri = {k: 2 * v for k, v in pieri.items()}
+            # if p >= 2:
+            #     for (lam, c) in gp_pieri(mu, p - 1).items():
+            #         pieri[lam] = pieri.get(lam, 0) + c * beta
 
             q = mu[0] if mu else 0
             nu = (q + p,) + mu

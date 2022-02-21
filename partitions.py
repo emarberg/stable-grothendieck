@@ -283,6 +283,16 @@ class Partition:
         return all(0 <= smaller[i] <= bigger[i] for i in range(len(smaller)))
 
     @classmethod
+    def compositions(cls, n):
+        if n == 0:
+            return [()]
+        ans = []
+        for i in range(1, n + 1):
+            for e in cls.compositions(n - i):
+                ans.append((i,) + e)
+        return ans
+
+    @classmethod
     def all(cls, n, max_part=None, max_row=None, strict=False, even_parts=False):
         for i in range(n + 1):
             for mu in cls.generate(i, max_part=max_part, max_row=max_row, strict=strict, even_parts=even_parts):

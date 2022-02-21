@@ -70,6 +70,16 @@ def dual_grothendieck_P(num_variables, mu, nu=()): # noqa
     return SymmetricPolynomial.dual_stable_grothendieck_p(num_variables, mu, nu)
 
 
+def shifted_ribbon(alpha):
+    nu = []
+    mu = []
+    for i in range(1, len(alpha)):
+        nu.append(sum(alpha[i:]))
+        mu.append(nu[-1] + alpha[i - 1])
+    mu.append(alpha[-1])
+    return tuple(mu), tuple(nu)
+
+
 s = schur
 P = schur_P
 Q = schur_Q
@@ -88,6 +98,9 @@ g = dual_grothendieck
 gp = dual_grothendieck_P
 gq = dual_grothendieck_Q
 
+jp = SymmetricPolynomial._slow_transposed_dual_stable_grothendieck_p
+jq = SymmetricPolynomial._slow_transposed_dual_stable_grothendieck_q
+
 schur_expansion = SymmetricPolynomial.schur_expansion
 
 G_expansion = SymmetricPolynomial.grothendieck_expansion
@@ -95,6 +108,9 @@ g_expansion = SymmetricPolynomial.dual_grothendieck_expansion
 
 gp_expansion = SymmetricPolynomial.gp_expansion
 gq_expansion = SymmetricPolynomial.gq_expansion
+
+jp_expansion = SymmetricPolynomial.jp_expansion
+jq_expansion = SymmetricPolynomial.jq_expansion
 
 GP_expansion = SymmetricPolynomial.GP_expansion
 GQ_expansion = SymmetricPolynomial.GQ_expansion
