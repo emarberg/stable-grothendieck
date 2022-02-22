@@ -78,8 +78,6 @@ def gp_pieri(mu, p):
             if (Partition.shifted_shape(lam) - shape) | set(a) != set(c):
                 continue
             free = len([(i, j) for (i, j) in c if (i, j - 1) not in c and (i + 1, j) not in c])
-#            free = len([(i, j) for (i, j) in c if (i, j - 1) not in c and (i + 1, j) not in c])
-#            free = max(free - 1, 0)
             if len(c) <= p <= len(c) + free:
                 diff = p - len(c)
                 bet = beta**(sum(mu) + p - sum(lam))
@@ -107,11 +105,6 @@ def test_gp_pieri(n=4, m=10, l=5):
             # print('  ', actual - expected)
             # print()
             assert actual == expected
-
-            # pieri = {k: 2 * v for k, v in pieri.items()}
-            # if p >= 2:
-            #     for (lam, c) in gp_pieri(mu, p - 1).items():
-            #         pieri[lam] = pieri.get(lam, 0) + c * beta
 
             q = mu[0] if mu else 0
             nu = (q + p,) + mu
