@@ -141,6 +141,7 @@ class Partition:
 
     @classmethod
     def printable(cls, nu, mu=None, shifted=False):
+        if nu is None: return
         s = []
         for i, a in enumerate(nu):
             x = 0 if mu is None else cls.get(mu, i + 1)
@@ -194,6 +195,14 @@ class Partition:
     @classmethod
     def get(cls, mu, i):
         return mu[i - 1] if 0 <= i - 1 < len(mu) else 0
+
+    @classmethod
+    def isin(cls, mu, i, j, shifted=False):
+        return 1 <= j - (i - 1 if shifted else 0) <= cls.get(mu, i)
+
+    @classmethod
+    def isin_shifted(cls, mu, i, j):
+        return cls.isin(mu, i, j, True)
 
     @classmethod
     def is_partition(cls, mu):
