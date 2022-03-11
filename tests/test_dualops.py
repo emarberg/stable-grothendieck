@@ -119,6 +119,38 @@ def getnoncommuting(a=4, b=2, g=partitions, condition=None):
                         yield ((aa, aa + bb, cc, cc + dd), val)
 
 
+def getnoncommuting_h(a=4, b=2, g=partitions, condition=None):
+    for aa in range(a + 1):
+        for bb in range(b + 1):
+            for cc in range(a + 1):
+                for dd in range(b + 1):
+                    boolean = True if condition is None else condition(aa, aa + bb, cc, cc + dd)
+                    if not boolean:
+                        continue
+                    h1 = sh_horizontal_strip(aa, aa + bb)
+                    h2 = sh_horizontal_strip(cc, cc + dd)
+                    val = {mu for mu in g if h1(h2(mu)) != h2(h1(mu))}
+                    if val:
+                        print('h[%s %s] and h[%s %s]' % (aa, aa + bb, cc, cc + dd))
+                        yield ((aa, aa + bb, cc, cc + dd), val)
+
+
+def getnoncommuting_v(a=4, b=2, g=partitions, condition=None):
+    for aa in range(a + 1):
+        for bb in range(b + 1):
+            for cc in range(a + 1):
+                for dd in range(b + 1):
+                    boolean = True if condition is None else condition(aa, aa + bb, cc, cc + dd)
+                    if not boolean:
+                        continue
+                    v1 = sh_vertical_strip(aa, aa + bb)
+                    v2 = sh_vertical_strip(cc, cc + dd)
+                    val = {mu for mu in g if v1(v2(mu)) != v2(v1(mu))}
+                    if val:
+                        print('v[%s %s] and v[%s %s]' % (aa, aa + bb, cc, cc + dd))
+                        yield ((aa, aa + bb, cc, cc + dd), val)
+
+
 def op_equal(a1, b1, c1, d1, a2, b2, c2, d2, g=partitions):
     h1 = sh_horizontal_strip(a1, b1)
     v1 = sh_vertical_strip(c1, d1)
@@ -131,7 +163,7 @@ def op_equal(a1, b1, c1, d1, a2, b2, c2, d2, g=partitions):
     return ans0, ans1, ans2
 
 
-def find_op_equal(a=4, b=4, g=partitions, condition=None):
+def find_op_equal(a=4, b=4, g=partitions, condition=adjacent):
     patterns = [
         (aa, aa + bb, cc, cc + dd)
         for aa in range(a + 1)
@@ -159,3 +191,15 @@ def test_intersect_zero_vh(a=5, b=5):
 
 def test_separated_commuting(a=5, b=5):
     assert not any(getnoncommuting(a, b, condition=separated))
+
+
+def test_separated_commuting_h(a=5, b=5):
+    assert not any(getnoncommuting_h(a, b, condition=separated))
+
+
+def test_separated_commuting_v(a=5, b=5):
+    assert not any(getnoncommuting_v(a, b, condition=separated))
+
+
+def test_adjacent(a=5, b=5):
+    assert not any(getnoncommuting_v(a, b, condition=separated))
