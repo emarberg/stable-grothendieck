@@ -25,6 +25,12 @@ class Partition:
         raise Exception
 
     @classmethod
+    def merge_shifted(cls, mu, shape):
+        if type(mu) in [list, tuple]:
+            mu = cls.shifted_shape(mu)
+        return cls.from_shape(mu | set(shape))
+
+    @classmethod
     def from_shape(cls, sh):
         ans = []
         for (i, j) in sh:
@@ -140,8 +146,14 @@ class Partition:
         return Partition.sort(dictionary.values(), trim=True)
 
     @classmethod
+    def print_shifted(cls, mu, nu=None):
+        print()
+        print(cls.printable(mu, nu, shifted=True))
+
+    @classmethod
     def printable(cls, nu, mu=None, shifted=False):
-        if nu is None: return
+        if nu is None:
+            return
         s = []
         for i, a in enumerate(nu):
             x = 0 if mu is None else cls.get(mu, i + 1)
