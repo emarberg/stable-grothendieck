@@ -5,6 +5,8 @@ from collections import defaultdict
 from operator import itemgetter
 import itertools
 
+FRENCH = True
+
 COUNT_SEMISTANDARD_CACHE = {}
 COUNT_SEMISTANDARD_MARKED_CACHE = {}
 COUNT_SEMISTANDARD_SHIFTED_MARKED_CACHE = {}
@@ -40,6 +42,8 @@ KLG_MAPS = {}
 KOG_COUNTS_HELPER = {}
 KLG_COUNTS_HELPER = {}
 
+VALUED_SET_CACHE = {}
+
 
 def nchoosek(m, k):
     ans = 1
@@ -52,7 +56,8 @@ def nchoosek(m, k):
 
 class Tableau:
 
-    def __init__(self, mapping={}):
+    def __init__(self, mapping=None):
+        mapping = {} if mapping is None else mapping
         if type(mapping) == str:
             mapping = self.decode_string_input(mapping)
 
@@ -430,7 +435,11 @@ class Tableau:
                     for x in sorted(v, key=lambda x:(abs(x), x))
                 ]) for k, v in self.boxes.items()}
 
+            allmax = max([len(str(boxes[b])) for b in boxes])
+
             def maximum(j):
+                if allmax <= 2:
+                    return allmax
                 column = [len(str(boxes[b])) for b in boxes if b[1] == j]
                 return max(column) if column else 0
 
@@ -443,12 +452,11 @@ class Tableau:
                 for j in range(1, self.max_column() + 1):
                     row += [pad(boxes.get((i, j), '.'), j)]
                 array += [row]
-            self._string_array = array
+            self._string_array = array if not FRENCH else list(reversed(array))
         return self._string_array
 
     def __repr__(self):
-        # array = self.string_array  # english
-        array = reversed(self.string_array)  # french
+        array = self.string_array
         return '\n\n' + '\n'.join([' '.join(line) for line in array]) + '\n\n'
 
     def weight(self, n):
@@ -1251,3 +1259,142 @@ class MarkedReversePlanePartition(Tableau):
                     bns[-x - 1].add(i)
 
         return tuple(len(ans[i]) + len(bns[i]) for i in range(n))
+
+
+class ValuedSetTableau:
+
+    @classmethod
+    def is_valid_position(cls, tab, grp, i, j):
+        assert (i, j) in tab.boxes
+        grp = grp.get(i, j) if type(grp) != bool else grp
+        if not grp:
+            return True
+        if tab.get(i, j) > 0:
+            return tab.get(i, j) == tab.get(i, j + 1)
+        else:
+            return tab.get(i, j) == tab.get(i + 1, j)
+
+    def __init__(self, entry_mapping=None, group_mapping=None):
+        self.tableau = entry_mapping if type(entry_mapping) == Tableau else Tableau(entry_mapping)
+        self.grouping = group_mapping if type(entry_mapping) == Tableau else Tableau(group_mapping)
+        assert all(self.is_valid_position(self.tableau, self.grouping, i, j) for (i, j) in self.tableau.boxes)
+        self._strval = None
+
+    @classmethod
+    def all(cls, max_entry, mu, nu=(), diagonal_nonprimes=True):
+        return cls._all(max_entry, mu, nu, diagonal_nonprimes)
+
+    @cached_value(VALUED_SET_CACHE)
+    def _all(cls, max_entry, mu, nu, diagonal_nonprimes):
+        ans = set()
+        tabs = Tableau.semistandard_shifted(max_entry, mu, nu, diagonal_nonprimes)
+        for tab in tabs:
+            grp = {(i, j): int(cls.is_valid_position(tab, True, i, j)) for (i, j) in tab.boxes}
+            g = sorted(grp)
+            e = sum(grp.values())
+            for v in range(2**e):
+                next_grp = {}
+                for i, j in g:
+                    if grp[i, j]:
+                        next_grp[i, j] = v % 2
+                        v = v // 2
+                    else:
+                        next_grp[i, j] = 0
+                next_grp = Tableau(next_grp)
+                ans.add(cls(tab, next_grp))
+        return ans
+
+    def compute_string_array(self):
+        boxes = {
+            k: ','.join([
+                str(-x) + '\'' if x < 0 else str(x)
+                for x in sorted(v, key=lambda x:(abs(x), x))
+            ]) for k, v in self.tableau.boxes.items()}
+
+        allmax = max(2, max([len(str(boxes[b])) for b in boxes]))
+        column_spacing_offset = 0
+
+        def pad(x, j):
+            return str(x) + (column_spacing_offset + allmax - len(str(x))) * ' '
+
+        array = []
+        for i in range(1, self.tableau.max_row() + 1):
+            row = []
+            for j in range(1, self.tableau.max_column() + 1):
+                row += [pad(boxes.get((i, j), '.'), j)]
+            array += [row]
+        return array, allmax
+
+    def in_same_group(self, i, j, x, y):
+        if i == x and y == j + 1:
+            return bool(self.grouping.get(i, j, default=False)) and self.tableau.get(i, j) > 0
+        if i == x and y + 1 == j:
+            return self.in_same_group(x, y, i, j)
+        if i + 1 == x and y == j:
+            return bool(self.grouping.get(i, j, default=False)) and self.tableau.get(i, j) < 0
+        if i == x + 1 and y == j:
+            return self.in_same_group(x, y, i, j)
+        return False
+
+
+    def __repr__(self):
+        if self._strval is None:
+            array, column_width  = self.compute_string_array()
+            m, n = len(array), len(array[0])
+            boxes = self.tableau.boxes
+            newarray = [(2 * n + 1) * [" "] for _ in range(2 * m + 1)]
+
+            for i in range(2 * m + 1):
+                for j in range(2 * n + 1):
+                    a, b = i // 2 + 1, j // 2 + 1
+                    if i % 2 != 0 and j % 2 != 0:
+                        newarray[i][j] = array[i // 2][j // 2]
+                    elif i % 2 == 0 and j % 2 != 0:
+                        bordering = (a, b) in boxes or (a - 1, b) in boxes
+                        newarray[i][j] = column_width * ('─' if bordering else ' ')
+                    elif i % 2 != 0 and j % 2 == 0:
+                        bordering = (a, b) in boxes or (a, b - 1) in boxes
+                        newarray[i][j] = '│' if bordering else ' '
+                    else:
+                        if ((a - 1, b) in boxes and (a, b - 1) in boxes) or ((a, b) in boxes and (a - 1, b - 1) in boxes):
+                            newarray[i][j] = '┼'
+                        elif (a, b) in boxes and (a, b - 1) in boxes:
+                            newarray[i][j] = '┴'
+                        elif (a - 1, b) in boxes and (a - 1, b - 1) in boxes:
+                            newarray[i][j] = '┬'
+                        elif (a, b) in boxes and (a - 1, b) in boxes:
+                            newarray[i][j] = '├'
+                        elif (a, b - 1) in boxes and (a - 1, b - 1) in boxes:
+                            newarray[i][j] = '┤'
+                        elif (a, b) in boxes:
+                            newarray[i][j] = '└'
+                        elif (a - 1, b) in boxes:
+                            newarray[i][j] = '┌'
+                        elif (a, b - 1) in boxes:
+                            newarray[i][j] = '┘'
+                        elif (a - 1, b - 1) in boxes:
+                            newarray[i][j] = '┐'
+
+            array = newarray
+            for (a, b) in boxes:
+                i, j = 2 * a - 1, 2 * b - 1
+                if not self.grouping.get(a, b):
+                    continue
+                array[i][j] = ' ' * column_width
+                if self.tableau.get(a, b) > 0:
+                    array[i][j + 1] = ' '
+                    c = array[i + 1][j + 1]
+                    array[i + 1][j + 1] = '┴' if c == '┼' else '─'
+                    c = array[i - 1][j + 1]
+                    array[i - 1][j + 1] = '┬' if c == '┼' else '─'
+                else:
+                    array[i + 1][j] = ' ' * column_width
+                    c = array[i + 1][j + 1]
+                    array[i + 1][j + 1] = '├' if c == '┼' else '│'
+                    c = array[i + 1][j - 1]
+                    array[i + 1][j - 1] = '┤' if c == '┼' else '│'
+
+            array = array if not FRENCH else list(reversed(array))
+            self._strval = '\n\n' + '\n'.join([''.join(line) for line in array]) + '\n\n'
+        return self._strval
+
