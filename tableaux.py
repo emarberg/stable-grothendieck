@@ -1280,6 +1280,78 @@ class ValuedSetTableau:
         assert all(self.is_valid_position(self.tableau, self.grouping, i, j) for (i, j) in self.tableau.boxes)
         self._strval = None
 
+    def get_verticals(self, v):
+        assert v < 0
+        vertical_ends = sorted([(i, j) for (i, j) in self.tableau.boxes if self.tableau.get(i, j) == v and not self.grouping.get(i, j)], key=lambda ij: -ij[-1])
+        vertical_starts = []
+        for i, j in vertical_ends:
+            while self.grouping.get(i - 1, j) and self.tableau.get(i - 1, j) == self.tableau.get(i, j) < 0:
+                i -= 1
+            vertical_starts.append((i, j))
+        return vertical_starts, vertical_ends
+
+    def get_horizontals(self, v):
+        assert v > 0
+        horizontal_ends = sorted([(i, j) for (i, j) in self.tableau.boxes if self.tableau.get(i, j) == v and not self.grouping.get(i, j)], key=lambda ij: ij[0])
+        horizontal_starts = []
+        for i, j in horizontal_ends:
+            while self.grouping.get(i, j - 1) and self.tableau.get(i, j - 1) == self.tableau.get(i, j) > 0:
+                j -= 1
+            horizontal_starts.append((i, j))
+        return horizontal_starts, horizontal_ends
+
+    def forward_transition(self, value):
+        tab, grp = self.tableau.boxes.copy(), self.grouping.boxes.copy()
+        vertical_starts, vertical_ends = self.get_verticals(-value - 1)
+        horizontal_starts, horizontal_ends = self.get_horizontals(value)
+
+        for i in range(len(vertical_starts)):
+            (vx1, vy1), (vx2, vy2) = vertical_starts[i], vertical_ends[i]
+            for j in range(len(horizontal_starts)):
+                (hx1, hy1), (hx2, hy2) = horizontal_starts[j], horizontal_ends[j]
+                if (vx1, vy1) == (hx1 + 1, hy1):
+                    if hy1 < hy2:
+                        hy1 += 1
+                        vx1 -= 1
+                    else:
+                        hx1 = vx2
+                        hx2 = vx2
+                        vx1 -= 1
+                        vx2 -= 1
+                elif (vx2, vy2) == (hx2, hy2 + 1):
+                    if vx1 < vx2:
+                        hy2 += 1
+                        vx2 -= 1
+                    else:
+                        vy1 = hy1
+                        vy2 = hy1
+                        hy1 += 1
+                        hy2 += 1
+                horizontal_starts[j], horizontal_ends[j] = (hx1, hy1), (hx2, hy2)
+            vertical_starts[i], vertical_ends[i] = (vx1, vy1), (vx2, vy2)
+
+        for (vx1, vy1), (vx2, vy2) in zip(vertical_starts, vertical_ends):
+            for a in range(vx1, vx2 + 1):
+                for b in range(vy1, vy2 + 1):
+                    tab[a, b] = -value - 1
+                    grp[a, b] = 1
+            grp[vx2, vy2] = 0
+
+        for (hx1, hy1), (hx2, hy2) in zip(horizontal_starts, horizontal_ends):
+            for a in range(hx1, hx2 + 1):
+                for b in range(hy1, hy2 + 1):
+                    tab[a, b] = value
+                    grp[a, b] = 1
+            grp[hx2, hy2] = 0
+
+        return ValuedSetTableau(Tableau(tab), Tableau(grp))
+
+    def middle_transition(self, value):
+        pass
+
+    def backward_transition(self, value):
+        pass
+
     @classmethod
     def all(cls, max_entry, mu, nu=(), diagonal_nonprimes=True):
         return cls._all(max_entry, mu, nu, diagonal_nonprimes)
@@ -1336,6 +1408,11 @@ class ValuedSetTableau:
             return self.in_same_group(x, y, i, j)
         return False
 
+    def __lt__(self, other):
+        return self.tableau < other.tableau and self.grouping < other.grouping
+
+    def __eq__(self, other):
+        return type(other) == type(self) and self.tableau == other.tableau and self.grouping == other.grouping
 
     def __repr__(self):
         if self._strval is None:
@@ -1380,7 +1457,6 @@ class ValuedSetTableau:
                 i, j = 2 * a - 1, 2 * b - 1
                 if not self.grouping.get(a, b):
                     continue
-                array[i][j] = ' ' * column_width
                 if self.tableau.get(a, b) > 0:
                     array[i][j + 1] = ' '
                     c = array[i + 1][j + 1]
