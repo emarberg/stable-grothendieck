@@ -67,8 +67,8 @@ class Tableau:
                 assert all(type(i) == int for i in v)
                 return tuple(sorted(v))
             else:
-                assert type(v) == int
-                return (v,)
+                assert type(v) in [int, bool]
+                return (int(v),)
 
         assert all(i > 0 and j > 0 for i, j in mapping)
         self.boxes = {(i, j): tuplize(i, j) for i, j in mapping}
@@ -1347,7 +1347,111 @@ class ValuedSetTableau:
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
     def middle_transition(self, value):
-        pass
+        tab, grp = self.tableau.boxes.copy(), self.grouping.boxes.copy()
+
+        h1 = [(hx1, hy1, hy2, 0) for ((hx1, hy1), (hx2, hy2)) in zip(*self.get_horizontals(value))]
+        h2 = [(hx1, hy1, hy2, 1) for ((hx1, hy1), (hx2, hy2)) in zip(*self.get_horizontals(value + 1))]
+        hh = sorted(h1 + h2, key=lambda t: (-t[0], t[1]))
+        hh_by_rows = []
+        for tup in hh:
+            if not hh_by_rows or hh_by_rows[-1][-1][0] != tup[0]:
+                hh_by_rows.append([])
+            hh_by_rows[-1].append(tup)
+
+        one_row_groups = []
+        two_row_groups = []
+
+        for i in range(len(hh_by_rows)):
+            currow = hh_by_rows[i]
+            nextrow = hh_by_rows[i + 1] if i + 1 < len(hh_by_rows) else None
+            for (x, y1, y2, f) in currow:
+                if nextrow and nextrow[0][0] == x - 1 and nextrow[0][1] <= y2:
+                    row2, start2, stop2 = x, y1, currow[-1][2]
+                    row1, start1, stop1 = nextrow[0][:3]
+                    while hh_by_rows[i + 1]:
+                        _, z1, z2, _ = hh_by_rows[i + 1][0]
+                        if z1 <= stop2:
+                            stop1 = z2
+                            hh_by_rows[i + 1] = hh_by_rows[i + 1][1:]
+                        else:
+                            break
+                    two_row_groups.append((row1, start1, stop1, row2, start2, stop2))
+                    break
+                else:
+                    if not one_row_groups or one_row_groups[-1][-1][0][0] != x:
+                        one_row_groups.append([0, 0, []])
+                    one_row_groups[-1][f] += 1
+                    one_row_groups[-1][-1].append((x, y1, y2))
+
+        v1 = [(vy1, vx1, vx2, 0) for ((vx1, vy1), (vx2, vy2)) in zip(*self.get_verticals(-value))]
+        v2 = [(vy1, vx1, vx2, 1) for ((vx1, vy1), (vx2, vy2)) in zip(*self.get_verticals(-value - 1))]
+        vv = sorted(v1 + v2, key=lambda t: (-t[0], t[1]))
+        vv_by_cols = []
+        for tup in vv:
+            if not vv_by_cols or vv_by_cols[-1][-1][0] != tup[0]:
+                vv_by_cols.append([])
+            vv_by_cols[-1].append(tup)
+
+        one_col_groups = []
+        two_col_groups = []
+
+        for i in range(len(vv_by_cols)):
+            currcol = vv_by_cols[i]
+            nextcol = vv_by_cols[i + 1] if i + 1 < len(vv_by_cols) else None
+            for (y, x1, x2, f) in currcol:
+                if nextcol and nextcol[0][0] == y - 1 and nextcol[0][1] <= x2:
+                    col2, start2, stop2 = y, x1, currcol[-1][2]
+                    col1, start1, stop1 = nextcol[0][:3]
+                    while vv_by_cols[i + 1]:
+                        _, z1, z2, _ = vv_by_cols[i + 1][0]
+                        if z1 <= stop2:
+                            stop1 = z2
+                            vv_by_cols[i + 1] = vv_by_cols[i + 1][1:]
+                        else:
+                            break
+                    two_col_groups.append((col1, start1, stop1, col2, start2, stop2))
+                    break
+                else:
+                    if not one_col_groups or one_col_groups[-1][-1][0][0] != y:
+                        one_col_groups.append([0, 0, []])
+                    one_col_groups[-1][f] += 1
+                    one_col_groups[-1][-1].append((y, x1, x2))
+
+        for p, q, g in one_row_groups:
+            assert len(g) == p + q
+            for i in range(len(g)):
+                row, col1, col2 = g[i]
+                for y in range(col1, col2 + 1):
+                    tab[row, y] = (value + 1) if i < q else value
+                    grp[row, y] = 1
+                grp[row, col2] = 0
+
+        for row1, start1, stop1, row2, start2, stop2 in two_row_groups:
+            for y in range(start1, stop1 + 1):
+                tab[row1, y] = value + 1
+            for y in range(start2, stop2 + 1):
+                tab[row2, y] = value
+            for x in range(max(start1, start2), min(stop1, stop2)):
+                grp[row1, y], grp[row2, y] = grp[row2, y], grp[row1, y]
+
+        for p, q, g in one_col_groups:
+            assert len(g) == p + q
+            for i in range(len(g)):
+                col, row1, row2 = g[i]
+                for x in range(row1, row2 + 1):
+                    tab[x, col] = (-value - 1) if i < q else -value
+                    grp[x, col] = 1
+                grp[row2, col] = 0
+
+        for col1, start1, stop1, col2, start2, stop2 in two_col_groups:
+            for x in range(start1, stop1 + 1):
+                tab[x, col1] = -value - 1
+            for x in range(start2, stop2 + 1):
+                tab[x, col2] = -value
+            for x in range(max(start1, start2), min(stop1, stop2)):
+                grp[x, col1], grp[x, col2] = grp[x, col2], grp[x, col1]
+
+        return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
     def backward_transition(self, value):
         pass
@@ -1357,7 +1461,7 @@ class ValuedSetTableau:
         return cls._all(max_entry, mu, nu, diagonal_nonprimes)
 
     @cached_value(VALUED_SET_CACHE)
-    def _all(cls, max_entry, mu, nu, diagonal_nonprimes):
+    def _all(cls, max_entry, mu, nu, diagonal_nonprimes):  # noqa
         ans = set()
         tabs = Tableau.semistandard_shifted(max_entry, mu, nu, diagonal_nonprimes)
         for tab in tabs:
