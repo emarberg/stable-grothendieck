@@ -1263,6 +1263,30 @@ class MarkedReversePlanePartition(Tableau):
 
 class ValuedSetTableau:
 
+    def __hash__(self):
+        return hash((self.tableau, self.grouping))
+
+    def is_semistandard(self, order=None):
+        if order is None:
+            ofn = (lambda x: -2 - 2 * x if x < 0 else 2 * x - 1)
+        if type(order) in [list, tuple]:
+            order = {a: i for (i, a) in enumerate(order)}
+        if type(order) == dict:
+            ofn = (lambda x: order[x])
+        rowint = {(i, j) for (i, j) in self.tableau.boxes if (i + 1, j) in self.tableau.boxes}
+        colint = {(i, j) for (i, j) in self.tableau.boxes if (i, j + 1) in self.tableau.boxes}
+        for (i, j) in rowint:
+            p = ofn(self.tableau.get(i, j))
+            q = ofn(self.tableau.get(i + 1, j))
+            if p > q or (p == q and p % 2 != 0):
+                return False
+        for (i, j) in colint:
+            p = ofn(self.tableau.get(i, j))
+            q = ofn(self.tableau.get(i, j + 1))
+            if p > q or (p == q and p % 2 == 0):
+                return False
+        return True
+
     @classmethod
     def is_valid_position(cls, tab, grp, i, j):
         assert (i, j) in tab.boxes
@@ -1282,7 +1306,7 @@ class ValuedSetTableau:
 
     def get_verticals(self, v):
         assert v < 0
-        vertical_ends = sorted([(i, j) for (i, j) in self.tableau.boxes if self.tableau.get(i, j) == v and not self.grouping.get(i, j)], key=lambda ij: -ij[-1])
+        vertical_ends = sorted([(i, j) for (i, j) in self.tableau.boxes if self.tableau.get(i, j) == v and not self.grouping.get(i, j)], key=lambda ij: (-ij[1], ij[0]))
         vertical_starts = []
         for i, j in vertical_ends:
             while self.grouping.get(i - 1, j) and self.tableau.get(i - 1, j) == self.tableau.get(i, j) < 0:
@@ -1292,7 +1316,7 @@ class ValuedSetTableau:
 
     def get_horizontals(self, v):
         assert v > 0
-        horizontal_ends = sorted([(i, j) for (i, j) in self.tableau.boxes if self.tableau.get(i, j) == v and not self.grouping.get(i, j)], key=lambda ij: ij[0])
+        horizontal_ends = sorted([(i, j) for (i, j) in self.tableau.boxes if self.tableau.get(i, j) == v and not self.grouping.get(i, j)], key=lambda ij: (ij[0], -ij[1]))
         horizontal_starts = []
         for i, j in horizontal_ends:
             while self.grouping.get(i, j - 1) and self.tableau.get(i, j - 1) == self.tableau.get(i, j) > 0:
@@ -1454,7 +1478,61 @@ class ValuedSetTableau:
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
     def backward_transition(self, value):
-        pass
+        tab, grp = self.tableau.boxes.copy(), self.grouping.boxes.copy()
+        vertical_starts, vertical_ends = self.get_verticals(-value)
+        horizontal_starts, horizontal_ends = self.get_horizontals(value + 1)
+
+        for i in range(len(vertical_starts) - 1, -1, -1):
+            (vx1, vy1), (vx2, vy2) = vertical_starts[i], vertical_ends[i]
+            for j in range(len(horizontal_starts) - 1, -1, -1):
+                (hx1, hy1), (hx2, hy2) = horizontal_starts[j], horizontal_ends[j]
+                if (vx1, vy1) == (hx1, hy1 - 1):
+                    if vx1 < vx2:
+                        vx1 += 1
+                        hy1 -= 1
+                    else:
+                        print('here?', (vx1, vy1), (vx2, vy2), (hx1, hy1), (hx2, hy2))
+                        print(self, self.tableau, self.grouping, horizontal_ends)
+                        vy1 = hy2
+                        vy2 = hy2
+                        hy1 -= 1
+                        hy2 -= 1
+                elif (vx2, vy2) == (hx2 - 1, hy2):
+                    if hy1 < hy2:
+                        vx2 += 1
+                        hy2 -= 1
+                    else:
+                        hx1 = vx1
+                        hx2 = vx1
+                        vx1 += 1
+                        vx2 += 1
+                horizontal_starts[j], horizontal_ends[j] = (hx1, hy1), (hx2, hy2)
+            vertical_starts[i], vertical_ends[i] = (vx1, vy1), (vx2, vy2)
+
+        for (vx1, vy1), (vx2, vy2) in zip(vertical_starts, vertical_ends):
+            for a in range(vx1, vx2 + 1):
+                for b in range(vy1, vy2 + 1):
+                    tab[a, b] = -value
+                    grp[a, b] = 1
+            grp[vx2, vy2] = 0
+
+        for (hx1, hy1), (hx2, hy2) in zip(horizontal_starts, horizontal_ends):
+            for a in range(hx1, hx2 + 1):
+                for b in range(hy1, hy2 + 1):
+                    tab[a, b] = value + 1
+                    grp[a, b] = 1
+            grp[hx2, hy2] = 0
+
+        return ValuedSetTableau(Tableau(tab), Tableau(grp))
+
+    def transition(self, index):
+        ans = self.forward_transition(index).middle_transition(index).backward_transition(index)
+        mapping = {index: index + 1, -index: -index - 1, index + 1: index, -index - 1: -index}
+        boxes = {}
+        for i, j in ans.tableau.boxes:
+            v = ans.tableau.get(i, j)
+            boxes[i, j] = mapping.get(v, v)
+        return ValuedSetTableau(Tableau(boxes), ans.grouping)
 
     @classmethod
     def all(cls, max_entry, mu, nu=(), diagonal_nonprimes=True):
@@ -1487,7 +1565,7 @@ class ValuedSetTableau:
                 for x in sorted(v, key=lambda x:(abs(x), x))
             ]) for k, v in self.tableau.boxes.items()}
 
-        allmax = max(2, max([len(str(boxes[b])) for b in boxes]))
+        allmax = max([2] + [len(str(boxes[b])) for b in boxes])
         column_spacing_offset = 0
 
         def pad(x, j):
@@ -1520,8 +1598,8 @@ class ValuedSetTableau:
 
     def __repr__(self):
         if self._strval is None:
-            array, column_width  = self.compute_string_array()
-            m, n = len(array), len(array[0])
+            array, column_width = self.compute_string_array()
+            m, n = len(array), (len(array[0]) if array else 0)
             boxes = self.tableau.boxes
             newarray = [(2 * n + 1) * [" "] for _ in range(2 * m + 1)]
 

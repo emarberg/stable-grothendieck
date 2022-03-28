@@ -1,4 +1,5 @@
 from tableaux import Tableau, ValuedSetTableau
+from partitions import Partition
 
 
 def combine_str(a, *b):
@@ -130,18 +131,31 @@ def test_simple():
         assert expected_forward == forward
         assert expected_middle == middle
         assert expected_backward == backward
+        assert lhs.is_semistandard([-1, 1, -2, 2])
+        assert forward.is_semistandard([-1, None, -2, 1, None, 2])
+        assert middle.is_semistandard([-2, None, -1, 2, None, 1])
+        assert backward.is_semistandard([-2, 2, -1, 1])
 
 
-def test_forward():
-    mu=(3, 2)
-    nu=(1,)
-    test = sorted(ValuedSetTableau.all(2, mu, nu))
-    for i, vst in enumerate(test):
-        forward_vst = vst.forward_transition(1)
-        ziplines = zip(str(vst).split("\n"), str(forward_vst).split("\n"))
-        lines = ["  ->  ".join(pair) for pair in ziplines]
-        toprint = "\n".join(lines[2:-2])
-        print('case:', i)
-        print(combine_str(vst, forward_vst))
-        print()
-        print()
+def test_small():
+    for mu in [(2, 1)]: #Partition.all(10, strict=True):
+        for nu in [()]: #Partition.subpartitions(mu, strict=True):
+            test = sorted(ValuedSetTableau.all(2, mu, nu))
+            seen = set()
+            for i, vst in enumerate(test):
+                print('mu =', mu, 'nu =', nu, 'case:', i)
+                f = vst.forward_transition(1)
+                m = f.middle_transition(1)
+                b = m.backward_transition(1)
+                image = vst.transition(1)
+                print(combine_str(vst, f, m, b, image))
+                print()
+                print()
+                assert vst.is_semistandard([-1, 1, -2, 2])
+                assert f.is_semistandard([-1, None, -2, 1, None, 2])
+                assert m.is_semistandard([-2, None, -1, 2, None, 1])
+                assert b.is_semistandard([-2, 2, -1, 1])
+
+                assert image.is_semistandard()
+                assert image not in seen
+                seen.add(image)
