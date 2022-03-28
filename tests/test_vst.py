@@ -138,9 +138,9 @@ def test_simple():
 
 
 def test_small():
-    for mu in [(2, 1)]: #Partition.all(10, strict=True):
-        for nu in [()]: #Partition.subpartitions(mu, strict=True):
-            test = sorted(ValuedSetTableau.all(2, mu, nu))
+    for mu in Partition.all(10, strict=True):
+        for nu in Partition.subpartitions(mu, strict=True):
+            test = sorted(ValuedSetTableau.all(2, mu, nu, diagonal_nonprimes=False))
             seen = set()
             for i, vst in enumerate(test):
                 print('mu =', mu, 'nu =', nu, 'case:', i)

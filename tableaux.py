@@ -435,7 +435,7 @@ class Tableau:
                     for x in sorted(v, key=lambda x:(abs(x), x))
                 ]) for k, v in self.boxes.items()}
 
-            allmax = max([len(str(boxes[b])) for b in boxes])
+            allmax = max([2] + [len(str(boxes[b])) for b in boxes])
 
             def maximum(j):
                 if allmax <= 2:
@@ -1455,7 +1455,7 @@ class ValuedSetTableau:
                 tab[row1, y] = value + 1
             for y in range(start2, stop2 + 1):
                 tab[row2, y] = value
-            for x in range(max(start1, start2), min(stop1, stop2)):
+            for y in range(max(start1, start2), min(stop1, stop2)):
                 grp[row1, y], grp[row2, y] = grp[row2, y], grp[row1, y]
 
         for p, q, g in one_col_groups:
