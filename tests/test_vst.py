@@ -1,5 +1,6 @@
 from tableaux import Tableau, ValuedSetTableau
 from partitions import Partition
+import traceback
 
 
 def combine_str(a, *b):
@@ -138,24 +139,44 @@ def test_simple():
 
 
 def test_small():
+    dnp = True
     for mu in Partition.all(10, strict=True):
         for nu in Partition.subpartitions(mu, strict=True):
-            test = sorted(ValuedSetTableau.all(2, mu, nu, diagonal_nonprimes=False))
-            seen = set()
+            test = sorted(ValuedSetTableau.all(2, mu, nu, diagonal_nonprimes=dnp))
+            seen = {}
             for i, vst in enumerate(test):
-                print('mu =', mu, 'nu =', nu, 'case:', i)
+                # print('mu =', mu, 'nu =', nu, 'case:', i)
                 f = vst.forward_transition(1)
                 m = f.middle_transition(1)
                 b = m.backward_transition(1)
                 image = vst.transition(1)
-                print(combine_str(vst, f, m, b, image))
-                print()
-                print()
-                assert vst.is_semistandard([-1, 1, -2, 2])
-                assert f.is_semistandard([-1, None, -2, 1, None, 2])
-                assert m.is_semistandard([-2, None, -1, 2, None, 1])
-                assert b.is_semistandard([-2, 2, -1, 1])
+                post = image.transition(1)
+                # print(combine_str(vst, f, m, b, image, post))
+                # print()
+                # print()
+                try:
+                    if image not in seen:
+                        seen[image] = vst
 
-                assert image.is_semistandard()
-                assert image not in seen
-                seen.add(image)
+                    assert vst.is_semistandard([-1, 1, -2, 2])
+                    assert f.is_semistandard([-1, None, -2, 1, None, 2])
+                    assert m.is_semistandard([-2, None, -1, 2, None, 1])
+                    assert b.is_semistandard([-2, 2, -1, 1])
+
+                    assert image.is_semistandard()
+                    assert post == vst
+
+                    assert tuple(reversed(image.weight())) == vst.weight()
+
+                    # if not dnp and image.diagonal_primes():
+                    #     input("\n??\n")
+                except:
+                    print('mu =', mu, 'nu =', nu, 'case:', i)
+                    print(combine_str(vst, f, m, b, image, post))
+                    ust = vst.delete_diagonal()
+                    print(combine_str(ust, ust.transition(1)))
+                    print()
+                    print()
+                    traceback.print_exc()
+                    print(vst)
+                    input("\n?\n")

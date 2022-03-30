@@ -1263,6 +1263,44 @@ class MarkedReversePlanePartition(Tableau):
 
 class ValuedSetTableau:
 
+    def weight(self, n=2):
+        ans = n * [0]
+        for i, j, v in self.grouping:
+            if not v:
+                w = abs(self.tableau.get(i, j))
+                ans[w - 1] += 1
+        return tuple(ans)
+
+    def delete_diagonal(self):
+        boxes = self.tableau.boxes.copy()
+        groups = self.grouping.boxes.copy()
+        for i, j in self.tableau.boxes:
+            if i == j:
+                if self.tableau.get(i, i) < 0:
+                    h = 0
+                    while self.grouping.get(i - h - 1, i) and self.tableau.get(i - h - 1, i) == self.tableau.get(i, i):
+                        h += 1
+                    for k in range(i - h, i + 1):
+                        del boxes[k, i]
+                        del groups[k, i]
+                else:
+                    h = 0
+                    while self.grouping.get(i, h + i) and self.tableau.get(i, h + i + 1) == self.tableau.get(i, i):
+                        h += 1
+                    for k in range(i, h + i + 1):
+                        del boxes[i, k]
+                        del groups[i, k]
+        return ValuedSetTableau(boxes, groups)
+
+    def unprime_diagonal(self):
+        boxes = self.tableau.boxes.copy()
+        for i in self.diagonal_primes():
+            boxes[i, i] = self.tableau.get(i, i) * - 1
+        return ValuedSetTableau(boxes, self.grouping)
+
+    def diagonal_primes(self):
+        return {i for i, j in self.tableau.boxes if i == j and self.tableau.get(i, j) < 0}
+
     def __hash__(self):
         return hash((self.tableau, self.grouping))
 
@@ -1300,7 +1338,7 @@ class ValuedSetTableau:
 
     def __init__(self, entry_mapping=None, group_mapping=None):
         self.tableau = entry_mapping if type(entry_mapping) == Tableau else Tableau(entry_mapping)
-        self.grouping = group_mapping if type(entry_mapping) == Tableau else Tableau(group_mapping)
+        self.grouping = group_mapping if type(group_mapping) == Tableau else Tableau(group_mapping)
         assert all(self.is_valid_position(self.tableau, self.grouping, i, j) for (i, j) in self.tableau.boxes)
         self._strval = None
 
@@ -1491,8 +1529,6 @@ class ValuedSetTableau:
                         vx1 += 1
                         hy1 -= 1
                     else:
-                        print('here?', (vx1, vy1), (vx2, vy2), (hx1, hy1), (hx2, hy2))
-                        print(self, self.tableau, self.grouping, horizontal_ends)
                         vy1 = hy2
                         vy2 = hy2
                         hy1 -= 1
