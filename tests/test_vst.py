@@ -138,12 +138,13 @@ def test_simple():
         assert backward.is_semistandard([-2, 2, -1, 1])
 
 
-def test_small():
-    dnp = True
+def test_small(dnp=True):
+    n = 2
     for mu in Partition.all(10, strict=True):
         for nu in Partition.subpartitions(mu, strict=True):
-            test = sorted(ValuedSetTableau.all(2, mu, nu, diagonal_nonprimes=dnp))
+            test = sorted(ValuedSetTableau.all(n, mu, nu, diagonal_nonprimes=dnp))
             seen = {}
+            exceptions = []
             for i, vst in enumerate(test):
                 # print('mu =', mu, 'nu =', nu, 'case:', i)
                 f = vst.forward_transition(1)
@@ -155,28 +156,30 @@ def test_small():
                 # print()
                 # print()
                 try:
-                    if image not in seen:
-                        seen[image] = vst
-
                     assert vst.is_semistandard([-1, 1, -2, 2])
                     assert f.is_semistandard([-1, None, -2, 1, None, 2])
                     assert m.is_semistandard([-2, None, -1, 2, None, 1])
                     assert b.is_semistandard([-2, 2, -1, 1])
-
                     assert image.is_semistandard()
-                    assert post == vst
 
-                    assert tuple(reversed(image.weight())) == vst.weight()
-
-                    # if not dnp and image.diagonal_primes():
-                    #     input("\n??\n")
-                except:
-                    print('mu =', mu, 'nu =', nu, 'case:', i)
+                    assert tuple(reversed(image.weight(n))) == vst.weight(n)
+                    # assert post == vst
+                    assert image not in seen
+                    seen[image] = vst
+                    assert dnp or not image.diagonal_primes()
                     print(combine_str(vst, f, m, b, image, post))
-                    ust = vst.delete_diagonal()
-                    print(combine_str(ust, ust.transition(1)))
+                except:
+                    # print('mu =', mu, 'nu =', nu, 'case:', i)
+                    print(combine_str(vst, f, m, b, image, post))
+                    # ust = vst.delete_diagonal()
+                    # print(combine_str(ust, ust.transition(1)))
                     print()
                     print()
                     traceback.print_exc()
-                    print(vst)
-                    input("\n?\n")
+                    # print(vst)
+                    exceptions.append(vst)
+                    input('')
+            if exceptions:
+                print(len(exceptions))
+                print('mu =', mu, 'nu =', nu, '\n')
+                # input("\n")

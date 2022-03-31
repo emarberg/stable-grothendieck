@@ -1263,10 +1263,10 @@ class MarkedReversePlanePartition(Tableau):
 
 class ValuedSetTableau:
 
-    def weight(self, n=2):
+    def weight(self, n):
         ans = n * [0]
-        for i, j, v in self.grouping:
-            if not v:
+        for i, j in self.grouping.boxes:
+            if not self.grouping.get(i, j):
                 w = abs(self.tableau.get(i, j))
                 ans[w - 1] += 1
         return tuple(ans)
@@ -1478,7 +1478,13 @@ class ValuedSetTableau:
                         one_col_groups.append([0, 0, []])
                     one_col_groups[-1][f] += 1
                     one_col_groups[-1][-1].append((y, x1, x2))
-
+        # print()
+        # print()
+        # print('1 row', one_row_groups)
+        # print('2 row', two_row_groups)
+        # print()
+        # print('1 col', one_col_groups)
+        # print('2 col', two_col_groups)
         for p, q, g in one_row_groups:
             assert len(g) == p + q
             for i in range(len(g)):
@@ -1495,6 +1501,9 @@ class ValuedSetTableau:
                 tab[row2, y] = value
             for y in range(max(start1, start2), min(stop1, stop2)):
                 grp[row1, y], grp[row2, y] = grp[row2, y], grp[row1, y]
+            # special diagonal condition
+            if row1 == start1 and not self.grouping.get(row1, start1):
+                tab[row1, start1] = -value
 
         for p, q, g in one_col_groups:
             assert len(g) == p + q
@@ -1512,6 +1521,9 @@ class ValuedSetTableau:
                 tab[x, col2] = -value
             for x in range(max(start1, start2), min(stop1, stop2)):
                 grp[x, col1], grp[x, col2] = grp[x, col2], grp[x, col1]
+            # special diagonal condition
+            if col2 == stop2 and ((stop2 - 1, col2) not in self.grouping.boxes or not (self.grouping.get(stop2 - 1, col2) and self.tableau.get(stop2 - 1, col2) < 0)):
+                tab[stop2, col2] = value + 1
 
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
@@ -1567,7 +1579,10 @@ class ValuedSetTableau:
         boxes = {}
         for i, j in ans.tableau.boxes:
             v = ans.tableau.get(i, j)
-            boxes[i, j] = mapping.get(v, v)
+            m = mapping.get(v, v)
+            # if i == j and m < 0:
+            #    m = -m
+            boxes[i, j] = m
         return ValuedSetTableau(Tableau(boxes), ans.grouping)
 
     @classmethod
