@@ -140,46 +140,46 @@ def test_simple():
 
 def test_small(dnp=True):
     n = 2
-    for mu in Partition.all(10, strict=True):
+    for mu in Partition.all(15, strict=True):
         for nu in Partition.subpartitions(mu, strict=True):
+            print('mu =', mu, 'nu =', nu)
             test = sorted(ValuedSetTableau.all(n, mu, nu, diagonal_nonprimes=dnp))
             seen = {}
             exceptions = []
             for i, vst in enumerate(test):
-                # print('mu =', mu, 'nu =', nu, 'case:', i)
-                f = vst.forward_transition(1)
-                m = f.middle_transition(1)
-                b = m.backward_transition(1)
-                image = vst.transition(1)
-                post = image.transition(1)
-                # print(combine_str(vst, f, m, b, image, post))
-                # print()
-                # print()
                 try:
+                    # print('mu =', mu, 'nu =', nu, 'case:', i)
+                    f = vst.forward_transition(1)
+                    m = f.middle_transition(1)
+                    b = m.backward_transition(1)
+                    image = vst.transition(1)
+                    key = image
+                    seen[key] = seen.get(key, []) + [vst]
+
                     assert vst.is_semistandard([-1, 1, -2, 2])
                     assert f.is_semistandard([-1, None, -2, 1, None, 2])
                     assert m.is_semistandard([-2, None, -1, 2, None, 1])
                     assert b.is_semistandard([-2, 2, -1, 1])
                     assert image.is_semistandard()
-
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
-                    # assert post == vst
-                    assert image not in seen
-                    seen[image] = vst
+                    # assert len(seen[key]) == 1
+                    assert all(preimage.unprime_diagonal() == vst.unprime_diagonal() for preimage in seen[key])
                     assert dnp or not image.diagonal_primes()
-                    print(combine_str(vst, f, m, b, image, post))
+                    # print(combine_str(vst, f, m, b, image))
                 except:
+                    # print(vst)
                     # print('mu =', mu, 'nu =', nu, 'case:', i)
-                    print(combine_str(vst, f, m, b, image, post))
-                    # ust = vst.delete_diagonal()
-                    # print(combine_str(ust, ust.transition(1)))
+                    print(combine_str(vst, f, m, b, image))
+                    print('preimages:')
+                    for preimage in seen[key]:
+                        if vst == preimage:
+                            continue
+                        f = preimage.forward_transition(1)
+                        m = f.middle_transition(1)
+                        b = m.backward_transition(1)
+                        image = preimage.transition(1)
+                        print(combine_str(preimage, f, m, b, image))
                     print()
                     print()
                     traceback.print_exc()
-                    # print(vst)
-                    exceptions.append(vst)
                     input('')
-            if exceptions:
-                print(len(exceptions))
-                print('mu =', mu, 'nu =', nu, '\n')
-                # input("\n")

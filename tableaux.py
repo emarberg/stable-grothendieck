@@ -1263,6 +1263,36 @@ class MarkedReversePlanePartition(Tableau):
 
 class ValuedSetTableau:
 
+    def unprime_diagonal(self):
+        t = self.tableau.boxes.copy()
+        for x in self.diagonal_singletons():
+            t[x, x] = abs(self.tableau.get(x, x))
+        return ValuedSetTableau(t, self.grouping)
+
+    def singletons(self, *args):
+        ans = []
+        for (x, y) in self.tableau.boxes:
+            if self.grouping.get(x, y):
+                continue
+            v = self.tableau.get(x, y)
+            if args and abs(v) not in [abs(a) for a in args]:
+                continue
+            if v > 0 and (self.tableau.get(x, y - 1) != v or not self.grouping.get(x, y - 1)):
+                ans.append((x, y))
+            elif v < 0 and (self.tableau.get(x - 1, y) != v or not self.grouping.get(x - 1, y)):
+                ans.append((x, y))
+        return ans
+
+    def diagonal_singletons(self, *args):
+        return sorted([x for (x, y) in self.singletons(*args) if x == y])
+
+    def primed_groups(self, *args):
+        if len(args) == 0:
+            return len([(i, j) for (i, j) in self.tableau.boxes if self.tableau.get(i, j) < 0 and not self.grouping.get(i, j)])
+        else:
+            args = [-abs(a) for a in args]
+            return len([(i, j) for (i, j) in self.tableau.boxes if self.tableau.get(i, j) in args and not self.grouping.get(i, j)])
+
     def weight(self, n):
         ans = n * [0]
         for i, j in self.grouping.boxes:
@@ -1291,15 +1321,6 @@ class ValuedSetTableau:
                         del boxes[i, k]
                         del groups[i, k]
         return ValuedSetTableau(boxes, groups)
-
-    def unprime_diagonal(self):
-        boxes = self.tableau.boxes.copy()
-        for i in self.diagonal_primes():
-            boxes[i, i] = self.tableau.get(i, i) * - 1
-        return ValuedSetTableau(boxes, self.grouping)
-
-    def diagonal_primes(self):
-        return {i for i, j in self.tableau.boxes if i == j and self.tableau.get(i, j) < 0}
 
     def __hash__(self):
         return hash((self.tableau, self.grouping))
@@ -1364,11 +1385,34 @@ class ValuedSetTableau:
 
     def forward_transition(self, value):
         tab, grp = self.tableau.boxes.copy(), self.grouping.boxes.copy()
-        vertical_starts, vertical_ends = self.get_verticals(-value - 1)
-        horizontal_starts, horizontal_ends = self.get_horizontals(value)
+
+        t = self
+        x = [x for (x, y) in tab if x == y and (x, y + 1) in tab and (x + 1, y + 1) in tab]
+        if x:
+            x = x[0]
+            if self.tableau.get(x, x) == value and self.tableau.get(x + 1, x + 1) == -value - 1:
+                if self.tableau.get(x, x + 1) < 0 < self.grouping.get(x, x + 1):
+                    tab[x, x] = -value
+                else:
+                    tab[x + 1, x + 1] = value + 1
+                t = ValuedSetTableau(Tableau(tab), grp)
+
+        vertical_starts, vertical_ends = t.get_verticals(-value - 1)
+        horizontal_starts, horizontal_ends = t.get_horizontals(value)
 
         for i in range(len(vertical_starts)):
             (vx1, vy1), (vx2, vy2) = vertical_starts[i], vertical_ends[i]
+            # if len(vertical_starts) == i + 1 and vx2 == vy2:
+            #     x = vx2 - 1
+            #     t = Tableau(tab)
+            #     g = Tableau(grp)
+            #     if t.get(x, x, -value) != -value:
+            #         if t.get(x, x + 1) == -value - 1 and g.get(x, x + 1):
+            #             tab[x, x] = -t.get(x, x)
+            #         else:
+            #             tab[x + 1, x + 1] = -t.get(x + 1, x + 1)
+            #         print('skip')
+            #         break
             for j in range(len(horizontal_starts)):
                 (hx1, hy1), (hx2, hy2) = horizontal_starts[j], horizontal_ends[j]
                 if (vx1, vy1) == (hx1 + 1, hy1):
@@ -1478,13 +1522,7 @@ class ValuedSetTableau:
                         one_col_groups.append([0, 0, []])
                     one_col_groups[-1][f] += 1
                     one_col_groups[-1][-1].append((y, x1, x2))
-        # print()
-        # print()
-        # print('1 row', one_row_groups)
-        # print('2 row', two_row_groups)
-        # print()
-        # print('1 col', one_col_groups)
-        # print('2 col', two_col_groups)
+
         for p, q, g in one_row_groups:
             assert len(g) == p + q
             for i in range(len(g)):
@@ -1493,6 +1531,10 @@ class ValuedSetTableau:
                     tab[row, y] = (value + 1) if i < q else value
                     grp[row, y] = 1
                 grp[row, col2] = 0
+            # special diagonal condition
+            # if len(g) == 1 and row == col1 == col2 and (row - 1, row) in tab and (row - 1, row - 1) in tab and self.tableau.get(row - 1, row) < 0 and self.tableau.get(row - 1, row - 1) < 0:
+            #     print('  here a')
+            #     pass
 
         for row1, start1, stop1, row2, start2, stop2 in two_row_groups:
             for y in range(start1, stop1 + 1):
@@ -1502,8 +1544,14 @@ class ValuedSetTableau:
             for y in range(max(start1, start2), min(stop1, stop2)):
                 grp[row1, y], grp[row2, y] = grp[row2, y], grp[row1, y]
             # special diagonal condition
-            if row1 == start1 and not self.grouping.get(row1, start1):
-                tab[row1, start1] = -value
+            if row1 == start1:
+                if not self.grouping.get(row1, start1):
+                    print('  here b1')
+                    tab[row1, start1] = -value
+                else:
+                    print('  here b2')
+                    for y in range(start1 + 1, stop1):
+                        grp[row1, y - 1], grp[row1, y] = grp[row1, y], grp[row1, y - 1]
 
         for p, q, g in one_col_groups:
             assert len(g) == p + q
@@ -1513,6 +1561,11 @@ class ValuedSetTableau:
                     tab[x, col] = (-value - 1) if i < q else -value
                     grp[x, col] = 1
                 grp[row2, col] = 0
+            # special diagonal condition
+            # if len(g) == 1 and col == row1 == row2 and (col, col + 1) in tab and (col + 1, col + 1) in tab and self.tableau.get(col, col + 1) > 0 and self.tableau.get(col + 1, col + 1) > 0:
+            #     print('here c')
+            #     pass
+
 
         for col1, start1, stop1, col2, start2, stop2 in two_col_groups:
             for x in range(start1, stop1 + 1):
@@ -1523,7 +1576,8 @@ class ValuedSetTableau:
                 grp[x, col1], grp[x, col2] = grp[x, col2], grp[x, col1]
             # special diagonal condition
             if col2 == stop2 and ((stop2 - 1, col2) not in self.grouping.boxes or not (self.grouping.get(stop2 - 1, col2) and self.tableau.get(stop2 - 1, col2) < 0)):
-                tab[stop2, col2] = value + 1
+              print('  here d')
+              tab[stop2, col2] = value + 1
 
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
@@ -1574,16 +1628,27 @@ class ValuedSetTableau:
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
     def transition(self, index):
-        ans = self.forward_transition(index).middle_transition(index).backward_transition(index)
+        p = self.primed_groups(index, index + 1)
+        f = self.forward_transition(index)
+        q = f.primed_groups(index, index + 1)
+        m = f.middle_transition(index)
+        r = m.primed_groups(index, index + 1)
+        ans = m.backward_transition(index)
         mapping = {index: index + 1, -index: -index - 1, index + 1: index, -index - 1: -index}
         boxes = {}
         for i, j in ans.tableau.boxes:
             v = ans.tableau.get(i, j)
-            m = mapping.get(v, v)
-            # if i == j and m < 0:
-            #    m = -m
-            boxes[i, j] = m
-        return ValuedSetTableau(Tableau(boxes), ans.grouping)
+            boxes[i, j] = mapping.get(v, v)
+        ans = ValuedSetTableau(Tableau(boxes), ans.grouping)
+        diag = ans.diagonal_singletons(index, index + 1)
+        print('diag:', diag, p, q, r)
+        if p != q or q != r:
+            t = ans.tableau
+            if len(diag) == 1:
+                x = diag[0]
+                t = t.set(x, x, t.get(x, x) * -1)
+                ans = ValuedSetTableau(t, ans.grouping)
+        return ans
 
     @classmethod
     def all(cls, max_entry, mu, nu=(), diagonal_nonprimes=True):
