@@ -163,7 +163,7 @@ def test_small(dnp=True):
                     assert image.is_semistandard()
 
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
-                    # assert post == vst
+                    assert post == vst
                     assert image not in seen
                     seen[image] = vst
                     assert dnp or not image.diagonal_primes()

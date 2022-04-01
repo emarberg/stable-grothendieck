@@ -1384,6 +1384,8 @@ class ValuedSetTableau:
                     if vx1 < vx2:
                         hy2 += 1
                         vx2 -= 1
+                    #elif hy1 == hy2:
+                    #
                     else:
                         vy1 = hy1
                         vy2 = hy1
@@ -1513,6 +1515,10 @@ class ValuedSetTableau:
                     tab[x, col] = (-value - 1) if i < q else -value
                     grp[x, col] = 1
                 grp[row2, col] = 0
+                # special diagonal condition
+                if len(g) == 1 and col == row1 == row2 and (col, col + 1) in tab and (col + 1, col + 1) in tab and self.tableau.get(col, col + 1) > 0 and self.tableau.get(col + 1, col + 1) > 0:
+                    print('here')
+                    tab[row1, col] = value + 1
 
         for col1, start1, stop1, col2, start2, stop2 in two_col_groups:
             for x in range(start1, stop1 + 1):
@@ -1522,8 +1528,8 @@ class ValuedSetTableau:
             for x in range(max(start1, start2), min(stop1, stop2)):
                 grp[x, col1], grp[x, col2] = grp[x, col2], grp[x, col1]
             # special diagonal condition
-            if col2 == stop2 and ((stop2 - 1, col2) not in self.grouping.boxes or not (self.grouping.get(stop2 - 1, col2) and self.tableau.get(stop2 - 1, col2) < 0)):
-                tab[stop2, col2] = value + 1
+            #if col2 == stop2 and ((stop2 - 1, col2) not in self.grouping.boxes or not (self.grouping.get(stop2 - 1, col2) and self.tableau.get(stop2 - 1, col2) < 0)):
+            #    tab[stop2, col2] = value + 1
 
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
@@ -1580,8 +1586,6 @@ class ValuedSetTableau:
         for i, j in ans.tableau.boxes:
             v = ans.tableau.get(i, j)
             m = mapping.get(v, v)
-            # if i == j and m < 0:
-            #    m = -m
             boxes[i, j] = m
         return ValuedSetTableau(Tableau(boxes), ans.grouping)
 
