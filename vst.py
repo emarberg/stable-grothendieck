@@ -9,15 +9,18 @@ VALUED_SET_CACHE = {}
 class ValuedSetTableau:
 
     def is_group_end(self, i, j):
-        assert (i, j) in self.tableau.boxes
-        return not self.grouping.get(i, j)
+        return (i, j) in self.tableau.boxes and not self.grouping.get(i, j)
 
     def is_group_start(self, i, j):
-        assert (i, j) in self.tableau.boxes
+        if (i, j) not in self.tableau.boxes:
+            return False
         if self.tableau.get(i, j) > 0:
             return (i, j - 1) not in self.tableau.boxes or not (self.tableau.get(i, j - 1) > 0 and self.grouping.get(i, j - 1))
         if self.tableau.get(i, j) < 0:
             return (i + 1, j) not in self.tableau.boxes or not (self.tableau.get(i + 1, j) < 0 and self.grouping.get(i + 1, j))
+
+    def is_singleton(self, i, j):
+        return self.is_group_end(i, j) and self.is_group_start(i, j)
 
     def diagonal_primes(self):
         return len([i for (i, j) in self.tableau.boxes if i == j and self.tableau.get(i, j) < 0])
@@ -259,16 +262,18 @@ class ValuedSetTableau:
                 grp[row1, y], grp[row2, y] = grp[row2, y], grp[row1, y]
             # special diagonal condition
             if row1 == start1:
-                if self.is_group_end(row1, stop2 - 1) and self.is_group_end(row1, start1):
+                if self.is_group_end(row1, start1):
                     tab[row1, start1] = -value
-                elif not self.is_group_end(row1, stop2 - 1) and self.is_group_end(row1, start1):
-                    grp[row1, start1] = 1
-                    for y in range(stop2 - 1, start2, -1):
-                        grp[row2, y - 1], grp[row2, y] = grp[row2, y], grp[row2, y - 1]
-                    grp[row2, start2] = 0
-                elif not self.is_group_end(row1, start1):
-                    for y in range(start1 + 1, stop1):
-                        grp[row1, y - 1], grp[row1, y] = grp[row1, y], grp[row1, y - 1]
+                # if self.is_group_end(row1, stop2 - 1) and self.is_group_end(row1, start1):
+                #     tab[row1, start1] = -value
+                # elif not self.is_group_end(row1, stop2 - 1) and self.is_group_end(row1, start1):
+                #     grp[row1, start1] = 1
+                #     for y in range(stop2 - 1, start2, -1):
+                #         grp[row2, y - 1], grp[row2, y] = grp[row2, y], grp[row2, y - 1]
+                #     grp[row2, start2] = 0
+                # elif not self.is_group_end(row1, start1):
+                #     for y in range(start1 + 1, stop1):
+                #         grp[row1, y - 1], grp[row1, y] = grp[row1, y], grp[row1, y - 1]
 
         for p, q, g in one_col_groups:
             assert len(g) == p + q
@@ -288,16 +293,18 @@ class ValuedSetTableau:
                 grp[x, col1], grp[x, col2] = grp[x, col2], grp[x, col1]
             # special diagonal condition
             if col2 == stop2:
-                if self.is_group_end(start1 + 1, col2) and self.is_group_end(stop2, col2):
+                if self.is_group_end(stop2, col2):
                     tab[stop2, col2] = value + 1
-                elif not self.is_group_end(start1 + 1, col2) and self.is_group_end(stop2, col2):
-                    grp[stop2, col2] = 1
-                    for x in range(start1 + 1, stop1):
-                        grp[x - 1, col1], grp[x, col1] = grp[x, col1], grp[x - 1, col1]
-                    grp[stop1, col1] = 0
-                elif not self.is_group_end(stop2, col2):
-                    for x in range(stop2, start2 + 1, -1):
-                        grp[x - 1, col2], grp[x, col2] = grp[x, col2], grp[x - 1, col2]
+                # if self.is_group_end(start1 + 1, col2) and self.is_group_end(stop2, col2):
+                #     tab[stop2, col2] = value + 1
+                # elif not self.is_group_end(start1 + 1, col2) and self.is_group_end(stop2, col2):
+                #     grp[stop2, col2] = 1
+                #     for x in range(start1 + 1, stop1):
+                #         grp[x + 1, col1], grp[x, col1] = grp[x, col1], grp[x + 1, col1]
+                #     grp[stop1, col1] = 0
+                # elif not self.is_group_end(stop2, col2):
+                #     for x in range(stop2, start2 + 1, -1):
+                #         grp[x - 1, col2], grp[x, col2] = grp[x, col2], grp[x - 1, col2]
 
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 

@@ -149,7 +149,7 @@ def print_transition(vst, i):
 
 def test_small(dnp=True):
     n = 2
-    for mu in Partition.all(15, strict=True):
+    for mu in Partition.all(18, strict=True):
         for nu in Partition.subpartitions(mu, strict=True):
             print('mu =', mu, 'nu =', nu)
             test = sorted(ValuedSetTableau.all(n, mu, nu, diagonal_nonprimes=dnp))
@@ -164,7 +164,8 @@ def test_small(dnp=True):
                 images[key] = images.get(key, []) + [vst]
             unseen = {}
             for vst in _unseen:
-                unseen[vst.unprime_diagonal()] = unseen.get(vst.weight(n), []) + [vst]
+                key = (tuple(sorted(vst.tableau.boxes)), vst.weight(n))
+                unseen[key] = unseen.get(key, []) + [vst]
             seen = {}
             for vst in test:
                 try:
@@ -185,11 +186,12 @@ def test_small(dnp=True):
                     assert dnp or not image.diagonal_primes()
                     # print(combine_str(vst, f, m, b, image))
 
-                    if len(seen[key]) == multiplicities[image]:
-                        assert len(seen[key]) == 1
+                    if len(seen[key]) == multiplicities[key]:
+                       assert len(seen[key]) == 1
                 except:
                     # print(vst)
                     # print('mu =', mu, 'nu =', nu, 'case:', i)
+                    print(5 * '\n')
                     print_transition(vst, 1)
                     for preimage in seen[key]:
                         if vst == preimage:
@@ -206,12 +208,12 @@ def test_small(dnp=True):
                     print()
                     print()
                     print('unseen:')
-                    uns = unseen.get(key.unprime_diagonal(), [])
-                    for u in uns:
-                        print(u)
-                    print()
+                    ukey = (tuple(sorted(image.tableau.boxes)), image.weight(n))
+                    uns = unseen.get(ukey, [])
+                    print(uns)
+                    print(5 * '\n')
                     traceback.print_exc()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
 
-                    if not (len(alts) > len(seen[key]) or len(uns) > 0):
+                    if len(uns) <= 4: #len(image.diagonal_singletons()) == 0:
                         input('')
