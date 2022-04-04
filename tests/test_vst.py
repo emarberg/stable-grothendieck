@@ -1,4 +1,5 @@
-from tableaux import Tableau, ValuedSetTableau
+from tableaux import Tableau
+from vst import ValuedSetTableau
 from partitions import Partition
 import traceback
 
