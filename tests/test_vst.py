@@ -211,5 +211,7 @@ def test_small(dnp=True):
                         print(u)
                     print()
                     traceback.print_exc()
-                    assert len(alts) > len(seen[key]) or len(uns) > 0
-                    # input('')
+                    assert tuple(reversed(image.weight(n))) == vst.weight(n)
+
+                    if not (len(alts) > len(seen[key]) or len(uns) > 0):
+                        input('')
