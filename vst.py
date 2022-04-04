@@ -305,12 +305,12 @@ class ValuedSetTableau:
             # special diagonal condition
             if row1 == start1:
                 if self.is_group_end(row1, start1):
-                    print('  here b1')
+                    #print('  here b1')
                     tab[row1, start1] = -value
                 else:
-                    print('  here b2')
+                    #print('  here b2')
                     for y in range(start1 + 1, stop1):
-                        grp[row1, y - 1], grp[row1, y] = grp[row1, y], grp[row1, y - 1]
+                       grp[row1, y - 1], grp[row1, y] = grp[row1, y], grp[row1, y - 1]
 
         for p, q, g in one_col_groups:
             assert len(g) == p + q
@@ -335,10 +335,11 @@ class ValuedSetTableau:
             # special diagonal condition
             if col2 == stop2:
                 if self.is_group_start(stop2, col2):
-                    print('  here d1')
+                    #print('  here d1')
                     tab[stop2, col2] = value + 1
                 else:
-                    print('  here d2')
+                    pass
+                    # print('  here d2')
                     # for y in range(start1 + 1, stop1):
                     #    grp[row1, y - 1], grp[row1, y] = grp[row1, y], grp[row1, y - 1]
 
@@ -404,12 +405,12 @@ class ValuedSetTableau:
             boxes[i, j] = mapping.get(v, v)
         ans = ValuedSetTableau(Tableau(boxes), ans.grouping)
         diag = ans.diagonal_singletons(index, index + 1)
-        print('diag:', diag, p, q, r)
-        if p != q or q != r:
-            t = ans.tableau
-            if len(diag) == 1:
-                x = diag[0]
-                t = t.set(x, x, t.get(x, x) * -1)
+        # print('diag:', diag, p, q, r)
+        # if p != q or q != r:
+        #    t = ans.tableau
+        #    if len(diag) == 1:
+        #        x = diag[0]
+        #        t = t.set(x, x, t.get(x, x) * -1)
                 # ans = ValuedSetTableau(t, ans.grouping)
         return ans
 

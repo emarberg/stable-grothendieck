@@ -139,17 +139,35 @@ def test_simple():
         assert backward.is_semistandard([-2, 2, -1, 1])
 
 
+def print_transition(vst, i):
+    f = vst.forward_transition(1)
+    m = f.middle_transition(1)
+    b = m.backward_transition(1)
+    image = vst.transition(1)
+    print(combine_str(vst, f, m, b, image))
+
+
 def test_small(dnp=True):
     n = 2
     for mu in Partition.all(15, strict=True):
         for nu in Partition.subpartitions(mu, strict=True):
             print('mu =', mu, 'nu =', nu)
             test = sorted(ValuedSetTableau.all(n, mu, nu, diagonal_nonprimes=dnp))
+            _unseen = set(test)
+            images = {}
+            multiplicities = {}
+            for vst in test:
+                image = vst.transition(1)
+                multiplicities[image] = multiplicities.get(image, 0) + 1
+                _unseen.discard(image)
+                key = image.unprime_diagonal()
+                images[key] = images.get(key, []) + [vst]
+            unseen = {}
+            for vst in _unseen:
+                unseen[vst.unprime_diagonal()] = unseen.get(vst.weight(n), []) + [vst]
             seen = {}
-            exceptions = []
-            for i, vst in enumerate(test):
+            for vst in test:
                 try:
-                    # print('mu =', mu, 'nu =', nu, 'case:', i)
                     f = vst.forward_transition(1)
                     m = f.middle_transition(1)
                     b = m.backward_transition(1)
@@ -163,24 +181,35 @@ def test_small(dnp=True):
                     assert b.is_semistandard([-2, 2, -1, 1])
                     assert image.is_semistandard()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
-                    # assert len(seen[key]) == 1
                     assert all(preimage.unprime_diagonal() == vst.unprime_diagonal() for preimage in seen[key])
                     assert dnp or not image.diagonal_primes()
                     # print(combine_str(vst, f, m, b, image))
+
+                    if len(seen[key]) == multiplicities[image]:
+                        assert len(seen[key]) == 1
                 except:
                     # print(vst)
                     # print('mu =', mu, 'nu =', nu, 'case:', i)
-                    print(combine_str(vst, f, m, b, image))
-                    print('preimages:')
+                    print_transition(vst, 1)
                     for preimage in seen[key]:
                         if vst == preimage:
                             continue
-                        f = preimage.forward_transition(1)
-                        m = f.middle_transition(1)
-                        b = m.backward_transition(1)
-                        image = preimage.transition(1)
-                        print(combine_str(preimage, f, m, b, image))
+                        print_transition(preimage, 1)
+                    print('preimages:', len(seen[key]))
                     print()
+                    print()
+                    print('alternatives:')
+                    alts = images.get(key.unprime_diagonal(), [])
+                    for u in alts:
+                        if u not in seen[key]:
+                            print_transition(u, 1)
+                    print()
+                    print()
+                    print('unseen:')
+                    uns = unseen.get(key.unprime_diagonal(), [])
+                    for u in uns:
+                        print(u)
                     print()
                     traceback.print_exc()
-                    input('')
+                    assert len(alts) > len(seen[key]) or len(uns) > 0
+                    # input('')
