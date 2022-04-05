@@ -33,7 +33,7 @@ class ValuedSetTableau:
 
     def singletons(self, *args):
         args = [abs(a) for a in args]
-        ans = [(x, y) for  (x, y) in self.tableau.boxes if self.is_group_end(x, y) and self.is_group_start(x, y)]
+        ans = [(x, y) for (x, y) in self.tableau.boxes if self.is_group_end(x, y) and self.is_group_start(x, y)]
         return [(x, y) for (x, y) in ans if len(args) == 0 or abs(self.tableau.get(x, y)) in args]
 
     def diagonal_singletons(self, *args):
@@ -367,14 +367,13 @@ class ValuedSetTableau:
             v = ans.tableau.get(i, j)
             boxes[i, j] = mapping.get(v, v)
         ans = ValuedSetTableau(Tableau(boxes), ans.grouping)
-        diag = ans.diagonal_singletons(index, index + 1)
+        # diag = ans.diagonal_singletons(index, index + 1)
         # print('diag:', diag, p, q, r)
         # if p != q or q != r:
-        #    t = ans.tableau
-        #    if len(diag) == 1:
-        #        x = diag[0]
-        #        t = t.set(x, x, t.get(x, x) * -1)
-                # ans = ValuedSetTableau(t, ans.grouping)
+        #     t = ans.tableau
+        #     for x in diag:
+        #         t = t.set(x, x, t.get(x, x) * -1)
+        #     ans = ValuedSetTableau(t, ans.grouping)
         return ans
 
     @classmethod

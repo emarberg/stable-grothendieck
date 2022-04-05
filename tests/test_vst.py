@@ -176,6 +176,9 @@ def test_small(dnp=True):
                     key = image
                     seen[key] = seen.get(key, []) + [vst]
 
+                    p = vst.primed_groups()
+                    q = f.primed_groups()
+
                     assert vst.is_semistandard([-1, 1, -2, 2])
                     assert f.is_semistandard([-1, None, -2, 1, None, 2])
                     assert m.is_semistandard([-2, None, -1, 2, None, 1])
@@ -187,7 +190,7 @@ def test_small(dnp=True):
                     # print(combine_str(vst, f, m, b, image))
 
                     if len(seen[key]) == multiplicities[key]:
-                       assert len(seen[key]) == 1
+                        assert len(seen[key]) == 1
                 except:
                     # print(vst)
                     # print('mu =', mu, 'nu =', nu, 'case:', i)
@@ -200,13 +203,13 @@ def test_small(dnp=True):
                     print('preimages:', len(seen[key]))
                     print()
                     print()
-                    print('alternatives:')
-                    alts = images.get(key.unprime_diagonal(), [])
-                    for u in alts:
-                        if u not in seen[key]:
-                            print_transition(u, 1)
-                    print()
-                    print()
+                    # print('alternatives:')
+                    # alts = images.get(key.unprime_diagonal(), [])
+                    # for u in alts:
+                    #     if u not in seen[key]:
+                    #         print_transition(u, 1)
+                    # print()
+                    # print()
                     print('unseen:')
                     ukey = (tuple(sorted(image.tableau.boxes)), image.weight(n))
                     uns = unseen.get(ukey, [])
@@ -215,5 +218,5 @@ def test_small(dnp=True):
                     traceback.print_exc()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
 
-                    if len(uns) <= 4: #len(image.diagonal_singletons()) == 0:
+                    if p != q or not any(uns[i].grouping == image.grouping for i in range(len(uns))):
                         input('')
