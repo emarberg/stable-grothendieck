@@ -144,7 +144,8 @@ def print_transition(vst, i):
     m = f.middle_transition(1)
     b = m.backward_transition(1)
     image = vst.transition(1)
-    print(combine_str(vst, f, m, b, image))
+    post = image.transition(1)
+    print(combine_str(vst, f, m, b, image, post))
 
 
 def test_small(dnp=True):
@@ -173,6 +174,7 @@ def test_small(dnp=True):
                     m = f.middle_transition(1)
                     b = m.backward_transition(1)
                     image = vst.transition(1)
+                    post = image.transition(1)
                     key = image
                     seen[key] = seen.get(key, []) + [vst]
 
@@ -189,8 +191,9 @@ def test_small(dnp=True):
                     assert dnp or not image.diagonal_primes()
                     # print(combine_str(vst, f, m, b, image))
 
-                    if len(seen[key]) == multiplicities[key]:
-                        assert len(seen[key]) == 1
+                    # if len(seen[key]) == multiplicities[key]:
+                    assert len(seen[key]) == 1
+                    # assert vst == post
                 except:
                     # print(vst)
                     # print('mu =', mu, 'nu =', nu, 'case:', i)
@@ -203,20 +206,21 @@ def test_small(dnp=True):
                     print('preimages:', len(seen[key]))
                     print()
                     print()
-                    # print('alternatives:')
-                    # alts = images.get(key.unprime_diagonal(), [])
-                    # for u in alts:
-                    #     if u not in seen[key]:
-                    #         print_transition(u, 1)
-                    # print()
-                    # print()
+                    print('alternatives:')
+                    alts = images.get(key.unprime_diagonal(), [])
+                    for u in alts:
+                        if u not in seen[key]:
+                            print_transition(u, 1)
+                    print()
+                    print()
                     print('unseen:')
                     ukey = (tuple(sorted(image.tableau.boxes)), image.weight(n))
                     uns = unseen.get(ukey, [])
-                    print(uns)
+                    for u in uns:
+                        print_transition(u, 1)
                     print(5 * '\n')
                     traceback.print_exc()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
 
-                    if p != q or not any(uns[i].grouping == image.grouping for i in range(len(uns))):
+                    if not image.diagonal_singletons():
                         input('')
