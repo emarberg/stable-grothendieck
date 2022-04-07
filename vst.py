@@ -4,9 +4,24 @@ from cached import cached_value
 
 
 VALUED_SET_CACHE = {}
+TRANSITION_CACHE = {}
+BACKWARD_TRANSITION_CACHE = {}
+FORWARD_TRANSITION_CACHE = {}
+MIDDLE_TRANSITION_CACHE = {}
 
 
 class ValuedSetTableau:
+
+    def is_highest_weight(self):
+        return all(self.grouping.get(i, j) == 0 for (i, j) in self.tableau.boxes)
+
+    def hinge(self, index):
+        assert index > 0
+        args = [index, -index, index + 1, -index - 1]
+        tab = self.tableau
+        x = [x for (x, y) in tab.boxes if x == y and tab.get(x, y) in args and tab.get(x, y + 1) in args and tab.get(x + 1, y + 1) in args]
+        assert len(x) <= 1
+        return x[0] if x else None
 
     def is_group_end(self, i, j):
         return (i, j) in self.tableau.boxes and not self.grouping.get(i, j)
@@ -38,6 +53,10 @@ class ValuedSetTableau:
 
     def diagonal_singletons(self, *args):
         return sorted([x for (x, y) in self.singletons(*args) if x == y])
+
+    def primed_diagonal_cells(self, *args):
+        args = [-abs(a) for a in args]
+        return sorted([x for (x, y) in self.tableau.boxes if x == y and self.tableau.get(x, y) in args])
 
     def primed_groups(self, *args):
         if len(args) == 0:
@@ -116,14 +135,17 @@ class ValuedSetTableau:
         return horizontal_starts, horizontal_ends
 
     def forward_transition(self, value):
-        tab, grp = self.tableau.boxes.copy(), self.grouping.boxes.copy()
+        return self.cached_forward_transition(self, value)
 
-        t = self
-        x = [x for (x, y) in tab if x == y and (x, y + 1) in tab and (x + 1, y + 1) in tab]
+    @cached_value(FORWARD_TRANSITION_CACHE)
+    def cached_forward_transition(cls, vst, value):
+        tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
+
+        t = vst
+        x = vst.hinge(value)
         if x:
-            x = x[0]
-            if self.tableau.get(x, x) == value and self.tableau.get(x + 1, x + 1) == -value - 1:
-                if self.tableau.get(x, x + 1) < 0 < self.grouping.get(x + 1, x + 1):
+            if vst.tableau.get(x, x) == value and vst.tableau.get(x + 1, x + 1) == -value - 1:
+                if vst.tableau.get(x, x + 1) < 0 < vst.grouping.get(x + 1, x + 1):
                     tab[x, x] = -value
                 else:
                     tab[x + 1, x + 1] = value + 1
@@ -174,10 +196,14 @@ class ValuedSetTableau:
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
     def middle_transition(self, value):
-        tab, grp = self.tableau.boxes.copy(), self.grouping.boxes.copy()
+        return self.cached_middle_transition(self, value)
 
-        h1 = [(hx1, hy1, hy2, 0) for ((hx1, hy1), (hx2, hy2)) in zip(*self.get_horizontals(value))]
-        h2 = [(hx1, hy1, hy2, 1) for ((hx1, hy1), (hx2, hy2)) in zip(*self.get_horizontals(value + 1))]
+    @cached_value(MIDDLE_TRANSITION_CACHE)
+    def cached_middle_transition(cls, vst, value):
+        tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
+
+        h1 = [(hx1, hy1, hy2, 0) for ((hx1, hy1), (hx2, hy2)) in zip(*vst.get_horizontals(value))]
+        h2 = [(hx1, hy1, hy2, 1) for ((hx1, hy1), (hx2, hy2)) in zip(*vst.get_horizontals(value + 1))]
         hh = sorted(h1 + h2, key=lambda t: (-t[0], t[1]))
         hh_by_rows = []
         for tup in hh:
@@ -210,8 +236,8 @@ class ValuedSetTableau:
                     one_row_groups[-1][f] += 1
                     one_row_groups[-1][-1].append((x, y1, y2))
 
-        v1 = [(vy1, vx1, vx2, 0) for ((vx1, vy1), (vx2, vy2)) in zip(*self.get_verticals(-value))]
-        v2 = [(vy1, vx1, vx2, 1) for ((vx1, vy1), (vx2, vy2)) in zip(*self.get_verticals(-value - 1))]
+        v1 = [(vy1, vx1, vx2, 0) for ((vx1, vy1), (vx2, vy2)) in zip(*vst.get_verticals(-value))]
+        v2 = [(vy1, vx1, vx2, 1) for ((vx1, vy1), (vx2, vy2)) in zip(*vst.get_verticals(-value - 1))]
         vv = sorted(v1 + v2, key=lambda t: (-t[0], t[1]))
         vv_by_cols = []
         for tup in vv:
@@ -262,18 +288,8 @@ class ValuedSetTableau:
                 grp[row1, y], grp[row2, y] = grp[row2, y], grp[row1, y]
             # special diagonal condition
             if row1 == start1:
-                if self.is_group_end(row1, start1):
+                if vst.is_group_end(row1, start1):
                     tab[row1, start1] = -value
-                # if self.is_group_end(row1, stop2 - 1) and self.is_group_end(row1, start1):
-                #     tab[row1, start1] = -value
-                # elif not self.is_group_end(row1, stop2 - 1) and self.is_group_end(row1, start1):
-                #     grp[row1, start1] = 1
-                #     for y in range(stop2 - 1, start2, -1):
-                #         grp[row2, y - 1], grp[row2, y] = grp[row2, y], grp[row2, y - 1]
-                #     grp[row2, start2] = 0
-                # elif not self.is_group_end(row1, start1):
-                #     for y in range(start1 + 1, stop1):
-                #         grp[row1, y - 1], grp[row1, y] = grp[row1, y], grp[row1, y - 1]
 
         for p, q, g in one_col_groups:
             assert len(g) == p + q
@@ -293,25 +309,19 @@ class ValuedSetTableau:
                 grp[x, col1], grp[x, col2] = grp[x, col2], grp[x, col1]
             # special diagonal condition
             if col2 == stop2:
-                if self.is_group_end(stop2, col2):
+                if vst.is_group_end(stop2, col2):
                     tab[stop2, col2] = value + 1
-                # if self.is_group_end(start1 + 1, col2) and self.is_group_end(stop2, col2):
-                #     tab[stop2, col2] = value + 1
-                # elif not self.is_group_end(start1 + 1, col2) and self.is_group_end(stop2, col2):
-                #     grp[stop2, col2] = 1
-                #     for x in range(start1 + 1, stop1):
-                #         grp[x + 1, col1], grp[x, col1] = grp[x, col1], grp[x + 1, col1]
-                #     grp[stop1, col1] = 0
-                # elif not self.is_group_end(stop2, col2):
-                #     for x in range(stop2, start2 + 1, -1):
-                #         grp[x - 1, col2], grp[x, col2] = grp[x, col2], grp[x - 1, col2]
 
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
     def backward_transition(self, value):
-        tab, grp = self.tableau.boxes.copy(), self.grouping.boxes.copy()
-        vertical_starts, vertical_ends = self.get_verticals(-value)
-        horizontal_starts, horizontal_ends = self.get_horizontals(value + 1)
+        return self.cached_backward_transition(self, value)
+
+    @cached_value(BACKWARD_TRANSITION_CACHE)
+    def cached_backward_transition(cls, vst, value):
+        tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
+        vertical_starts, vertical_ends = vst.get_verticals(-value)
+        horizontal_starts, horizontal_ends = vst.get_horizontals(value + 1)
 
         for i in range(len(vertical_starts) - 1, -1, -1):
             (vx1, vy1), (vx2, vy2) = vertical_starts[i], vertical_ends[i]
@@ -355,25 +365,73 @@ class ValuedSetTableau:
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
     def transition(self, index):
-        p = self.primed_groups(index, index + 1)
-        f = self.forward_transition(index)
+        return self.cached_transition(self, index)
+
+    @cached_value(TRANSITION_CACHE)
+    def cached_transition(cls, vst, index):
+        p = vst.primed_groups(index, index + 1)
+        h = vst.hinge(index)
+
+        f = vst.forward_transition(index)
         q = f.primed_groups(index, index + 1)
+
+
         m = f.middle_transition(index)
         r = m.primed_groups(index, index + 1)
+
         ans = m.backward_transition(index)
+        tab = ans.tableau
+        grp = ans.grouping
+
+        if h: # and ans.is_singleton(h, h) and ans.is_singleton(h + 1, h + 1):
+            if ans.is_singleton(h, h):
+                tab = tab.set(h, h, abs(tab.get(h, h)))
+            if ans.is_singleton(h + 1, h + 1):
+                tab = tab.set(h + 1, h + 1, abs(tab.get(h + 1, h + 1)))
+
+        elif ans.primed_diagonal_cells(index, index + 1):
+            x = y = list(ans.primed_diagonal_cells(index, index + 1))[0]
+            if tab.get(x, y) == -index - 1:
+                tab = tab.set(x, y, index + 1)
+                while tab.get(x, y) == index + 1:
+                    y += 1
+                while grp.get(x, y):
+                    for z in range(y, x, -1):
+                        grp = grp.set(x, z, grp.get(x, z - 1))
+                    grp = grp.set(x, x, 1)
+                    tab = tab.set(x, y, index + 1)
+                    y += 1
+                tab = tab.set(x, y, -index)
+            elif tab.get(x, y) == -index:
+                x = y - 1
+                while tab.get(x, y) == -index:
+                    x -= 1
+                tab = tab.set(x, y, -index - 1)
+                grp = grp.set(x, y, 1)
+                while grp.get(y, y):
+                    for w in range(y, x, -1):
+                        grp = grp.set(w, y, grp.get(w - 1, y))
+                        tab = tab.set(w, y, tab.get(w - 1, y))
+                grp = grp.set(x, y, 0)
+                tab = tab.set(y, y, index)
+
+
+            # if p == q and q != r:
+            #     tab = tab.set(h, h, tab.get(h, h) * -1)
+            #     tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
+            # if p != q:
+            #     tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
+            #     tab = tab.set(h, h, abs(tab.get(h, h)))
+
+        ans = ValuedSetTableau(tab, grp)
+
         mapping = {index: index + 1, -index: -index - 1, index + 1: index, -index - 1: -index}
         boxes = {}
         for i, j in ans.tableau.boxes:
             v = ans.tableau.get(i, j)
             boxes[i, j] = mapping.get(v, v)
         ans = ValuedSetTableau(Tableau(boxes), ans.grouping)
-        # diag = ans.diagonal_singletons(index, index + 1)
-        # print('diag:', diag, p, q, r)
-        # if p != q or q != r:
-        #     t = ans.tableau
-        #     for x in diag:
-        #         t = t.set(x, x, t.get(x, x) * -1)
-        #     ans = ValuedSetTableau(t, ans.grouping)
+
         return ans
 
     @classmethod
