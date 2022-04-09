@@ -140,14 +140,14 @@ def test_simple():
 
 
 def print_transition(vst, i, dnp):
-    p = vst.primed_groups()
+    altered = vst.is_altered(i)
     f = vst.forward_transition(i)
-    q = f.primed_groups()
-    m = f.middle_transition(i, p - q)
+    m, case = f.middle_transition(i, altered)
     b = m.backward_transition(i)
     image = vst.transition(i, dnp)
     post = image.transition(i, dnp)
     print(combine_str(vst, f, m, b, image, post))
+    print('is altered:', altered, '| middle case:', case)
 
 
 def test_small(dnp=True):
@@ -156,17 +156,18 @@ def test_small(dnp=True):
         for nu in Partition.subpartitions(mu, strict=True):
             print('mu =', mu, 'nu =', nu)
             test = sorted(ValuedSetTableau.all(n, mu, nu, diagonal_nonprimes=dnp))
-
-            # test = [vst for vst in test if not vst.is_separable(1)]
-
+            test = [vst for vst in test if not vst.is_highest_weight()]
             _unseen = set(test)
+
+            # test = [vst for vst in test if vst.is_altered(1)]
+
             images = {}
             multiplicities = {}
             for vst in test:
                 image = vst.transition(1, dnp)
                 _unseen.discard(image)
                 multiplicities[image] = multiplicities.get(image, 0) + 1
-                key = image.unprime_diagonal()
+                key = image.unprime()
                 images[key] = images.get(key, []) + [vst]
             unseen = {}
             for vst in _unseen:
@@ -176,14 +177,10 @@ def test_small(dnp=True):
             seen = {}
             for vst in test:
                 try:
-                    p = vst.primed_groups()
+                    altered = vst.is_altered(1)
                     f = vst.forward_transition(1)
-                    q = f.primed_groups()
 
-                    if p != q:
-                        continue
-
-                    m = f.middle_transition(1, p - q)
+                    m, case = f.middle_transition(1, altered)
                     b = m.backward_transition(1)
                     image = vst.transition(1, dnp)
                     # post = image.transition(1, dnp)
@@ -212,9 +209,10 @@ def test_small(dnp=True):
                     print('preimages:', len(seen[key]))
                     print()
                     print()
+                    input('')
 
                     print('alternatives:')
-                    alts = images.get(key.unprime_diagonal(), [])
+                    alts = images.get(key.unprime(), [])
                     for u in alts:
                         if u not in seen[key]: # and u.transition(1, dnp).transition(1, dnp) != u:
                             print_transition(u, 1, dnp)
@@ -232,5 +230,5 @@ def test_small(dnp=True):
                     traceback.print_exc()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
 
-                    if not any(u.unprime_diagonal() == image.unprime_diagonal() for u in uns):
-                        input('')
+                    # if not any(u.unprime_diagonal() == image.unprime_diagonal() for u in uns):
+                    #     input('')

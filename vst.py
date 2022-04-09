@@ -12,6 +12,14 @@ MIDDLE_TRANSITION_CACHE = {}
 
 class ValuedSetTableau:
 
+    def is_altered(self, index):
+        vst = self
+        x = vst.hinge(index)
+        if x:
+            if vst.tableau.get(x, x) == index and vst.tableau.get(x + 1, x + 1) == -index - 1:
+                return True
+        return False
+
     def is_separable(self, index):
         h = self.hinge(index)
         if h and self.grouping.get(h, h) == 0 and self.grouping.get(h + 1, h + 1) == 0:
@@ -45,6 +53,12 @@ class ValuedSetTableau:
 
     def diagonal_primes(self):
         return len([i for (i, j) in self.tableau.boxes if i == j and self.tableau.get(i, j) < 0])
+
+    def unprime(self):
+        t = self.tableau.boxes.copy()
+        for x, y in self.singletons():
+            t[x, y] = abs(self.tableau.get(x, y))
+        return ValuedSetTableau(t, self.grouping)
 
     def unprime_diagonal(self):
         t = self.tableau.boxes.copy()
@@ -144,18 +158,24 @@ class ValuedSetTableau:
         return self.cached_forward_transition(self, value)
 
     @cached_value(FORWARD_TRANSITION_CACHE)
-    def cached_forward_transition(cls, vst, value):
+    def cached_forward_transition(cls, vst, value):  # noqa
         tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
 
         t = vst
         x = vst.hinge(value)
-        if x:
-            if vst.tableau.get(x, x) == value and vst.tableau.get(x + 1, x + 1) == -value - 1:
-                if vst.tableau.get(x, x + 1) < 0 < vst.grouping.get(x + 1, x + 1):
+        altered = vst.is_altered(value)
+        if altered:
+            assert vst.tableau.get(x, x) == value and vst.tableau.get(x + 1, x + 1) == -value - 1
+            if not vst.grouping.get(x, x) and not vst.grouping.get(x + 1, x + 1):
+                if vst.tableau.get(x, x + 1) == value:
                     tab[x, x] = -value
                 else:
                     tab[x + 1, x + 1] = value + 1
-                t = ValuedSetTableau(Tableau(tab), grp)
+            elif vst.tableau.get(x, x + 1) < 0 < vst.grouping.get(x + 1, x + 1):
+                tab[x, x] = -value
+            else:
+                tab[x + 1, x + 1] = value + 1
+            t = ValuedSetTableau(Tableau(tab), grp)
 
         vertical_starts, vertical_ends = t.get_verticals(-value - 1)
         horizontal_starts, horizontal_ends = t.get_horizontals(value)
@@ -205,8 +225,9 @@ class ValuedSetTableau:
         return self.cached_middle_transition(self, value, altered)
 
     @cached_value(MIDDLE_TRANSITION_CACHE)
-    def cached_middle_transition(cls, vst, value, altered):
+    def cached_middle_transition(cls, vst, value, altered):  # noqa
         tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
+        case = None
 
         h1 = [(hx1, hy1, hy2, 0) for ((hx1, hy1), (hx2, hy2)) in zip(*vst.get_horizontals(value))]
         h2 = [(hx1, hy1, hy2, 1) for ((hx1, hy1), (hx2, hy2)) in zip(*vst.get_horizontals(value + 1))]
@@ -295,22 +316,29 @@ class ValuedSetTableau:
             # special diagonal condition
             if row1 == start1:
                 x = row1
-                if vst.is_group_end(x, x):
+                if not altered and vst.is_group_end(x, x):
+                    if vst.grouping.get(x, x + 1) and vst.grouping.get(x + 1, x + 2) is not None:
+                        case = 'a1'
+                        tab[x + 1, x + 1] = -value if not altered else value
+                        grp[x + 1, x + 1] = 0
+                        for y in range(x, stop1):
+                            grp[x, y] = grp[x, y + 1]
+                        grp[x, stop1 - 1] = 1
+                    else:
+                        case = 'a2'
+                        tab[x, x] = -value
+                        # if vst.grouping.get(x + 1, x + 2) is None:
+                        #     tab[x + 1, x + 1] *= -1
+                elif altered and vst.is_group_end(x + 1, x + 1) and vst.grouping.get(x + 1, x + 2) is not None:
+                    if vst.grouping.get(x, x) and vst.grouping.get(x, x + 1):
+                        case = 'a3'
+                        grp[x, x] = 0
+                        grp[x, x + 1] = 1
+                elif altered and vst.is_group_end(x, x):
+                    case = 'a4'
                     tab[x, x] = -value
-                #     if vst.grouping.get(x, x + 1) and vst.grouping.get(x + 1, x + 2) is not None:
-                #         tab[x + 1, x + 1] = -value if not altered else value
-                #         grp[x + 1, x + 1] = 0
-                #         for y in range(x, stop1):
-                #             grp[x, y] = grp[x, y + 1]
-                #         grp[x, stop1 - 1] = 1
-                #     else:
-                #         tab[x, x] = -value
-                # elif altered and vst.is_group_end(x + 1, x + 1) and vst.grouping.get(x + 1, x + 2) is not None:
-                #     if vst.grouping.get(x, x) and vst.grouping.get(x, x + 1):
-                #         grp[x, x] = 0
-                #         grp[x, x + 1] = 1
-                # if altered and not Tableau(grp).get(x + 1, x + 1):
-                #     pass # tab[x + 1, x + 1] = -value
+                if altered and not Tableau(grp).get(x + 1, x + 1):
+                    pass # tab[x + 1, x + 1] = -value
 
         for p, q, g in one_col_groups:
             assert len(g) == p + q
@@ -331,31 +359,38 @@ class ValuedSetTableau:
             # special diagonal condition
             if col2 == stop2:
                 x = col2
-                if vst.is_group_end(x, x):
+                if not altered and vst.is_group_end(x, x):
+                    if vst.grouping.get(x - 1, x) and vst.grouping.get(x - 2, x - 1) is not None:
+                        case = 'b1'
+                        tab[x - 1, x - 1] = value + 1
+                        grp[x - 1, x - 1] = 0
+                        grp[x, x] = 1
+                        for w in range(x, start2, - 1):
+                            grp[w, x] = grp[w - 1, x]
+                        grp[start2 + 1, x] = 1
+                    else:
+                        case = 'b2'
+                        tab[x, x] = value + 1
+                        # if vst.grouping.get(x - 2, x - 1) is None:
+                        #     tab[x - 1, x - 1] *= -1
+                elif altered and vst.is_group_end(x - 1, x - 1) and vst.grouping.get(x - 2, x - 1) is not None:
+                    if vst.grouping.get(x, x) and vst.grouping.get(x - 1, x):
+                        case = 'b3'
+                        grp[x, x] = 0
+                        grp[x - 1, x] = 1
+                elif altered and vst.is_group_end(x, x):
+                    case = 'b4'
                     tab[x, x] = value + 1
-                #     if vst.grouping.get(x - 1, x) and vst.grouping.get(x - 2, x - 1) is not None:
-                #         tab[x - 1, x - 1] = value + 1 if not altered else -value - 1
-                #         grp[x - 1, x - 1] = 0
-                #         grp[x, x] = 1
-                #         for w in range(x, start2, - 1):
-                #             grp[w, x] = grp[w - 1, x]
-                #         grp[start2 + 1, x] = 1
-                #     else:
-                #         tab[x, x] = value + 1
-                # elif altered and vst.is_group_end(x - 1, x - 1) and vst.grouping.get(x - 2, x - 1) is not None:
-                #     if vst.grouping.get(x, x) and vst.grouping.get(x - 1, x):
-                #         grp[x, x] = 0
-                #         grp[x - 1, x] = 1
-                # if altered and not Tableau(grp).get(x - 1, x - 1):
-                #     pass # tab[x - 1, x - 1] = value + 1
+                if altered and not Tableau(grp).get(x - 1, x - 1):
+                    pass # tab[x - 1, x - 1] = value + 1
 
-        return ValuedSetTableau(Tableau(tab), Tableau(grp))
+        return ValuedSetTableau(Tableau(tab), Tableau(grp)), case
 
     def backward_transition(self, value):
         return self.cached_backward_transition(self, value)
 
     @cached_value(BACKWARD_TRANSITION_CACHE)
-    def cached_backward_transition(cls, vst, value):
+    def cached_backward_transition(cls, vst, value):  # noqa
         tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
         vertical_starts, vertical_ends = vst.get_verticals(-value)
         horizontal_starts, horizontal_ends = vst.get_horizontals(value + 1)
@@ -454,44 +489,59 @@ class ValuedSetTableau:
         return ValuedSetTableau(Tableau(boxes), ans.grouping)
 
     @cached_value(TRANSITION_CACHE)
-    def cached_transition(cls, vst, index, dnp):
+    def cached_transition(cls, vst, index, dnp):  # noqa
+        altered = vst.is_altered(index)
         p = vst.primed_groups(index, index + 1)
         h = vst.hinge(index)
 
         f = vst.forward_transition(index)
         q = f.primed_groups(index, index + 1)
 
-
-        m = f.middle_transition(index, p - q)
+        m, case = f.middle_transition(index, altered)
         r = m.primed_groups(index, index + 1)
 
         ans = m.backward_transition(index)
 
         if not dnp:
             ans = cls.p_adjust(ans, index)
-        else:
+        elif h:
             tab = ans.tableau
             grp = ans.grouping
-            if h and ans.is_singleton(h, h) and ans.is_singleton(h + 1, h + 1) and ans.is_singleton(h, h + 1):
-                pass
-                # if p == q != r:
-                #     tab = tab.set(h, h, tab.get(h, h) * -1)
-                #     tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-                # if p != q:
+            if altered:
+                # if tab.get(h, h + 1) > 0 and tab.get(h + 1, h + 1) > 0:
                 #     tab = tab.set(h, h, abs(tab.get(h, h)))
-                #     tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-            elif h and (ans.is_singleton(h, h) or ans.is_singleton(h + 1, h + 1)):
-                pass
-                # if p == q != r:
-                #     if ans.is_singleton(h, h):
-                #         tab = tab.set(h, h, tab.get(h, h) * -1)
-                #     if ans.is_singleton(h + 1, h + 1):
-                #         tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-                # if p != q:
-                #     if ans.is_singleton(h, h):
-                #         tab = tab.set(h, h, abs(tab.get(h, h)))
-                #     if ans.is_singleton(h + 1, h + 1):
-                #         tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
+                # elif tab.get(h, h + 1) < 0 and tab.get(h, h) < 0:
+                #     tab = tab.set(h + 1, h + 1, -abs(tab.get(h + 1, h + 1)))
+                if not case and ans.diagonal_singletons(index, index + 1) == [h]:
+                    tab = tab.set(h, h, tab.get(h, h) * -1)
+                elif not case and ans.diagonal_singletons(index, index + 1) == [h + 1]:
+                    tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
+                elif ans.diagonal_singletons(index, index + 1) == [h, h + 1]:
+                    tab = tab.set(h, h, tab.get(h, h) * -1)
+                    tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
+            elif not altered and q != r and m.is_semistandard([-2, None, -1, 2, None, 1]):
+                if ans.is_singleton(h, h):
+                    tab = tab.set(h, h, tab.get(h, h) * -1)
+                if ans.is_singleton(h + 1, h + 1):
+                    tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
+            # if ans.is_singleton(h, h) and ans.is_singleton(h + 1, h + 1) and ans.is_singleton(h, h + 1):
+            #     # if p == q != r:
+            #     #     tab = tab.set(h, h, tab.get(h, h) * -1)
+            #     #     tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
+            #     # if p != q:
+            #     #     tab = tab.set(h, h, abs(tab.get(h, h)))
+            #     #     tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
+            # elif (ans.is_singleton(h, h) or ans.is_singleton(h + 1, h + 1)):
+            #     # if p == q != r:
+            #     #     if ans.is_singleton(h, h):
+            #     #         tab = tab.set(h, h, tab.get(h, h) * -1)
+            #     #     if ans.is_singleton(h + 1, h + 1):
+            #     #         tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
+            #     # if p != q:
+            #     #     if ans.is_singleton(h, h):
+            #     #         tab = tab.set(h, h, abs(tab.get(h, h)))
+            #     #     if ans.is_singleton(h + 1, h + 1):
+            #     #         tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
 
             # if p != q or q != r:
             #     tab = tab.set(h, h, tab.get(h, h) * -1)
