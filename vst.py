@@ -319,26 +319,22 @@ class ValuedSetTableau:
                 if not altered and vst.is_group_end(x, x):
                     if vst.grouping.get(x, x + 1) and vst.grouping.get(x + 1, x + 2) is not None:
                         case = 'a1'
-                        tab[x + 1, x + 1] = -value if not altered else value
+                        tab[x + 1, x + 1] = -value
                         grp[x + 1, x + 1] = 0
-                        for y in range(x, stop1):
-                            grp[x, y] = grp[x, y + 1]
-                        grp[x, stop1 - 1] = 1
+                        grp[x, x] = 1
                     else:
                         case = 'a2'
                         tab[x, x] = -value
-                        # if vst.grouping.get(x + 1, x + 2) is None:
-                        #     tab[x + 1, x + 1] *= -1
                 elif altered and vst.is_group_end(x + 1, x + 1) and vst.grouping.get(x + 1, x + 2) is not None:
-                    if vst.grouping.get(x, x) and vst.grouping.get(x, x + 1):
-                        case = 'a3'
-                        grp[x, x] = 0
-                        grp[x, x + 1] = 1
+                    case = 'a3'
+                    grp[x, x] = 0
+                    grp[x, x + 1] = 1
+                    if Tableau(grp).get(x + 1, x + 1) == 0:
+                        tab[x + 1, x + 1] = -value
                 elif altered and vst.is_group_end(x, x):
                     case = 'a4'
                     tab[x, x] = -value
-                if altered and not Tableau(grp).get(x + 1, x + 1):
-                    pass # tab[x + 1, x + 1] = -value
+                    tab[x + 1, x + 1] = -value
 
         for p, q, g in one_col_groups:
             assert len(g) == p + q
@@ -365,24 +361,19 @@ class ValuedSetTableau:
                         tab[x - 1, x - 1] = value + 1
                         grp[x - 1, x - 1] = 0
                         grp[x, x] = 1
-                        for w in range(x, start2, - 1):
-                            grp[w, x] = grp[w - 1, x]
-                        grp[start2 + 1, x] = 1
                     else:
                         case = 'b2'
                         tab[x, x] = value + 1
-                        # if vst.grouping.get(x - 2, x - 1) is None:
-                        #     tab[x - 1, x - 1] *= -1
                 elif altered and vst.is_group_end(x - 1, x - 1) and vst.grouping.get(x - 2, x - 1) is not None:
-                    if vst.grouping.get(x, x) and vst.grouping.get(x - 1, x):
-                        case = 'b3'
-                        grp[x, x] = 0
-                        grp[x - 1, x] = 1
+                    case = 'b3'
+                    grp[x, x] = 0
+                    grp[x - 1, x] = 1
+                    if Tableau(grp).get(x - 1, x - 1) == 0:
+                        tab[x - 1, x - 1] = value + 1
                 elif altered and vst.is_group_end(x, x):
                     case = 'b4'
+                    tab[x - 1, x - 1] = value + 1
                     tab[x, x] = value + 1
-                if altered and not Tableau(grp).get(x - 1, x - 1):
-                    pass # tab[x - 1, x - 1] = value + 1
 
         return ValuedSetTableau(Tableau(tab), Tableau(grp)), case
 
@@ -508,45 +499,18 @@ class ValuedSetTableau:
             tab = ans.tableau
             grp = ans.grouping
             if altered:
-                # if tab.get(h, h + 1) > 0 and tab.get(h + 1, h + 1) > 0:
-                #     tab = tab.set(h, h, abs(tab.get(h, h)))
-                # elif tab.get(h, h + 1) < 0 and tab.get(h, h) < 0:
-                #     tab = tab.set(h + 1, h + 1, -abs(tab.get(h + 1, h + 1)))
                 if not case and ans.diagonal_singletons(index, index + 1) == [h]:
                     tab = tab.set(h, h, tab.get(h, h) * -1)
                 elif not case and ans.diagonal_singletons(index, index + 1) == [h + 1]:
                     tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-                elif ans.diagonal_singletons(index, index + 1) == [h, h + 1]:
-                    tab = tab.set(h, h, tab.get(h, h) * -1)
-                    tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
+                elif not case and ans.diagonal_singletons(index, index + 1) == [h, h + 1]:
+                    tab = tab.set(h, h, -tab.get(h, h))
+                    tab = tab.set(h + 1, h + 1, -tab.get(h + 1, h + 1))
             elif not altered and q != r and m.is_semistandard([-2, None, -1, 2, None, 1]):
                 if ans.is_singleton(h, h):
                     tab = tab.set(h, h, tab.get(h, h) * -1)
                 if ans.is_singleton(h + 1, h + 1):
                     tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-            # if ans.is_singleton(h, h) and ans.is_singleton(h + 1, h + 1) and ans.is_singleton(h, h + 1):
-            #     # if p == q != r:
-            #     #     tab = tab.set(h, h, tab.get(h, h) * -1)
-            #     #     tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-            #     # if p != q:
-            #     #     tab = tab.set(h, h, abs(tab.get(h, h)))
-            #     #     tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-            # elif (ans.is_singleton(h, h) or ans.is_singleton(h + 1, h + 1)):
-            #     # if p == q != r:
-            #     #     if ans.is_singleton(h, h):
-            #     #         tab = tab.set(h, h, tab.get(h, h) * -1)
-            #     #     if ans.is_singleton(h + 1, h + 1):
-            #     #         tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-            #     # if p != q:
-            #     #     if ans.is_singleton(h, h):
-            #     #         tab = tab.set(h, h, abs(tab.get(h, h)))
-            #     #     if ans.is_singleton(h + 1, h + 1):
-            #     #         tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-
-            # if p != q or q != r:
-            #     tab = tab.set(h, h, tab.get(h, h) * -1)
-            # if p != q or q != r:
-            #     tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
             ans = ValuedSetTableau(tab, grp)
 
         return cls.reorient(ans, index)

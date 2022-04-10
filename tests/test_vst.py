@@ -156,11 +156,8 @@ def test_small(dnp=True):
         for nu in Partition.subpartitions(mu, strict=True):
             print('mu =', mu, 'nu =', nu)
             test = sorted(ValuedSetTableau.all(n, mu, nu, diagonal_nonprimes=dnp))
-            test = [vst for vst in test if not vst.is_highest_weight()]
+
             _unseen = set(test)
-
-            # test = [vst for vst in test if vst.is_altered(1)]
-
             images = {}
             multiplicities = {}
             for vst in test:
@@ -171,7 +168,8 @@ def test_small(dnp=True):
                 images[key] = images.get(key, []) + [vst]
             unseen = {}
             for vst in _unseen:
-                key = (tuple(sorted(vst.tableau.boxes)), vst.weight(n))
+                # key = (tuple(sorted(vst.tableau.boxes)), vst.weight(n))
+                key = vst.unprime_diagonal()
                 unseen[key] = unseen.get(key, []) + [vst]
 
             seen = {}
@@ -193,17 +191,17 @@ def test_small(dnp=True):
                     assert b.is_semistandard([-2, 2, -1, 1])
                     assert image.is_semistandard()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
-                    assert all(preimage.unprime_diagonal() == vst.unprime_diagonal() for preimage in seen[key])
+                    # assert all(preimage.unprime_diagonal() == vst.unprime_diagonal() for preimage in seen[key])
                     assert dnp or not image.diagonal_primes()
 
-                    #if len(seen[key]) == multiplicities[image]:
+                    # if len(seen[key]) == multiplicities[image]:
                     assert len(seen[key]) == 1
                     # print_transition(vst, 1, dnp)
                 except:
                     print(5 * '\n')
                     print_transition(vst, 1, dnp)
                     for preimage in seen[key]:
-                        if vst == preimage: # or preimage.transition(1, dnp).transition(1, dnp) == preimage:
+                        if vst == preimage:  # or preimage.transition(1, dnp).transition(1, dnp) == preimage:
                             continue
                         print_transition(preimage, 1, dnp)
                     print('preimages:', len(seen[key]))
@@ -214,13 +212,14 @@ def test_small(dnp=True):
                     print('alternatives:')
                     alts = images.get(key.unprime(), [])
                     for u in alts:
-                        if u not in seen[key]: # and u.transition(1, dnp).transition(1, dnp) != u:
+                        if u not in seen[key]:  # and u.transition(1, dnp).transition(1, dnp) != u:
                             print_transition(u, 1, dnp)
                     print()
                     print()
 
                     print('unseen:')
-                    ukey = (tuple(sorted(image.tableau.boxes)), image.weight(n))
+                    # ukey = (tuple(sorted(image.tableau.boxes)), image.weight(n))
+                    ukey = image.unprime_diagonal()
                     uns = unseen.get(ukey, [])
                     for u in uns:
                         print_transition(u, 1, dnp)
@@ -229,6 +228,6 @@ def test_small(dnp=True):
 
                     traceback.print_exc()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
-
+                    assert len(uns) + 1 == len(seen[key])
                     # if not any(u.unprime_diagonal() == image.unprime_diagonal() for u in uns):
                     #     input('')
