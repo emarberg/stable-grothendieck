@@ -198,9 +198,8 @@ def test_small(dnp=True):
                     #     print_transition(vst, 1, dnp)
 
                     assert len(seen[key]) == 1
-                    # assert vst == post
-                    print_transition(vst, 1, dnp)
-                    input('')
+                    assert vst == post
+                    # print_transition(vst, 1, dnp)
                 except:
                     # print(5 * '\n')
                     # print_transition(vst, 1, dnp)
