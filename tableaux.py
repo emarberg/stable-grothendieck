@@ -333,6 +333,12 @@ class Tableau:
             ans = ans[0]
         return ans
 
+    def get_row(self, x, before=None, after=None):
+        return Tableau({(i, j): self.boxes[i, j] for (i, j) in self.boxes if i == x and (before is None or j < before) and (after is None or j > after)})
+
+    def get_column(self, x, before=None, after=None):
+        return Tableau({(i, j): self.boxes[i, j] for (i, j) in self.boxes if j == x and (before is None or i < before) and (after is None or i > after)})
+
     def add(self, i, j, v):
         assert i > 0 and j > 0
         mapping = self.boxes.copy()

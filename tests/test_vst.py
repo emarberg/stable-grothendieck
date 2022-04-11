@@ -177,7 +177,6 @@ def test_small(dnp=True):
                 try:
                     altered = vst.is_altered(1)
                     f = vst.forward_transition(1)
-
                     m, case = f.middle_transition(1, altered)
                     b = m.backward_transition(1)
                     image = vst.transition(1, dnp)
@@ -220,8 +219,6 @@ def test_small(dnp=True):
 
                     if len(seen[key]) > 1:
                         for preimage in seen[key]:
-                            if vst == preimage:
-                                continue
                             print_transition(preimage, 1, dnp)
                         print('preimages:', len(seen[key]))
                         print()
