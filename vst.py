@@ -319,7 +319,7 @@ class ValuedSetTableau:
                 if not altered and vst.is_group_end(x, x):
                     if vst.grouping.get(x, x + 1) and vst.grouping.get(x + 1, x + 2) is not None:
                         case = 'a1'
-                        tab[x + 1, x + 1] = -value
+                        tab[x + 1, x + 1] *= -1
                         grp[x + 1, x + 1] = 0
                         grp[x, x] = 1
                     else:
@@ -330,7 +330,7 @@ class ValuedSetTableau:
                     grp[x, x] = 0
                     grp[x, x + 1] = 1
                     if Tableau(grp).get(x + 1, x + 1) == 0:
-                        tab[x + 1, x + 1] = -value
+                        tab[x + 1, x + 1] *= -1
                 elif altered and vst.is_group_end(x, x):
                     case = 'a4'
                     tab[x, x] = -value
@@ -358,7 +358,7 @@ class ValuedSetTableau:
                 if not altered and vst.is_group_end(x, x):
                     if vst.grouping.get(x - 1, x) and vst.grouping.get(x - 2, x - 1) is not None:
                         case = 'b1'
-                        tab[x - 1, x - 1] = value + 1
+                        tab[x - 1, x - 1] *= -1
                         grp[x - 1, x - 1] = 0
                         grp[x, x] = 1
                     else:
@@ -369,7 +369,7 @@ class ValuedSetTableau:
                     grp[x, x] = 0
                     grp[x - 1, x] = 1
                     if Tableau(grp).get(x - 1, x - 1) == 0:
-                        tab[x - 1, x - 1] = value + 1
+                        tab[x - 1, x - 1] *= -1
                 elif altered and vst.is_group_end(x, x):
                     case = 'b4'
                     tab[x - 1, x - 1] = value + 1
