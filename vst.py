@@ -353,11 +353,9 @@ class ValuedSetTableau:
                     case = 'a3'
                     grp[x, x] = 0
                     grp[x, x + 1] = 1
-                elif altered and vst.is_group_end(x, x):
-                    case = 'a4'
-                    tab[x, x] = -value
                 elif altered:
-                    case = 'a5'
+                    assert not vst.is_group_end(x, x)
+                    case = 'a4'
 
         for p, q, g in one_col_groups:
             assert len(g) == p + q
@@ -390,11 +388,9 @@ class ValuedSetTableau:
                     case = 'b3'
                     grp[x, x] = 0
                     grp[x - 1, x] = 1
-                elif altered and vst.is_group_end(x, x):
-                    case = 'b4'
-                    tab[x, x] = value + 1
                 elif altered:
-                    case = 'b5'
+                    assert not vst.is_group_end(x, x)
+                    case = 'b4'
 
         ans = ValuedSetTableau(Tableau(tab), Tableau(grp))
         h = vst.hinge(value)
@@ -404,6 +400,8 @@ class ValuedSetTableau:
         elif case == '*' and ans.tableau.get(h + 1, h + 1) > 0 and ans.tableau.get(h, h + 1) > 0 and ans.tableau.get(h, h) < 0:
              ans = ValuedSetTableau(ans.tableau.set(h, h, ans.tableau.get(h, h) * -1), ans.grouping)
              case = 'a0'
+        assert case != '*'
+
         return ans, case
 
     def backward_transition(self, value):
@@ -530,10 +528,10 @@ class ValuedSetTableau:
         if h:
             tab = ans.tableau
             grp = ans.grouping
-            if case in ['a1', 'a2', 'a4', 'a5', '*']:
+            if case in ['a1', 'a2', 'a4']:
                 if ans.is_singleton(h + 1, h + 1):
                     tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-            if case in ['b1', 'b2', 'b4', 'b5', '*']:
+            if case in ['b1', 'b2', 'b4']:
                 if ans.is_singleton(h, h):
                     tab = tab.set(h, h, tab.get(h, h) * -1)
             ans = ValuedSetTableau(tab, grp)

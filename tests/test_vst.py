@@ -168,7 +168,6 @@ def test_small(dnp=True):
                 images[key] = images.get(key, []) + [vst]
             unseen = {}
             for vst in _unseen:
-                # key = (tuple(sorted(vst.tableau.boxes)), vst.weight(n))
                 key = vst.unprime_diagonal()
                 unseen[key] = unseen.get(key, []) + [vst]
 
@@ -192,16 +191,11 @@ def test_small(dnp=True):
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
                     assert dnp or not image.diagonal_primes()
 
-                    # if altered:
-                    #     print(5 * '\n')
-                    #     print_transition(vst, 1, dnp)
-
                     assert len(seen[key]) == 1
                     assert vst == post
+
                     # print_transition(vst, 1, dnp)
                 except:
-                    # print(5 * '\n')
-                    # print_transition(vst, 1, dnp)
                     if len(seen[key]) == 1:
                         print('\nagain:')
                         print_transition(vst, 1, dnp)
@@ -242,6 +236,5 @@ def test_small(dnp=True):
 
                     traceback.print_exc()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
-                    # assert len(uns) + 1 == len(seen[key])
                     assert len(seen[key]) == 1
                     input('')
