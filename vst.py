@@ -128,7 +128,7 @@ class ValuedSetTableau:
         else:
             return tab.get(i, j) == tab.get(i - 1, j)
 
-    def __init__(self, entry_mapping=None, group_mapping=None):
+    def __init__(self, entry_mapping, group_mapping):
         self.tableau = entry_mapping if type(entry_mapping) == Tableau else Tableau(entry_mapping)
         self.grouping = group_mapping if type(group_mapping) == Tableau else Tableau(group_mapping)
         assert all(self.is_valid_position(self.tableau, self.grouping, i, j) for (i, j) in self.tableau.boxes)
@@ -498,15 +498,7 @@ class ValuedSetTableau:
         elif h:
             tab = ans.tableau
             grp = ans.grouping
-            if altered:
-                if not case and ans.diagonal_singletons(index, index + 1) == [h]:
-                    tab = tab.set(h, h, tab.get(h, h) * -1)
-                elif not case and ans.diagonal_singletons(index, index + 1) == [h + 1]:
-                    tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-                elif not case and ans.diagonal_singletons(index, index + 1) == [h, h + 1]:
-                    tab = tab.set(h, h, -tab.get(h, h))
-                    tab = tab.set(h + 1, h + 1, -tab.get(h + 1, h + 1))
-            elif not altered and q != r and m.is_semistandard([-2, None, -1, 2, None, 1]):
+            if (altered and not case) or (not altered and q != r and m.is_semistandard([-2, None, -1, 2, None, 1])):
                 if ans.is_singleton(h, h):
                     tab = tab.set(h, h, tab.get(h, h) * -1)
                 if ans.is_singleton(h + 1, h + 1):
