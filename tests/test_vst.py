@@ -147,7 +147,7 @@ def print_transition(vst, i, dnp):
     image = vst.transition(i, dnp)
     post = image.transition(i, dnp)
     print(combine_str(vst, f, m, b, image, post))
-    print('is altered:', altered, '| middle case:', case)
+    print('is altered:', altered, '->', image.is_altered(i), '| middle case:', case)
 
 
 def test_small(dnp=True):
@@ -191,17 +191,16 @@ def test_small(dnp=True):
                     assert b.is_semistandard([-2, 2, -1, 1])
                     assert image.is_semistandard()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
-                    # assert all(preimage.unprime_diagonal() == vst.unprime_diagonal() for preimage in seen[key])
                     assert dnp or not image.diagonal_primes()
 
-                    if altered:
-                        print(5 * '\n')
-                        print_transition(vst, 1, dnp)
+                    # if altered:
+                    #     print(5 * '\n')
+                    #     print_transition(vst, 1, dnp)
 
-                    # if len(seen[key]) == multiplicities[image]:
                     assert len(seen[key]) == 1
-                    assert vst == post
-                    # print_transition(vst, 1, dnp)
+                    # assert vst == post
+                    print_transition(vst, 1, dnp)
+                    input('')
                 except:
                     # print(5 * '\n')
                     # print_transition(vst, 1, dnp)
@@ -238,7 +237,6 @@ def test_small(dnp=True):
                         print()
 
                         print('unseen:')
-                        # ukey = (tuple(sorted(image.tableau.boxes)), image.weight(n))
                         ukey = image.unprime_diagonal()
                         uns = unseen.get(ukey, [])
                         for u in uns:
@@ -249,5 +247,5 @@ def test_small(dnp=True):
                     traceback.print_exc()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
                     # assert len(uns) + 1 == len(seen[key])
-                    # assert len(seen[key]) == 1
+                    assert len(seen[key]) == 1
                     input('')
