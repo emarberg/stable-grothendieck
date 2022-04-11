@@ -142,7 +142,7 @@ def test_simple():
 def print_transition(vst, i, dnp):
     altered = vst.is_altered(i)
     f = vst.forward_transition(i)
-    m, case = f.middle_transition(i, altered)
+    m, case = f.middle_transition(i, altered, dnp)
     b = m.backward_transition(i)
     image = vst.transition(i, dnp)
     post = image.transition(i, dnp)
@@ -176,7 +176,7 @@ def test_small(dnp=True):
                 try:
                     altered = vst.is_altered(1)
                     f = vst.forward_transition(1)
-                    m, case = f.middle_transition(1, altered)
+                    m, case = f.middle_transition(1, altered, dnp)
                     b = m.backward_transition(1)
                     image = vst.transition(1, dnp)
                     post = image.transition(1, dnp)
@@ -194,7 +194,7 @@ def test_small(dnp=True):
                     assert len(seen[key]) == 1
                     assert vst == post
 
-                    # print_transition(vst, 1, dnp)
+                    print_transition(vst, 1, dnp)
                 except:
                     if len(seen[key]) == 1:
                         print('\nagain:')

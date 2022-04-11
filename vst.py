@@ -235,8 +235,8 @@ class ValuedSetTableau:
 
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
-    def middle_transition(self, value, altered):
-        return self.cached_middle_transition(self, value, altered)
+    def middle_transition(self, value, altered, dnp):
+        return self.cached_middle_transition(self, value, altered, dnp)
 
     def _get_row_groups(self, value):
         vst = self
@@ -315,7 +315,7 @@ class ValuedSetTableau:
         return one_col_groups, two_col_groups
 
     @cached_value(MIDDLE_TRANSITION_CACHE)
-    def cached_middle_transition(cls, vst, value, altered):  # noqa
+    def cached_middle_transition(cls, vst, value, altered, dnp):  # noqa
         tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
         case = '*' if altered else None
 
@@ -342,7 +342,7 @@ class ValuedSetTableau:
             if row1 == start1:
                 x = row1
                 if not altered and vst.is_group_end(x, x):
-                    if vst.grouping.get(x, x + 1) and vst.grouping.get(x + 1, x + 2) is not None:
+                    if dnp and vst.grouping.get(x, x + 1) and vst.grouping.get(x + 1, x + 2) is not None:
                         case = 'a1'
                         grp[x + 1, x + 1] = 0
                         grp[x, x] = 1
@@ -377,7 +377,7 @@ class ValuedSetTableau:
             if col2 == stop2:
                 x = col2
                 if not altered and vst.is_group_end(x, x):
-                    if vst.grouping.get(x - 1, x) and vst.grouping.get(x - 2, x - 1) is not None:
+                    if dnp and vst.grouping.get(x - 1, x) and vst.grouping.get(x - 2, x - 1) is not None:
                         case = 'b1'
                         grp[x - 1, x - 1] = 0
                         grp[x, x] = 1
@@ -498,6 +498,20 @@ class ValuedSetTableau:
         return ValuedSetTableau(tab, grp)
 
     @classmethod
+    def q_adjust(cls, ans, index, h, case):
+        if h:
+            tab = ans.tableau
+            grp = ans.grouping
+            if case in ['a1', 'a2', 'a4']:
+                if ans.is_singleton(h + 1, h + 1):
+                    tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
+            if case in ['b1', 'b2', 'b4']:
+                if ans.is_singleton(h, h):
+                    tab = tab.set(h, h, tab.get(h, h) * -1)
+            ans = ValuedSetTableau(tab, grp)
+        return ans
+
+    @classmethod
     def reorient(cls, ans, index):
         mapping = {index: index + 1, -index: -index - 1, index + 1: index, -index - 1: -index}
         boxes = {}
@@ -509,34 +523,17 @@ class ValuedSetTableau:
     @cached_value(TRANSITION_CACHE)
     def cached_transition(cls, vst, index, dnp):  # noqa
         altered = vst.is_altered(index)
-        p = vst.primed_groups(index, index + 1)
-        h = vst.hinge(index)
-
         f = vst.forward_transition(index)
-        q = f.primed_groups(index, index + 1)
-
-        m, case = f.middle_transition(index, altered)
-        r = m.primed_groups(index, index + 1)
-
+        m, case = f.middle_transition(index, altered, dnp)
         ans = m.backward_transition(index)
 
         if not dnp:
             ans = cls.p_adjust(ans, index)
         else:
-            ans = cls.reorient(ans, index)
+            h = vst.hinge(index)
+            ans = cls.q_adjust(ans, index, h, case)
+        return cls.reorient(ans, index)
 
-        if h:
-            tab = ans.tableau
-            grp = ans.grouping
-            if case in ['a1', 'a2', 'a4']:
-                if ans.is_singleton(h + 1, h + 1):
-                    tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-            if case in ['b1', 'b2', 'b4']:
-                if ans.is_singleton(h, h):
-                    tab = tab.set(h, h, tab.get(h, h) * -1)
-            ans = ValuedSetTableau(tab, grp)
-
-        return ans
 
     @classmethod
     def all(cls, max_entry, mu, nu=(), diagonal_nonprimes=True):
