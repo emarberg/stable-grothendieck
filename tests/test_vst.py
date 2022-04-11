@@ -146,7 +146,7 @@ def print_transition(vst, i, dnp):
     b = m.backward_transition(i)
     image = vst.transition(i, dnp)
     post = image.transition(i, dnp)
-    print(combine_str(vst, f, m, b, image, post))
+    print(combine_str(vst, f, m, b, image))
     print('is altered:', altered, '| middle case:', case)
 
 
@@ -181,7 +181,7 @@ def test_small(dnp=True):
                     m, case = f.middle_transition(1, altered)
                     b = m.backward_transition(1)
                     image = vst.transition(1, dnp)
-                    # post = image.transition(1, dnp)
+                    post = image.transition(1, dnp)
                     key = image
                     seen[key] = seen.get(key, []) + [vst]
 
@@ -194,40 +194,60 @@ def test_small(dnp=True):
                     # assert all(preimage.unprime_diagonal() == vst.unprime_diagonal() for preimage in seen[key])
                     assert dnp or not image.diagonal_primes()
 
+                    if altered:
+                        print(5 * '\n')
+                        print_transition(vst, 1, dnp)
+
                     # if len(seen[key]) == multiplicities[image]:
                     assert len(seen[key]) == 1
+                    assert vst == post
                     # print_transition(vst, 1, dnp)
                 except:
-                    print(5 * '\n')
-                    print_transition(vst, 1, dnp)
-                    for preimage in seen[key]:
-                        if vst == preimage:  # or preimage.transition(1, dnp).transition(1, dnp) == preimage:
-                            continue
-                        print_transition(preimage, 1, dnp)
-                    print('preimages:', len(seen[key]))
-                    print()
-                    print()
-                    input('')
+                    # print(5 * '\n')
+                    # print_transition(vst, 1, dnp)
+                    if len(seen[key]) == 1:
+                        print('\nagain:')
+                        print_transition(vst, 1, dnp)
+                        print_transition(image, 1, dnp)
+                        print_transition(post, 1, dnp)
+                        print_transition(post.transition(1, dnp), 1, dnp)
+                        print()
+                        print()
+                        print()
+                        print()
+                        print()
+                        print()
+                        print()
+                        print()
 
-                    print('alternatives:')
-                    alts = images.get(key.unprime(), [])
-                    for u in alts:
-                        if u not in seen[key]:  # and u.transition(1, dnp).transition(1, dnp) != u:
+                    if len(seen[key]) > 1:
+                        for preimage in seen[key]:
+                            if vst == preimage:
+                                continue
+                            print_transition(preimage, 1, dnp)
+                        print('preimages:', len(seen[key]))
+                        print()
+                        print()
+
+                        print('alternatives:')
+                        alts = images.get(key.unprime(), [])
+                        for u in alts:
+                            if u not in seen[key]:
+                                print_transition(u, 1, dnp)
+                        print()
+                        print()
+
+                        print('unseen:')
+                        # ukey = (tuple(sorted(image.tableau.boxes)), image.weight(n))
+                        ukey = image.unprime_diagonal()
+                        uns = unseen.get(ukey, [])
+                        for u in uns:
                             print_transition(u, 1, dnp)
-                    print()
-                    print()
-
-                    print('unseen:')
-                    # ukey = (tuple(sorted(image.tableau.boxes)), image.weight(n))
-                    ukey = image.unprime_diagonal()
-                    uns = unseen.get(ukey, [])
-                    for u in uns:
-                        print_transition(u, 1, dnp)
 
                     print(5 * '\n')
 
                     traceback.print_exc()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
-                    assert len(uns) + 1 == len(seen[key])
-                    # if not any(u.unprime_diagonal() == image.unprime_diagonal() for u in uns):
-                    #     input('')
+                    # assert len(uns) + 1 == len(seen[key])
+                    # assert len(seen[key]) == 1
+                    input('')
