@@ -472,28 +472,32 @@ class ValuedSetTableau:
         elif ans.primed_diagonal_cells(index, index + 1):
             x = y = list(ans.primed_diagonal_cells(index, index + 1))[0]
             if tab.get(x, y) == -index - 1:
-                tab = tab.set(x, y, index + 1)
+                tab = tab.set(x, x, index + 1)
                 while tab.get(x, y) == index + 1:
                     y += 1
                 while grp.get(x, y):
-                    for z in range(y, x, -1):
-                        grp = grp.set(x, z, grp.get(x, z - 1))
-                    grp = grp.set(x, x, 1)
-                    tab = tab.set(x, y, index + 1)
                     y += 1
+                for z in range(x, y):
+                    grp = grp.set(x, z, grp.get(x, z + 1))
+                    tab = tab.set(x, z, index + 1)
+                grp = grp.set(x, y, 0)
                 tab = tab.set(x, y, -index)
+
             elif tab.get(x, y) == -index:
-                x = y - 1
                 while tab.get(x, y) == -index:
                     x -= 1
-                tab = tab.set(x, y, -index - 1)
-                grp = grp.set(x, y, 1)
-                while grp.get(y, y):
-                    for w in range(y, x, -1):
-                        grp = grp.set(w, y, grp.get(w - 1, y))
-                        tab = tab.set(w, y, tab.get(w - 1, y))
-                grp = grp.set(x, y, 0)
+                assert grp.get(x, y) == 0
+
+                for z in range(x, y):
+                    grp = grp.set(z, y, grp.get(z + 1, y))
+                    tab = tab.set(z, y, tab.get(z + 1, y))
+                grp = grp.set(y, y, 0)
                 tab = tab.set(y, y, index)
+
+                tab = tab.set(x, y, -index - 1)
+                while grp.get(x + 1, y) != 0:
+                    x += 1
+                    tab = tab.set(x, y, -index - 1)
 
         return ValuedSetTableau(tab, grp)
 
