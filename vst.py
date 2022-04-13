@@ -10,6 +10,19 @@ FORWARD_TRANSITION_CACHE = {}
 MIDDLE_TRANSITION_CACHE = {}
 
 
+def combine_str(a, *b):
+    if not b:
+        return str(a)
+    elif len(b) > 1:
+        return combine_str(a, combine_str(b[0], *b[1:]))
+    else:
+        b = b[0]
+    ziplines = zip(str(a).split("\n"), str(b).split("\n"))
+    lines = ["  ->  ".join(pair) if "".join(pair).strip() else "" for pair in ziplines]
+    toprint = "\n".join(lines)
+    return toprint
+
+
 class ValuedSetTableau:
 
     def is_altered(self, index):
@@ -164,25 +177,41 @@ class ValuedSetTableau:
     @classmethod
     def undo_alteration(cls, vst, value):
         tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
-
         t = vst
         x = vst.hinge(value)
         altered = vst.is_altered(value)
         if altered:
             assert vst.tableau.get(x, x) == value and vst.tableau.get(x + 1, x + 1) == -value - 1
             if not vst.grouping.get(x, x) and not vst.grouping.get(x + 1, x + 1):
-                tab[x, x] = -value
-                t = ValuedSetTableau(Tableau(tab), grp)
-                assert not t.is_altered(value)
-                u = t.forward_transition(value)
-                if cls.coincide(t, u, x, x) and cls.coincide(t, u, x + 1, x + 1):
+                del tab[x, x]
+                del tab[x + 1, x + 1]
+                del grp[x, x]
+                del grp[x + 1, x + 1]
+
+                w = ValuedSetTableau(tab, grp).forward_transition(value)
+                if w.tableau.get(x, x + 1) == value:
+                    tab[x, x] = -value
+                    tab[x + 1, x + 1] = -value - 1
+                else:
                     tab[x, x] = value
                     tab[x + 1, x + 1] = value + 1
+
+                grp[x, x] = 0
+                grp[x + 1, x + 1] = 0
+
+                # tab[x, x] = -value
+                # t = ValuedSetTableau(Tableau(tab), grp)
+                # assert not t.is_altered(value)
+                # u = t.forward_transition(value)
+                # if cls.coincide(t, u, x, x) and cls.coincide(t, u, x + 1, x + 1):
+                #     tab[x, x] = value
+                #     tab[x + 1, x + 1] = value + 1
+
             elif vst.tableau.get(x, x + 1) < 0 < vst.grouping.get(x + 1, x + 1):
                 tab[x, x] = -value
             else:
                 tab[x + 1, x + 1] = value + 1
-            t = ValuedSetTableau(Tableau(tab), grp)
+            t = ValuedSetTableau(tab, grp)
 
         return t
 
@@ -393,14 +422,19 @@ class ValuedSetTableau:
                     case = 'b4'
 
         ans = ValuedSetTableau(Tableau(tab), Tableau(grp))
-        h = vst.hinge(value)
-        if case == '*' and ans.tableau.get(h, h) < 0 and ans.tableau.get(h, h + 1) < 0 and ans.tableau.get(h + 1, h + 1) > 0:
-             ans = ValuedSetTableau(ans.tableau.set(h + 1, h + 1, ans.tableau.get(h + 1, h + 1) * -1), ans.grouping)
-             case = 'b0'
-        elif case == '*' and ans.tableau.get(h + 1, h + 1) > 0 and ans.tableau.get(h, h + 1) > 0 and ans.tableau.get(h, h) < 0:
-             ans = ValuedSetTableau(ans.tableau.set(h, h, ans.tableau.get(h, h) * -1), ans.grouping)
-             case = 'a0'
-        assert case != '*'
+
+        if case == '*':
+            h = vst.hinge(value)
+            x = ans.tableau.get(h, h)
+            y = ans.tableau.get(h, h + 1)
+            z = ans.tableau.get(h + 1, h + 1)
+            if x < 0 and y < 0 and z > 0:
+                ans = ValuedSetTableau(ans.tableau.set(h + 1, h + 1, -z), ans.grouping)
+                case = 'a0'
+            elif z > 0 and y > 0 and x < 0:
+                ans = ValuedSetTableau(ans.tableau.set(h, h, -x), ans.grouping)
+                case = 'b0'
+            assert case != '*'
 
         return ans, case
 
@@ -502,7 +536,8 @@ class ValuedSetTableau:
         return ValuedSetTableau(tab, grp)
 
     @classmethod
-    def q_adjust(cls, ans, index, h, case):
+    def q_adjust(cls, ans, index, case):
+        h = ans.hinge(index)
         if h:
             tab = ans.tableau
             grp = ans.grouping
@@ -534,10 +569,8 @@ class ValuedSetTableau:
         if not dnp:
             ans = cls.p_adjust(ans, index)
         else:
-            h = vst.hinge(index)
-            ans = cls.q_adjust(ans, index, h, case)
+            ans = cls.q_adjust(ans, index, case)
         return cls.reorient(ans, index)
-
 
     @classmethod
     def all(cls, max_entry, mu, nu=(), diagonal_nonprimes=True):

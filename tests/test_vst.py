@@ -1,20 +1,7 @@
 from tableaux import Tableau
-from vst import ValuedSetTableau
+from vst import combine_str, ValuedSetTableau
 from partitions import Partition
 import traceback
-
-
-def combine_str(a, *b):
-    if not b:
-        return str(a)
-    elif len(b) > 1:
-        return combine_str(a, combine_str(b[0], *b[1:]))
-    else:
-        b = b[0]
-    ziplines = zip(str(a).split("\n"), str(b).split("\n"))
-    lines = ["  ->  ".join(pair) if "".join(pair).strip() else "" for pair in ziplines]
-    toprint = "\n".join(lines)
-    return toprint
 
 
 def test_simple():
