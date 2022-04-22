@@ -177,8 +177,8 @@ def _test_small(k=9, dnp=True, verbose=False):
 
                     assert vst.is_semistandard([-1, 1, -2, 2])
                     assert f.is_semistandard([-1, None, -2, 1, None, 2])
-                    assert m.is_semistandard([-2, None, -1, 2, None, 1])
-                    assert b.is_semistandard([-2, 2, -1, 1])
+                    assert m.is_semistandard([-1, None, -2, 1, None, 2])
+                    assert b.is_semistandard([-1, 1, -2, 2])
                     assert image.is_semistandard()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
                     assert dnp or not image.diagonal_primes()

@@ -170,56 +170,54 @@ class ValuedSetTableau:
     def forward_transition(self, value):
         return self.cached_forward_transition(self, value)
 
-    @classmethod
-    def coincide(cls, t, u, i, j):
-        return t.tableau.get(i, j) == u.tableau.get(i, j) and t.grouping.get(i, j) == u.grouping.get(i, j)
+    # @classmethod
+    # def coincide(cls, t, u, i, j):
+    #     return t.tableau.get(i, j) == u.tableau.get(i, j) and t.grouping.get(i, j) == u.grouping.get(i, j)
 
-    @classmethod
-    def undo_alteration(cls, vst, value):
-        tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
-        t = vst
-        x = vst.hinge(value)
-        altered = vst.is_altered(value)
-        if altered:
-            assert vst.tableau.get(x, x) == value and vst.tableau.get(x + 1, x + 1) == -value - 1
-            if not vst.grouping.get(x, x) and not vst.grouping.get(x + 1, x + 1):
-                del tab[x, x]
-                del tab[x + 1, x + 1]
-                del grp[x, x]
-                del grp[x + 1, x + 1]
+    # @classmethod
+    # def undo_alteration(cls, vst, value):
+    #     tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
+    #     t = vst
+    #     x = vst.hinge(value)
+    #     altered = vst.is_altered(value)
+    #     if altered:
+    #         assert vst.tableau.get(x, x) == value and vst.tableau.get(x + 1, x + 1) == -value - 1
+    #         if not vst.grouping.get(x, x) and not vst.grouping.get(x + 1, x + 1):
+    #             del tab[x, x]
+    #             del tab[x + 1, x + 1]
+    #             del grp[x, x]
+    #             del grp[x + 1, x + 1]
 
-                w = ValuedSetTableau(tab, grp).forward_transition(value)
-                if w.tableau.get(x, x + 1) == value:
-                    tab[x, x] = -value
-                    tab[x + 1, x + 1] = -value - 1
-                else:
-                    tab[x, x] = value
-                    tab[x + 1, x + 1] = value + 1
+    #             w = ValuedSetTableau(tab, grp).forward_transition(value)
+    #             if w.tableau.get(x, x + 1) == value:
+    #                 tab[x, x] = -value
+    #                 tab[x + 1, x + 1] = -value - 1
+    #             else:
+    #                 tab[x, x] = value
+    #                 tab[x + 1, x + 1] = value + 1
 
-                grp[x, x] = 0
-                grp[x + 1, x + 1] = 0
+    #             grp[x, x] = 0
+    #             grp[x + 1, x + 1] = 0
 
-                # tab[x, x] = -value
-                # t = ValuedSetTableau(Tableau(tab), grp)
-                # assert not t.is_altered(value)
-                # u = t.forward_transition(value)
-                # if cls.coincide(t, u, x, x) and cls.coincide(t, u, x + 1, x + 1):
-                #     tab[x, x] = value
-                #     tab[x + 1, x + 1] = value + 1
+    #             # tab[x, x] = -value
+    #             # t = ValuedSetTableau(Tableau(tab), grp)
+    #             # assert not t.is_altered(value)
+    #             # u = t.forward_transition(value)
+    #             # if cls.coincide(t, u, x, x) and cls.coincide(t, u, x + 1, x + 1):
+    #             #     tab[x, x] = value
+    #             #     tab[x + 1, x + 1] = value + 1
 
-            elif vst.tableau.get(x, x + 1) < 0 < vst.grouping.get(x + 1, x + 1):
-                tab[x, x] = -value
-            else:
-                tab[x + 1, x + 1] = value + 1
-            t = ValuedSetTableau(tab, grp)
+    #         elif vst.tableau.get(x, x + 1) < 0 < vst.grouping.get(x + 1, x + 1):
+    #             tab[x, x] = -value
+    #         else:
+    #             tab[x + 1, x + 1] = value + 1
+    #         t = ValuedSetTableau(tab, grp)
 
-        return t
+    #     return t
 
     @cached_value(FORWARD_TRANSITION_CACHE)
     def cached_forward_transition(cls, vst, value):  # noqa
-        # t = cls.undo_alteration(vst, value)
         t = vst
-
         tab, grp = t.tableau.boxes.copy(), t.grouping.boxes.copy()
         vertical_starts, vertical_ends = t.get_verticals(-value - 1)
         horizontal_starts, horizontal_ends = t.get_horizontals(value)
@@ -381,15 +379,11 @@ class ValuedSetTableau:
             for i in range(len(g)):
                 row, col1, col2 = g[i]
                 for y in range(col1, col2 + 1):
-                    tab[row, y] = (value + 1) if i < q else value
+                    tab[row, y] = value if i < q else value + 1
                     grp[row, y] = 1
                 grp[row, col2] = 0
 
         for row1, start1, stop1, row2, start2, stop2 in two_row_groups:
-            for y in range(start1, stop1 + 1):
-                tab[row1, y] = value + 1
-            for y in range(start2, stop2 + 1):
-                tab[row2, y] = value
             for y in range(max(start1, start2), min(stop1, stop2)):
                 grp[row1, y], grp[row2, y] = grp[row2, y], grp[row1, y]
             # special diagonal condition
@@ -402,7 +396,7 @@ class ValuedSetTableau:
                         grp[x, x] = 1
                     else:
                         case = 'a2'
-                        tab[x, x] = -value
+                        tab[x, x] = -value - 1
                 elif altered and vst.is_group_end(x + 1, x + 1) and vst.grouping.get(x + 1, x + 2) is not None:
                     case = 'a3'
                     grp[x, x] = 0
@@ -416,15 +410,11 @@ class ValuedSetTableau:
             for i in range(len(g)):
                 col, row1, row2 = g[i]
                 for x in range(row1, row2 + 1):
-                    tab[x, col] = (-value - 1) if i < q else -value
+                    tab[x, col] = -value if i < q else -value - 1
                     grp[x, col] = 1
                 grp[row1, col] = 0
 
         for col1, start1, stop1, col2, start2, stop2 in two_col_groups:
-            for x in range(start1, stop1 + 1):
-                tab[x, col1] = -value - 1
-            for x in range(start2, stop2 + 1):
-                tab[x, col2] = -value
             for x in range(max(start1, start2) + 1, min(stop1, stop2) + 1):
                 grp[x, col1], grp[x, col2] = grp[x, col2], grp[x, col1]
             # special diagonal condition
@@ -437,7 +427,7 @@ class ValuedSetTableau:
                         grp[x, x] = 1
                     else:
                         case = 'b2'
-                        tab[x, x] = value + 1
+                        tab[x, x] = value
                 elif altered and vst.is_group_end(x - 1, x - 1) and vst.grouping.get(x - 2, x - 1) is not None:
                     case = 'b3'
                     grp[x, x] = 0
@@ -469,8 +459,8 @@ class ValuedSetTableau:
     @cached_value(BACKWARD_TRANSITION_CACHE)
     def cached_backward_transition(cls, vst, value):  # noqa
         tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
-        vertical_starts, vertical_ends = vst.get_verticals(-value)
-        horizontal_starts, horizontal_ends = vst.get_horizontals(value + 1)
+        vertical_starts, vertical_ends = vst.get_verticals(-value - 1)
+        horizontal_starts, horizontal_ends = vst.get_horizontals(value)
 
         for i in range(len(vertical_starts) - 1, -1, -1):
             (vx1, vy1), (vx2, vy2) = vertical_starts[i], vertical_ends[i]
@@ -500,14 +490,14 @@ class ValuedSetTableau:
         for (vx1, vy1), (vx2, vy2) in zip(vertical_starts, vertical_ends):
             for a in range(vx1, vx2 + 1):
                 for b in range(vy1, vy2 + 1):
-                    tab[a, b] = -value
+                    tab[a, b] = -value - 1
                     grp[a, b] = 1
             grp[vx1, vy1] = 0
 
         for (hx1, hy1), (hx2, hy2) in zip(horizontal_starts, horizontal_ends):
             for a in range(hx1, hx2 + 1):
                 for b in range(hy1, hy2 + 1):
-                    tab[a, b] = value + 1
+                    tab[a, b] = value
                     grp[a, b] = 1
             grp[hx2, hy2] = 0
 
@@ -530,20 +520,20 @@ class ValuedSetTableau:
 
         elif ans.primed_diagonal_cells(index, index + 1):
             x = y = list(ans.primed_diagonal_cells(index, index + 1))[0]
-            if tab.get(x, y) == -index - 1:
-                tab = tab.set(x, x, index + 1)
-                while tab.get(x, y) == index + 1:
+            if tab.get(x, y) == -index:
+                tab = tab.set(x, x, index)
+                while tab.get(x, y) == index:
                     y += 1
                 while grp.get(x, y):
                     y += 1
                 for z in range(x, y):
                     grp = grp.set(x, z, grp.get(x, z + 1))
-                    tab = tab.set(x, z, index + 1)
+                    tab = tab.set(x, z, index)
                 grp = grp.set(x, y, 0)
-                tab = tab.set(x, y, -index)
+                tab = tab.set(x, y, -index - 1)
 
-            elif tab.get(x, y) == -index:
-                while tab.get(x, y) == -index:
+            elif tab.get(x, y) == -index - 1:
+                while tab.get(x, y) == -index - 1:
                     x -= 1
                 assert grp.get(x, y) == 0
 
@@ -551,12 +541,12 @@ class ValuedSetTableau:
                     grp = grp.set(z, y, grp.get(z + 1, y))
                     tab = tab.set(z, y, tab.get(z + 1, y))
                 grp = grp.set(y, y, 0)
-                tab = tab.set(y, y, index)
+                tab = tab.set(y, y, index + 1)
 
-                tab = tab.set(x, y, -index - 1)
+                tab = tab.set(x, y, -index)
                 while grp.get(x + 1, y) != 0:
                     x += 1
-                    tab = tab.set(x, y, -index - 1)
+                    tab = tab.set(x, y, -index)
 
         return ValuedSetTableau(tab, grp)
 
@@ -575,14 +565,14 @@ class ValuedSetTableau:
             ans = ValuedSetTableau(tab, grp)
         return ans
 
-    @classmethod
-    def reorient(cls, ans, index):
-        mapping = {index: index + 1, -index: -index - 1, index + 1: index, -index - 1: -index}
-        boxes = {}
-        for i, j in ans.tableau.boxes:
-            v = ans.tableau.get(i, j)
-            boxes[i, j] = mapping.get(v, v)
-        return ValuedSetTableau(Tableau(boxes), ans.grouping)
+    # @classmethod
+    # def reorient(cls, ans, index):
+    #     mapping = {index: index + 1, -index: -index - 1, index + 1: index, -index - 1: -index}
+    #     boxes = {}
+    #     for i, j in ans.tableau.boxes:
+    #         v = ans.tableau.get(i, j)
+    #         boxes[i, j] = mapping.get(v, v)
+    #     return ValuedSetTableau(Tableau(boxes), ans.grouping)
 
     @cached_value(TRANSITION_CACHE)
     def cached_transition(cls, vst, index, dnp):  # noqa
@@ -592,10 +582,9 @@ class ValuedSetTableau:
         ans = m.backward_transition(index)
 
         if not dnp:
-            ans = cls.p_adjust(ans, index)
+            return cls.p_adjust(ans, index)
         else:
-            ans = cls.q_adjust(ans, index, case)
-        return cls.reorient(ans, index)
+            return cls.q_adjust(ans, index, case)
 
     @classmethod
     def all(cls, max_entry, mu, nu=(), diagonal_nonprimes=True):
