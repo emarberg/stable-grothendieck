@@ -134,6 +134,7 @@ def test_simple():
 def print_transition(vst, i, dnp):
     altered = vst.is_altered(i)
     f = vst.forward_transition(i)
+    print(combine_str(vst, f))
     m, case = f.middle_transition(i, altered, dnp)
     b = m.backward_transition(i)
     image = vst.transition(i, dnp)

@@ -217,18 +217,33 @@ class ValuedSetTableau:
 
     @cached_value(FORWARD_TRANSITION_CACHE)
     def cached_forward_transition(cls, vst, value):  # noqa
-        t = cls.undo_alteration(vst, value)
+        # t = cls.undo_alteration(vst, value)
+        t = vst
 
         tab, grp = t.tableau.boxes.copy(), t.grouping.boxes.copy()
         vertical_starts, vertical_ends = t.get_verticals(-value - 1)
         horizontal_starts, horizontal_ends = t.get_horizontals(value)
 
+        diag1 = diag2 = None
+
         for i in range(len(vertical_starts)):
             (vx1, vy1), (vx2, vy2) = vertical_starts[i], vertical_ends[i]
             for j in range(len(horizontal_starts)):
                 (hx1, hy1), (hx2, hy2) = horizontal_starts[j], horizontal_ends[j]
-                if (vx1, vy1) == (hx1 + 1, hy1):
-                    if hy1 < hy2:
+                if vx1 == vy1 == hx1 + 1 == hy1 + 1 <= hy2:
+                    assert diag2 is None
+                    assert i + 1 == len(vertical_starts)
+                    diag2 = vx1
+                elif hx2 == hy2 == vx2 - 1 == vy2 - 1 >= vx1:
+                    assert diag1 is None
+                    assert i + 1 == len(vertical_starts)
+                    diag1 = hx2
+                elif (vx1, vy1) == (hx1 + 1, hy1):
+                    if (hx1, hx1) in vertical_starts:
+                        assert diag2 is None
+                        assert i + 1 == len(vertical_starts)
+                        diag2 = vx1
+                    elif hy1 < hy2:
                         hy1 += 1
                         vx1 -= 1
                     else:
@@ -237,7 +252,11 @@ class ValuedSetTableau:
                         vx1 -= 1
                         vx2 -= 1
                 elif (vx2, vy2) == (hx2, hy2 + 1):
-                    if vx1 < vx2:
+                    if (vy2, vy2) in horizontal_ends:
+                        assert diag1 is None
+                        assert i + 1 == len(vertical_starts)
+                        diag1 = hx2
+                    elif vx1 < vx2:
                         hy2 += 1
                         vx2 -= 1
                     else:
@@ -261,6 +280,12 @@ class ValuedSetTableau:
                     tab[a, b] = value
                     grp[a, b] = 1
             grp[hx2, hy2] = 0
+
+        assert diag1 is None or diag2 is None
+        if diag1 is not None:
+            tab[diag1, diag1] = -value
+        if diag2 is not None:
+            tab[diag2, diag2] = value + 1
 
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
