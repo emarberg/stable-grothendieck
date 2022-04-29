@@ -287,11 +287,18 @@ class ValuedSetTableau:
 
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
-    def middle_transition(self, value, altered, dnp):
-        return self.cached_middle_transition(self, value, altered, dnp)
+    def middle_transition(self, value, altered):
+        return self.cached_middle_transition(self, value, altered)
 
     def _get_row_groups(self, value):
-        vst = self
+        h = self.hinge(value)
+        if h is not None and self.tableau.get(h, h) < 0 < self.tableau.get(h, h + 1) < self.tableau.get(h + 1, h + 1):
+            vst = ValuedSetTableau(self.tableau.set(h, h, -self.tableau.get(h, h)), self.grouping)
+        elif h is not None and self.tableau.get(h + 1, h + 1) > 0 > self.tableau.get(h, h) > self.tableau.get(h, h + 1):
+            vst = ValuedSetTableau(self.tableau.set(h + 1, h + 1, -self.tableau.get(h + 1, h + 1)), self.grouping)
+        else:
+            vst = self
+
         h1 = [(hx1, hy1, hy2, 0) for ((hx1, hy1), (hx2, hy2)) in zip(*vst.get_horizontals(value))]
         h2 = [(hx1, hy1, hy2, 1) for ((hx1, hy1), (hx2, hy2)) in zip(*vst.get_horizontals(value + 1))]
         hh = sorted(h1 + h2, key=lambda t: (-t[0], t[1]))
@@ -318,8 +325,6 @@ class ValuedSetTableau:
                             hh_by_rows[i + 1] = hh_by_rows[i + 1][1:]
                         else:
                             break
-                    # if row1 + 1 == start1 and vst.tableau.get(row1, row1) is not None:
-                    #    start1 -= 1
                     two_row_groups.append((row1, start1, stop1, row2, start2, stop2))
                     break
                 else:
@@ -331,7 +336,14 @@ class ValuedSetTableau:
         return one_row_groups, two_row_groups
 
     def _get_column_groups(self, value):
-        vst = self
+        h = self.hinge(value)
+        if h is not None and self.tableau.get(h, h) < 0 < self.tableau.get(h, h + 1) < self.tableau.get(h + 1, h + 1):
+            vst = ValuedSetTableau(self.tableau.set(h, h, -self.tableau.get(h, h)), self.grouping)
+        elif h is not None and self.tableau.get(h + 1, h + 1) > 0 > self.tableau.get(h, h) > self.tableau.get(h, h + 1):
+            vst = ValuedSetTableau(self.tableau.set(h + 1, h + 1, -self.tableau.get(h + 1, h + 1)), self.grouping)
+        else:
+            vst = self
+
         v1 = [(vy1, vx1, vx2, 0) for ((vx1, vy1), (vx2, vy2)) in zip(*vst.get_verticals(-value))]
         v2 = [(vy1, vx1, vx2, 1) for ((vx1, vy1), (vx2, vy2)) in zip(*vst.get_verticals(-value - 1))]
         vv = sorted(v1 + v2, key=lambda t: (-t[0], t[1]))
@@ -369,7 +381,7 @@ class ValuedSetTableau:
         return one_col_groups, two_col_groups
 
     @cached_value(MIDDLE_TRANSITION_CACHE)
-    def cached_middle_transition(cls, vst, value, altered, dnp):  # noqa
+    def cached_middle_transition(cls, vst, value, altered):  # noqa
         tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
         case = '*' if altered else None
 
@@ -391,17 +403,39 @@ class ValuedSetTableau:
             # special diagonal condition
             if row1 == start1:
                 x = row1
+                v = vst.tableau.get(x, x)
                 if not altered and vst.is_group_end(x, x):
-                    case = 'a2'
-                    tab[x, x] = -value - 1
-                elif altered and vst.is_group_end(x + 1, x + 1) and vst.grouping.get(x + 1, x + 2) is not None:
-                    case = 'a3'
-                    grp[x, x] = 0
-                    grp[x, x + 1] = 1
-                    tab[x, x] = -value
+                    if v == value:
+                        case = 'a1'
+                        tab[x, x] = -value - 1
+                    elif v == -value - 1:
+                        case = 'a2'
+                        tab[x, x] = value
+                    elif v == -value and Tableau(grp).get(x + 1, x + 1):
+                        case = 'a3'
+                        grp[x + 1, x + 1] = 0
+                        grp[x, x] = 1
+                        tab[x, x] = value
+                    elif v == -value:
+                        case = 'a4'
+                        tab[x, x] = -value - 1
+                    else:
+                        raise Exception
                 elif altered:
-                    assert not vst.is_group_end(x, x)
-                    case = 'a4'
+                    if v == -value:
+                        case = 'a5'
+                        tab[x, x] = -value - 1
+                    elif v == -value - 1:
+                        case = 'a6'
+                        tab[x, x] = -value
+                    elif vst.is_group_end(x + 1, x + 1) and vst.grouping.get(x + 1, x + 2) is not None:
+                        case = 'a7'
+                        grp[x, x] = 0
+                        grp[x, x + 1] = 1
+                        tab[x, x] = -value
+                    else:
+                        assert not vst.is_group_end(x, x)
+                        case = 'a8'
 
         for p, q, g in one_col_groups:
             assert len(g) == p + q
@@ -418,47 +452,41 @@ class ValuedSetTableau:
             # special diagonal condition
             if col2 == stop2:
                 x = col2
+                v = vst.tableau.get(x, x)
                 if not altered and vst.is_group_end(x, x):
-                    if dnp and vst.grouping.get(x - 1, x) and vst.grouping.get(x - 2, x - 1) is not None:
+                    if v == -value - 1:
                         case = 'b1'
+                        tab[x, x] = value
+                    elif v == value:
+                        case = 'b2'
+                        tab[x, x] = -value - 1
+                    elif v == value + 1 and Tableau(grp).get(x - 1, x - 1):
+                        case = 'b3'
                         grp[x - 1, x - 1] = 0
                         grp[x, x] = 1
-                    else:
-                        case = 'b2'
+                        tab[x, x] = -value - 1
+                    elif v == value + 1:
+                        case = 'b4'
                         tab[x, x] = value
-                elif altered and vst.is_group_end(x - 1, x - 1) and vst.grouping.get(x - 2, x - 1) is not None:
-                    case = 'b3'
-                    grp[x, x] = 0
-                    grp[x - 1, x] = 1
+                    else:
+                        raise Exception
                 elif altered:
-                    assert not vst.is_group_end(x, x)
-                    case = 'b4'
+                    if v == value + 1:
+                        case = 'b5'
+                        tab[x, x] = value
+                    elif v == value:
+                        case = 'b6'
+                        tab[x, x] = value + 1
+                    elif vst.is_group_end(x - 1, x - 1) and vst.grouping.get(x - 2, x - 1) is not None:
+                        case = 'b7'
+                        grp[x, x] = 0
+                        grp[x - 1, x] = 1
+                        tab[x, x] = value + 1
+                    else:
+                        assert not vst.is_group_end(x, x)
+                        case = 'b8'
 
         ans = ValuedSetTableau(Tableau(tab), Tableau(grp))
-
-        h = vst.hinge(value)
-        if h is not None and (case == '*' or case is None):
-            x = ans.tableau.get(h, h)
-            y = ans.tableau.get(h, h + 1)
-            z = ans.tableau.get(h + 1, h + 1)
-            if x < 0 and y < 0 and z > 0:
-                if case == '*':
-                    ans = ValuedSetTableau(ans.tableau.set(h + 1, h + 1, -z), grp)
-                    case = 'b0'
-            elif z > 0 and y > 0 and x < 0 and vst.is_singleton(h, h):
-                if not altered and x == -value:
-                    case = 'a0'
-                    ans = ValuedSetTableau(ans.tableau.set(h, h, -x), grp)
-                elif not altered and x == -value - 1:
-                    case = 'a1'
-                    if Tableau(grp).get(h + 1, h + 1):
-                        grp[h + 1, h + 1] = 0
-                        grp[h, h] = 1
-                        ans = ValuedSetTableau(ans.tableau.set(h, h, value), grp)
-                elif case == '*':
-                    case = 'a5'
-            assert case != '*'
-
         return ans, case
 
     def backward_transition(self, value):
@@ -564,10 +592,10 @@ class ValuedSetTableau:
         if h:
             tab = ans.tableau
             grp = ans.grouping
-            if case in ['a1', 'a4']:
+            if case in ['a3', 'a4', 'a8']:
                 if ans.is_singleton(h + 1, h + 1):
                     tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-            if case in ['b1', 'b2', 'b4']:
+            if case in ['b3', 'b4', 'b8']:
                 if ans.is_singleton(h, h):
                     tab = tab.set(h, h, tab.get(h, h) * -1)
             ans = ValuedSetTableau(tab, grp)
@@ -586,7 +614,7 @@ class ValuedSetTableau:
     def cached_transition(cls, vst, index, dnp):  # noqa
         altered = vst.is_altered(index)
         f = vst.forward_transition(index)
-        m, case = f.middle_transition(index, altered, dnp)
+        m, case = f.middle_transition(index, altered)
         ans = m.backward_transition(index)
 
         if not dnp:
