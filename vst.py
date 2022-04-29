@@ -116,17 +116,25 @@ class ValuedSetTableau:
             order = {a: i for (i, a) in enumerate(order)}
         if type(order) == dict:
             ofn = (lambda x: order[x])
-        rowint = {(i, j) for (i, j) in self.tableau.boxes if (i + 1, j) in self.tableau.boxes}
+        rowint = {(i, j) for (i, j) in self.tableau.boxes if (i - 1, j) in self.tableau.boxes}
         colint = {(i, j) for (i, j) in self.tableau.boxes if (i, j + 1) in self.tableau.boxes}
         for (i, j) in rowint:
-            p = ofn(self.tableau.get(i, j))
-            q = ofn(self.tableau.get(i + 1, j))
-            if p > q or (p == q and p % 2 != 0):
+            # allow special sign changes at diagonal
+            p_giv = ofn(self.tableau.get(i, j))
+            p_alt = ofn(-self.tableau.get(i, j))
+            pset = [p_giv, p_alt] if i == j and self.is_group_end(i, j) else [p_giv]
+            # p = ofn(self.tableau.get(i, j))
+            q = ofn(self.tableau.get(i - 1, j))
+            if all(p < q or (p == q and p % 2 != 0) for p in pset):
                 return False
         for (i, j) in colint:
-            p = ofn(self.tableau.get(i, j))
+            # allow special sign changes at diagonal
+            p_giv = ofn(self.tableau.get(i, j))
+            p_alt = ofn(-self.tableau.get(i, j))
+            pset = [p_giv, p_alt] if i == j and self.is_group_end(i, j) else [p_giv]
+            # p = ofn(self.tableau.get(i, j))
             q = ofn(self.tableau.get(i, j + 1))
-            if p > q or (p == q and p % 2 == 0):
+            if all(p > q or (p == q and p % 2 == 0) for p in pset):
                 return False
         return True
 
@@ -416,9 +424,11 @@ class ValuedSetTableau:
                         grp[x + 1, x + 1] = 0
                         grp[x, x] = 1
                         tab[x, x] = value
+                        tab[x + 1, x + 1] = -value - 1
                     elif v == -value:
                         case = 'a4'
                         tab[x, x] = -value - 1
+                        tab[x + 1, x + 1] = -value - 1
                     else:
                         raise Exception
                 elif altered:
@@ -436,6 +446,7 @@ class ValuedSetTableau:
                     else:
                         assert not vst.is_group_end(x, x)
                         case = 'a8'
+                        tab[x + 1, x + 1] = -value - 1
 
         for p, q, g in one_col_groups:
             assert len(g) == p + q
@@ -465,9 +476,11 @@ class ValuedSetTableau:
                         grp[x - 1, x - 1] = 0
                         grp[x, x] = 1
                         tab[x, x] = -value - 1
+                        tab[x - 1, x - 1] = value
                     elif v == value + 1:
                         case = 'b4'
                         tab[x, x] = value
+                        tab[x - 1, x - 1] = value
                     else:
                         raise Exception
                 elif altered:
@@ -485,6 +498,7 @@ class ValuedSetTableau:
                     else:
                         assert not vst.is_group_end(x, x)
                         case = 'b8'
+                        tab[x - 1, x - 1] = value
 
         ans = ValuedSetTableau(Tableau(tab), Tableau(grp))
         return ans, case
@@ -586,20 +600,20 @@ class ValuedSetTableau:
 
         return ValuedSetTableau(tab, grp)
 
-    @classmethod
-    def q_adjust(cls, ans, index, case):
-        h = ans.hinge(index)
-        if h:
-            tab = ans.tableau
-            grp = ans.grouping
-            if case in ['a3', 'a4', 'a8']:
-                if ans.is_singleton(h + 1, h + 1):
-                    tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-            if case in ['b3', 'b4', 'b8']:
-                if ans.is_singleton(h, h):
-                    tab = tab.set(h, h, tab.get(h, h) * -1)
-            ans = ValuedSetTableau(tab, grp)
-        return ans
+    # @classmethod
+    # def q_adjust(cls, ans, index, case):
+    #     h = ans.hinge(index)
+    #     if h:
+    #         tab = ans.tableau
+    #         grp = ans.grouping
+    #         if case in ['a3', 'a4', 'a8']:
+    #             assert ans.is_singleton(h + 1, h + 1)
+    #             tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
+    #         if case in ['b3', 'b4', 'b8']:
+    #             assert ans.is_singleton(h, h)
+    #             tab = tab.set(h, h, tab.get(h, h) * -1)
+    #         ans = ValuedSetTableau(tab, grp)
+    #     return ans
 
     # @classmethod
     # def reorient(cls, ans, index):
@@ -618,9 +632,9 @@ class ValuedSetTableau:
         ans = m.backward_transition(index)
 
         if not dnp:
-            return cls.p_adjust(ans, index)
-        else:
-            return cls.q_adjust(ans, index, case)
+            ans = cls.p_adjust(ans, index)
+
+        return ans
 
     @classmethod
     def all(cls, max_entry, mu, nu=(), diagonal_nonprimes=True):
