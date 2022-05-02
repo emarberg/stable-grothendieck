@@ -111,9 +111,8 @@ def test_simple():
 
     dnp = True
     for lhs, expected_forward, expected_middle, expected_backward in test:
-        altered = lhs.is_altered(1)
         forward = lhs.forward_transition(1)
-        middle, case = forward.middle_transition(1, altered)
+        middle, case = forward.middle_transition(1)
         backward = middle.backward_transition(1)
         image = lhs.transition(1, dnp)
         post = image.transition(1, dnp)
@@ -135,7 +134,7 @@ def print_transition(vst, i, dnp):
     altered = vst.is_altered(i)
     f = vst.forward_transition(i)
     print(combine_str(vst, f))
-    m, case = f.middle_transition(i, altered)
+    m, case = f.middle_transition(i)
     b = m.backward_transition(i)
     image = vst.transition(i, dnp)
     post = image.transition(i, dnp)
@@ -168,9 +167,8 @@ def _test_small(k=9, dnp=True, verbose=False):
             seen = {}
             for vst in test:
                 try:
-                    altered = vst.is_altered(1)
                     f = vst.forward_transition(1)
-                    m, case = f.middle_transition(1, altered)
+                    m, case = f.middle_transition(1)
                     b = m.backward_transition(1)
                     image = vst.transition(1, dnp)
                     post = image.transition(1, dnp)
