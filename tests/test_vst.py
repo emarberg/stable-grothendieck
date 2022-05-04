@@ -182,7 +182,6 @@ def _test_small(k=9, dnp=True, verbose=False):
                     assert dnp or not image.diagonal_primes()
 
                     assert vst == post
-
                     if verbose:
                         key = image
                         seen[key] = seen.get(key, []) + [vst]
@@ -195,6 +194,7 @@ def _test_small(k=9, dnp=True, verbose=False):
                         print_transition(post, 1, dnp)
                         print_transition(post.transition(1, dnp), 1, dnp)
                         print(5 * '\n')
+                        input('')
 
                     if verbose:
                         for preimage in seen[key]:

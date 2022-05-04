@@ -417,41 +417,40 @@ class ValuedSetTableau:
                 assert w in [value + 1, -value - 1]
                 if w > 0 and vst.is_group_end(x, x):
                     if v == value:
-                        case = 'a1'
+                        assert case is None
+                        case = 'a1+'
                         tab[x, x] = -value - 1
-                    elif v == -value - 1:
-                        case = 'a2'
+                    if v == -value - 1:
+                        assert case is None
+                        case = 'a1-'
                         tab[x, x] = value
-                    elif v == -value and Tableau(grp).get(x + 1, x + 1):
-                        case = 'a3'
+                    if v == -value and Tableau(grp).get(x + 1, x + 1):
+                        assert case is None
+                        case = 'a2+'
                         grp[x + 1, x + 1] = 0
                         grp[x, x] = 1
                         tab[x, x] = value
                         tab[x + 1, x + 1] = -value - 1
                     elif v == -value:
-                        case = 'a4'
+                        assert case is None
+                        case = 'a3+'
                         tab[x, x] = -value - 1
                         tab[x + 1, x + 1] = -value - 1
-                    else:
-                        raise Exception
+                    assert case is not None
                 elif w < 0:
-                    if v == -value:
-                        case = 'a5'
-                        tab[x, x] = -value - 1
-                        tab[x + 1, x + 1] = value + 1
-                    elif v == -value - 1:
-                        case = 'a6'
+                    assert v != -value
+                    if v == -value - 1:
+                        assert case is None
+                        case = 'a3-'
                         tab[x, x] = -value
                         tab[x + 1, x + 1] = value + 1
-                    elif vst.is_group_end(x + 1, x + 1) and vst.grouping.get(x + 1, x + 2) is not None:
-                        case = 'a7'
+                    if vst.grouping.get(x, x) and vst.grouping.get(x + 1, x + 2) is not None:
+                        assert case is None
+                        case = 'a2-'
                         grp[x, x] = 0
                         grp[x, x + 1] = 1
                         tab[x, x] = -value
                         tab[x + 1, x + 1] = value + 1
-                    else:
-                        assert not vst.is_group_end(x, x)
-                        case = 'a8'
 
         for p, q, g in one_col_groups:
             assert len(g) == p + q
@@ -473,41 +472,40 @@ class ValuedSetTableau:
                 assert u in [value, -value]
                 if u < 0 and vst.is_group_end(x, x):
                     if v == -value - 1:
-                        case = 'b1'
+                        assert case is None
+                        case = 'b1+'
                         tab[x, x] = value
-                    elif v == value:
-                        case = 'b2'
+                    if v == value:
+                        assert case is None
+                        case = 'b1-'
                         tab[x, x] = -value - 1
-                    elif v == value + 1 and Tableau(grp).get(x - 1, x - 1):
-                        case = 'b3'
+                    if v == value + 1 and Tableau(grp).get(x - 1, x - 1):
+                        assert case is None
+                        case = 'b2+'
                         grp[x - 1, x - 1] = 0
                         grp[x, x] = 1
                         tab[x, x] = -value - 1
                         tab[x - 1, x - 1] = value
                     elif v == value + 1:
-                        case = 'b4'
+                        assert case is None
+                        case = 'b3+'
                         tab[x, x] = value
                         tab[x - 1, x - 1] = value
-                    else:
-                        raise Exception
+                    assert case is not None
                 elif u > 0:
-                    if v == value + 1:
-                        case = 'b5'
-                        tab[x, x] = value
-                        tab[x - 1, x - 1] = -value
-                    elif v == value:
-                        case = 'b6'
+                    assert v != value + 1
+                    if v == value:
+                        assert case is None
+                        case = 'b3-'
                         tab[x, x] = value + 1
                         tab[x - 1, x - 1] = -value
-                    elif vst.is_group_end(x - 1, x - 1) and vst.grouping.get(x - 2, x - 1) is not None:
-                        case = 'b7'
+                    if vst.grouping.get(x, x) and vst.grouping.get(x - 2, x - 1) is not None:
+                        assert case is None
+                        case = 'b2-'
                         grp[x, x] = 0
                         grp[x - 1, x] = 1
                         tab[x, x] = value + 1
                         tab[x - 1, x - 1] = -value
-                    else:
-                        assert not vst.is_group_end(x, x)
-                        case = 'b8'
 
         ans = ValuedSetTableau(Tableau(tab), Tableau(grp))
         return ans, case
