@@ -123,10 +123,10 @@ def test_simple():
         assert expected_forward == forward
         assert expected_middle == middle
         assert expected_backward == backward
-        assert lhs.is_semistandard([-1, 1, -2, 2])
-        assert forward.is_semistandard([-1, None, -2, 1, None, 2])
-        assert middle.is_semistandard([-2, None, -1, 2, None, 1])
-        assert backward.is_semistandard([-2, 2, -1, 1])
+        assert lhs.is_semistandard()
+        assert forward.is_intermediary()
+        assert middle.is_intermediary()
+        assert backward.is_semistandard()
         assert lhs == post
 
 
@@ -173,10 +173,10 @@ def _test_small(k=9, dnp=True, verbose=False):
                     image = vst.transition(1, dnp)
                     post = image.transition(1, dnp)
 
-                    assert vst.is_semistandard([-1, 1, -2, 2])
-                    assert f.is_semistandard([-1, None, -2, 1, None, 2])
-                    assert m.is_semistandard([-1, None, -2, 1, None, 2])
-                    assert b.is_semistandard([-1, 1, -2, 2])
+                    assert vst.is_semistandard()
+                    assert f.is_intermediary()
+                    assert m.is_intermediary()
+                    assert b.is_semistandard()
                     assert image.is_semistandard()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
                     assert dnp or not image.diagonal_primes()
@@ -187,14 +187,13 @@ def _test_small(k=9, dnp=True, verbose=False):
                         seen[key] = seen.get(key, []) + [vst]
                         assert len(seen[key]) == 1
                 except:
-                    if vst != post:
-                        print('\nvst:')
-                        print_transition(vst, 1, dnp)
-                        print_transition(image, 1, dnp)
-                        print_transition(post, 1, dnp)
-                        print_transition(post.transition(1, dnp), 1, dnp)
-                        print(5 * '\n')
-                        input('')
+                    print('\nvst:')
+                    print_transition(vst, 1, dnp)
+                    print_transition(image, 1, dnp)
+                    print_transition(post, 1, dnp)
+                    print_transition(post.transition(1, dnp), 1, dnp)
+                    print(5 * '\n')
+                    input('')
 
                     if verbose:
                         for preimage in seen[key]:

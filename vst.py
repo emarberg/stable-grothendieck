@@ -109,32 +109,40 @@ class ValuedSetTableau:
     def __hash__(self):
         return hash((self.tableau, self.grouping))
 
-    def is_semistandard(self, order=None):
-        if order is None:
-            ofn = (lambda x: -2 - 2 * x if x < 0 else 2 * x - 1)
-        if type(order) in [list, tuple]:
-            order = {a: i for (i, a) in enumerate(order)}
-        if type(order) == dict:
-            ofn = (lambda x: order[x])
+    def is_intermediary(self):
+        ofn = (lambda x : {-1: 0, -2: 2, 1: 3, 2: 5}[x])
+        rowint = {(i, j) for (i, j) in self.tableau.boxes if (i - 1, j) in self.tableau.boxes}
+        colint = {(i, j) for (i, j) in self.tableau.boxes if (i, j + 1) in self.tableau.boxes}
+        tget = self.tableau.get
+        for (i, j) in rowint:
+            if i == j and (i - 1, i - 1) in self.tableau.boxes and tget(i, i) == -2 and tget(i - 1, i) == 1 and (tget(i - 1, i - 1) == -2 or self.grouping.get(i - 1, i - 1)):
+                continue
+            p = ofn(self.tableau.get(i, j))
+            q = ofn(self.tableau.get(i - 1, j))
+            if p < q or (p == q and p % 2 != 0):
+                return False
+        for (i, j) in colint:
+            if i == j and (i + 1, i + 1) in self.tableau.boxes and tget(i, i) == 1 and tget(i, i + 1) == -2 and (tget(i + 1, i + 1) == 1 or self.grouping.get(i + 1, i + 1)):
+                continue
+            p = ofn(self.tableau.get(i, j))
+            q = ofn(self.tableau.get(i, j + 1))
+            if p > q or (p == q and p % 2 == 0):
+                return False
+        return True
+
+    def is_semistandard(self):
+        ofn = (lambda x: -2 - 2 * x if x < 0 else 2 * x - 1)
         rowint = {(i, j) for (i, j) in self.tableau.boxes if (i - 1, j) in self.tableau.boxes}
         colint = {(i, j) for (i, j) in self.tableau.boxes if (i, j + 1) in self.tableau.boxes}
         for (i, j) in rowint:
-            # allow special sign changes at diagonal
-            p_giv = ofn(self.tableau.get(i, j))
-            p_alt = ofn(-self.tableau.get(i, j))
-            pset = [p_giv, p_alt] if i == j and self.is_group_end(i, j) else [p_giv]
-            # p = ofn(self.tableau.get(i, j))
+            p = ofn(self.tableau.get(i, j))
             q = ofn(self.tableau.get(i - 1, j))
-            if all(p < q or (p == q and p % 2 != 0) for p in pset):
+            if p < q or (p == q and p % 2 != 0):
                 return False
         for (i, j) in colint:
-            # allow special sign changes at diagonal
-            p_giv = ofn(self.tableau.get(i, j))
-            p_alt = ofn(-self.tableau.get(i, j))
-            pset = [p_giv, p_alt] if i == j and self.is_group_end(i, j) else [p_giv]
-            # p = ofn(self.tableau.get(i, j))
+            p = ofn(self.tableau.get(i, j))
             q = ofn(self.tableau.get(i, j + 1))
-            if all(p > q or (p == q and p % 2 == 0) for p in pset):
+            if p > q or (p == q and p % 2 == 0):
                 return False
         return True
 
@@ -567,16 +575,10 @@ class ValuedSetTableau:
     def p_adjust(cls, ans, index):
         tab = ans.tableau
         grp = ans.grouping
-        h = ans.hinge(index)
-
-        if h:
-            if ans.is_singleton(h, h):
-                tab = tab.set(h, h, abs(tab.get(h, h)))
-            if ans.is_singleton(h + 1, h + 1):
-                tab = tab.set(h + 1, h + 1, abs(tab.get(h + 1, h + 1)))
-
-        elif ans.primed_diagonal_cells(index, index + 1):
-            x = y = list(ans.primed_diagonal_cells(index, index + 1))[0]
+        cells = list(ans.primed_diagonal_cells(index, index + 1))
+        if cells:
+            assert len(cells) == 1
+            x = y = cells[0]
             if tab.get(x, y) == -index:
                 tab = tab.set(x, x, index)
                 while tab.get(x, y) == index:
@@ -604,8 +606,8 @@ class ValuedSetTableau:
                 while grp.get(x + 1, y) != 0:
                     x += 1
                     tab = tab.set(x, y, -index)
-
-        return ValuedSetTableau(tab, grp)
+            ans = ValuedSetTableau(tab, grp)
+        return ans
 
     # @classmethod
     # def q_adjust(cls, ans, index, case):
