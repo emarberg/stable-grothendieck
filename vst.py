@@ -296,11 +296,6 @@ class ValuedSetTableau:
             grp[hx2, hy2] = 0
 
         assert diag1 is None or diag2 is None
-        # if diag1 is not None:
-        #     tab[diag1, diag1] = -value
-        # if diag2 is not None:
-        #     tab[diag2, diag2] = value + 1
-
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
     def middle_transition(self, value):
@@ -354,7 +349,7 @@ class ValuedSetTableau:
                     if not one_row_groups or one_row_groups[-1][-1][0][0] != x:
                         one_row_groups.append([0, 0, []])
                     one_row_groups[-1][f] += 1
-                    one_row_groups[-1][-1].append((x, y1, y2))
+                    one_row_groups[-1][-1].append((x, y1, y2, 1))
 
         return one_row_groups, two_row_groups
 
@@ -393,30 +388,53 @@ class ValuedSetTableau:
                     if not one_col_groups or one_col_groups[-1][-1][0][0] != y:
                         one_col_groups.append([0, 0, []])
                     one_col_groups[-1][f] += 1
-                    one_col_groups[-1][-1].append((y, x1, x2))
+                    one_col_groups[-1][-1].append((y, x1, x2, -1))
 
         return one_col_groups, two_col_groups
 
+    def _get_blocks(self, index):
+        one_row_groups, two_row_groups = self._get_row_groups(index)
+        one_col_groups, two_col_groups = self._get_column_groups(index)
+
+        for i in range(len(one_row_groups)):
+            p, q, g = one_row_groups[i]
+            for j in range(len(one_col_groups)):
+                pp, qq, gg = one_col_groups[j]
+                if pp + qq == 1 and gg[0][0] == gg[0][1] == gg[0][2] == g[0][0] == g[0][1] - 1:
+                    one_row_groups[i] = p + pp, q + qq, ((g + gg) if qq == 1 else (gg + g))
+                    one_col_groups = one_col_groups[:j] + one_col_groups[j + 1:]
+                    break
+
+        for i in range(len(one_col_groups)):
+            p, q, g = one_col_groups[i]
+            for j in range(len(one_row_groups)):
+                pp, qq, gg = one_row_groups[j]
+                if pp + qq == 1 and gg[0][0] == gg[0][1] == gg[0][2] == g[-1][0] == g[-1][2] + 1:
+                    one_col_groups[i] = p + pp, q + qq, ((g + gg) if qq == 1 else (gg + g))
+                    one_row_groups = one_row_groups[:j] + one_row_groups[j + 1:]
+                    break
+
+        return one_row_groups, two_row_groups, one_col_groups, two_col_groups
+
     @cached_value(MIDDLE_TRANSITION_CACHE)
     def cached_middle_transition(cls, vst, value):  # noqa
-        tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
         case = None
-
-        one_row_groups, two_row_groups = vst._get_row_groups(value)
-        one_col_groups, two_col_groups = vst._get_column_groups(value)
+        tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
+        one_row_groups, two_row_groups, one_col_groups, two_col_groups = vst._get_blocks(value)
 
         for p, q, g in one_row_groups:
             assert len(g) == p + q
             for i in range(len(g)):
-                row, col1, col2 = g[i]
+                row, col1, col2, sgn = g[i]
                 for y in range(col1, col2 + 1):
-                    tab[row, y] = value if i < q else value + 1
+                    tab[row, y] = sgn * (value if i < q else value + 1)
                     grp[row, y] = 1
                 grp[row, col2] = 0
 
         for row1, start1, stop1, row2, start2, stop2 in two_row_groups:
             for y in range(max(start1, start2), min(stop1, stop2)):
                 grp[row1, y], grp[row2, y] = grp[row2, y], grp[row1, y]
+
             # special diagonal condition
             if row1 == start1:
                 x = row1
@@ -463,15 +481,16 @@ class ValuedSetTableau:
         for p, q, g in one_col_groups:
             assert len(g) == p + q
             for i in range(len(g)):
-                col, row1, row2 = g[i]
+                col, row1, row2, sgn = g[i]
                 for x in range(row1, row2 + 1):
-                    tab[x, col] = -value if i < q else -value - 1
+                    tab[x, col] = sgn * (value if i < q else value + 1)
                     grp[x, col] = 1
                 grp[row1, col] = 0
 
         for col1, start1, stop1, col2, start2, stop2 in two_col_groups:
             for x in range(max(start1, start2) + 1, min(stop1, stop2) + 1):
                 grp[x, col1], grp[x, col2] = grp[x, col2], grp[x, col1]
+
             # special diagonal condition
             if col2 == stop2:
                 x = col2
@@ -568,80 +587,14 @@ class ValuedSetTableau:
 
         return ValuedSetTableau(Tableau(tab), Tableau(grp))
 
-    def transition(self, index, dnp):
-        return self.cached_transition(self, index, dnp)
-
-    @classmethod
-    def p_adjust(cls, ans, index):
-        tab = ans.tableau
-        grp = ans.grouping
-        cells = list(ans.primed_diagonal_cells(index, index + 1))
-        if cells:
-            assert len(cells) == 1
-            x = y = cells[0]
-            if tab.get(x, y) == -index:
-                tab = tab.set(x, x, index)
-                while tab.get(x, y) == index:
-                    y += 1
-                while grp.get(x, y):
-                    y += 1
-                for z in range(x, y):
-                    grp = grp.set(x, z, grp.get(x, z + 1))
-                    tab = tab.set(x, z, index)
-                grp = grp.set(x, y, 0)
-                tab = tab.set(x, y, -index - 1)
-
-            elif tab.get(x, y) == -index - 1:
-                while tab.get(x, y) == -index - 1:
-                    x -= 1
-                assert grp.get(x, y) == 0
-
-                for z in range(x, y):
-                    grp = grp.set(z, y, grp.get(z + 1, y))
-                    tab = tab.set(z, y, tab.get(z + 1, y))
-                grp = grp.set(y, y, 0)
-                tab = tab.set(y, y, index + 1)
-
-                tab = tab.set(x, y, -index)
-                while grp.get(x + 1, y) != 0:
-                    x += 1
-                    tab = tab.set(x, y, -index)
-            ans = ValuedSetTableau(tab, grp)
-        return ans
-
-    # @classmethod
-    # def q_adjust(cls, ans, index, case):
-    #     h = ans.hinge(index)
-    #     if h:
-    #         tab = ans.tableau
-    #         grp = ans.grouping
-    #         if case in ['a3', 'a4', 'a8']:
-    #             assert ans.is_singleton(h + 1, h + 1)
-    #             tab = tab.set(h + 1, h + 1, tab.get(h + 1, h + 1) * -1)
-    #         if case in ['b3', 'b4', 'b8']:
-    #             assert ans.is_singleton(h, h)
-    #             tab = tab.set(h, h, tab.get(h, h) * -1)
-    #         ans = ValuedSetTableau(tab, grp)
-    #     return ans
-
-    # @classmethod
-    # def reorient(cls, ans, index):
-    #     mapping = {index: index + 1, -index: -index - 1, index + 1: index, -index - 1: -index}
-    #     boxes = {}
-    #     for i, j in ans.tableau.boxes:
-    #         v = ans.tableau.get(i, j)
-    #         boxes[i, j] = mapping.get(v, v)
-    #     return ValuedSetTableau(Tableau(boxes), ans.grouping)
+    def transition(self, index):
+        return self.cached_transition(self, index)
 
     @cached_value(TRANSITION_CACHE)
-    def cached_transition(cls, vst, index, dnp):  # noqa
+    def cached_transition(cls, vst, index):  # noqa
         f = vst.forward_transition(index)
         m, case = f.middle_transition(index)
         ans = m.backward_transition(index)
-
-        if not dnp:
-            ans = cls.p_adjust(ans, index)
-
         return ans
 
     @classmethod

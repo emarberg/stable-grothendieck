@@ -109,13 +109,12 @@ def test_simple():
     backward = ValuedSetTableau(Tableau(". 2 2;. 1' 1"), Tableau(". 0 0;. 0 0"))
     test += [(lhs, forward, middle, backward)]
 
-    dnp = True
     for lhs, expected_forward, expected_middle, expected_backward in test:
         forward = lhs.forward_transition(1)
         middle, case = forward.middle_transition(1)
         backward = middle.backward_transition(1)
-        image = lhs.transition(1, dnp)
-        post = image.transition(1, dnp)
+        image = lhs.transition(1)
+        post = image.transition(1)
         print(combine_str(lhs, forward, middle, backward, image, post))
         print(combine_str(lhs, expected_forward, expected_middle, expected_backward))
         print()
@@ -130,14 +129,14 @@ def test_simple():
         assert lhs == post
 
 
-def print_transition(vst, i, dnp):
+def print_transition(vst, i):
     altered = vst.is_altered(i)
     f = vst.forward_transition(i)
     print(combine_str(vst, f))
     m, case = f.middle_transition(i)
     b = m.backward_transition(i)
-    image = vst.transition(i, dnp)
-    post = image.transition(i, dnp)
+    image = vst.transition(i)
+    post = image.transition(i)
     print(combine_str(vst, f, m, b, image, post))
     print('is altered:', altered, '->', image.is_altered(i), '| middle case:', case)
 
@@ -154,7 +153,7 @@ def _test_small(k=9, dnp=True, verbose=False):
                 images = {}
                 multiplicities = {}
                 for vst in test:
-                    image = vst.transition(1, dnp)
+                    image = vst.transition(1)
                     _unseen.discard(image)
                     multiplicities[image] = multiplicities.get(image, 0) + 1
                     key = image.unprime()
@@ -170,8 +169,8 @@ def _test_small(k=9, dnp=True, verbose=False):
                     f = vst.forward_transition(1)
                     m, case = f.middle_transition(1)
                     b = m.backward_transition(1)
-                    image = vst.transition(1, dnp)
-                    post = image.transition(1, dnp)
+                    image = vst.transition(1)
+                    post = image.transition(1)
 
                     assert vst.is_semistandard()
                     assert f.is_intermediary()
@@ -188,29 +187,29 @@ def _test_small(k=9, dnp=True, verbose=False):
                         assert len(seen[key]) == 1
                 except:
                     print('\nvst:')
-                    print_transition(vst, 1, dnp)
-                    print_transition(image, 1, dnp)
-                    print_transition(post, 1, dnp)
-                    print_transition(post.transition(1, dnp), 1, dnp)
+                    print_transition(vst, 1)
+                    print_transition(image, 1)
+                    print_transition(post, 1)
+                    print_transition(post.transition(1), 1)
                     print(5 * '\n')
                     input('')
 
                     if verbose:
                         for preimage in seen[key]:
-                            print_transition(preimage, 1, dnp)
+                            print_transition(preimage, 1)
                         print('preimages:', len(seen[key]))
                         print()
                         print('alternatives:')
                         alts = images.get(key.unprime(), [])
                         for u in alts:
                             if u not in seen[key]:
-                                print_transition(u, 1, dnp)
+                                print_transition(u, 1)
                         print()
                         print('unseen:')
                         ukey = image.unprime_diagonal()
                         uns = unseen.get(ukey, [])
                         for u in uns:
-                            print_transition(u, 1, dnp)
+                            print_transition(u, 1)
 
                     print(5 * '\n')
 
