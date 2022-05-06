@@ -4,6 +4,8 @@ from cached import cached_value
 
 
 VALUED_SET_CACHE = {}
+INTERMEDIARY_CACHE = {}
+
 TRANSITION_CACHE = {}
 BACKWARD_TRANSITION_CACHE = {}
 FORWARD_TRANSITION_CACHE = {}
@@ -24,20 +26,6 @@ def combine_str(a, *b):
 
 
 class ValuedSetTableau:
-
-    def is_altered(self, index):
-        vst = self
-        x = vst.hinge(index)
-        if x:
-            if vst.tableau.get(x, x) == index and vst.tableau.get(x + 1, x + 1) == -index - 1:
-                return True
-        return False
-
-    def is_separable(self, index):
-        h = self.hinge(index)
-        if h and self.grouping.get(h, h) == 0 and self.grouping.get(h + 1, h + 1) == 0:
-            return True
-        return False
 
     def is_highest_weight(self):
         return all(self.grouping.get(i, j) == 0 for (i, j) in self.tableau.boxes)
@@ -109,20 +97,20 @@ class ValuedSetTableau:
     def __hash__(self):
         return hash((self.tableau, self.grouping))
 
-    def is_intermediary(self):
+    def is_interstandard(self):
         ofn = (lambda x : {-1: 0, -2: 2, 1: 3, 2: 5}[x])
         rowint = {(i, j) for (i, j) in self.tableau.boxes if (i - 1, j) in self.tableau.boxes}
         colint = {(i, j) for (i, j) in self.tableau.boxes if (i, j + 1) in self.tableau.boxes}
         tget = self.tableau.get
         for (i, j) in rowint:
-            if i == j and (i - 1, i - 1) in self.tableau.boxes and tget(i, i) == -2 and tget(i - 1, i) == 1 and (tget(i - 1, i - 1) == -2 or self.grouping.get(i - 1, i - 1)):
+            if i == j and (i - 1, i - 1) in self.tableau.boxes and tget(i, i) == -2 and tget(i - 1, i) == 1 and (tget(i - 1, i - 1) == -2 or (tget(i - 1, i - 1) == 1 and self.grouping.get(i - 1, i - 1))):
                 continue
             p = ofn(self.tableau.get(i, j))
             q = ofn(self.tableau.get(i - 1, j))
             if p < q or (p == q and p % 2 != 0):
                 return False
         for (i, j) in colint:
-            if i == j and (i + 1, i + 1) in self.tableau.boxes and tget(i, i) == 1 and tget(i, i + 1) == -2 and (tget(i + 1, i + 1) == 1 or self.grouping.get(i + 1, i + 1)):
+            if i == j and (i + 1, i + 1) in self.tableau.boxes and tget(i, i) == 1 and tget(i, i + 1) == -2 and (tget(i + 1, i + 1) == 1 or (tget(i + 1, i + 1) == -2 and self.grouping.get(i + 1, i + 1))):
                 continue
             p = ofn(self.tableau.get(i, j))
             q = ofn(self.tableau.get(i, j + 1))
@@ -576,6 +564,49 @@ class ValuedSetTableau:
                         next_grp[i, j] = 0
                 next_grp = Tableau(next_grp)
                 ans.add(cls(tab, next_grp))
+        return ans
+
+    @classmethod
+    def all_interstandard(cls, mu, nu=(), diagonal_nonprimes=True):
+        return cls._interstandard(mu, nu, diagonal_nonprimes)
+
+    @cached_value(INTERMEDIARY_CACHE)
+    def _interstandard(cls, mu, nu, diagonal_nonprimes):  # noqa
+        ans = set()
+
+        tabs = []
+        adj = {-1: -1, -2: -2, 2: 1, 3: 2}
+        for t in Tableau.semistandard_shifted(3, mu, nu, diagonal_nonprimes):
+            counter = t.counter()
+            if 1 not in counter and -3 not in counter:
+                new_t = Tableau({(i, j): adj[t.get(i, j)] for (i, j) in t.boxes})
+                tabs.append(new_t)
+
+        for tab in tabs:
+            grp = {(i, j): int(cls.is_valid_position(tab, True, i, j)) for (i, j) in tab.boxes}
+            g = sorted(grp)
+            e = sum(grp.values())
+            for v in range(2**e):
+                next_grp = {}
+                for i, j in g:
+                    if grp[i, j]:
+                        next_grp[i, j] = v % 2
+                        v = v // 2
+                    else:
+                        next_grp[i, j] = 0
+                next_grp = Tableau(next_grp)
+                vst = cls(tab, next_grp)
+                ans.add(vst)
+
+                h = vst.hinge(1)
+                if h and vst.tableau.get(h, h + 1) == 1 and vst.tableau.get(h + 1, h + 1) == 2 and vst.grouping.get(h + 1, h + 1) == 0 and (vst.tableau.get(h, h) == -2 or (vst.tableau.get(h, h) == 1 and vst.grouping.get(h, h))):
+                    new_vst = cls(vst.tableau.set(h + 1, h + 1, -2), vst.grouping)
+                    ans.add(new_vst)
+
+                if h and vst.tableau.get(h, h + 1) == -2 and vst.tableau.get(h, h) == -1 and vst.grouping.get(h, h) == 0 and (vst.tableau.get(h + 1, h + 1) == 1 or (vst.tableau.get(h + 1, h + 1) == -2 and vst.grouping.get(h + 1, h + 1))):
+                    new_vst = cls(vst.tableau.set(h, h, 1), vst.grouping)
+                    ans.add(new_vst)
+
         return ans
 
     def compute_string_array(self):

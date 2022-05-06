@@ -463,6 +463,13 @@ class Tableau:
         array = self.string_array
         return '\n\n' + '\n'.join([' '.join(line) for line in array]) + '\n\n'
 
+    def counter(self):
+        ans = {}
+        for i, j, v in self:
+            for x in v:
+                ans[x] = ans.get(x, 0) + 1
+        return ans
+
     def weight(self, n):
         ans = n * [0]
         for i, j, v in self:

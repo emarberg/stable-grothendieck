@@ -123,8 +123,8 @@ import traceback
 #         assert expected_middle == middle
 #         assert expected_backward == backward
 #         assert lhs.is_semistandard()
-#         assert forward.is_intermediary()
-#         assert middle.is_intermediary()
+#         assert forward.is_interstandard()
+#         assert middle.is_interstandard()
 #         assert backward.is_semistandard()
 #         assert lhs == post
 
@@ -173,8 +173,8 @@ def _test_small(k=9, dnp=True, verbose=False):
                     post = image.transition(1)
 
                     assert vst.is_semistandard()
-                    assert f.is_intermediary()
-                    assert m.is_intermediary()
+                    assert f.is_interstandard()
+                    assert m.is_interstandard()
                     assert b.is_semistandard()
                     assert image.is_semistandard()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
@@ -224,3 +224,48 @@ def test_small_p(k=8, verbose=False):
 
 def test_small_q(k=8, verbose=False):
     _test_small(k, True, verbose)
+
+
+def _test_interstandard(k, dnp):
+    for mu in Partition.all(k, strict=True):
+        for nu in Partition.subpartitions(mu, strict=True):
+            print('mu =', mu, 'nu =', nu)
+            source = sorted(ValuedSetTableau.all(2, mu, nu, diagonal_nonprimes=dnp))
+            target = sorted(ValuedSetTableau.all_interstandard(mu, nu, diagonal_nonprimes=dnp))
+
+            for vst in source:
+                try:
+                    image = vst.forward_transition(1)
+                    post = image.backward_transition(1)
+                    assert vst.is_semistandard()
+                    assert image.is_interstandard()
+                    assert post.is_semistandard()
+                    assert vst == post
+                except:
+                    print('\nswap direction:\n')
+                    print(combine_str(vst, image, post))
+                    traceback.print_exc()
+                    input('\n?\n')
+
+            for vst in target:
+                try:
+                    image = vst.backward_transition(1)
+                    post = image.forward_transition(1)
+                    assert vst.is_interstandard()
+                    assert image.is_semistandard()
+                    assert post.is_interstandard()
+                    assert vst == post
+                except:
+                    print('\nunswap direction:\n')
+                    print(combine_str(vst, image, post))
+                    traceback.print_exc()
+                    input('\n?\n')
+
+
+def test_interstandard_p(k=8):
+    _test_interstandard(k, False)
+
+
+def test_interstandard_q(k=8):
+    _test_interstandard(k, True)
+
