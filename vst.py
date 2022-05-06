@@ -543,13 +543,13 @@ class ValuedSetTableau:
         return ans
 
     @classmethod
-    def all(cls, max_entry, mu, nu=(), diagonal_nonprimes=True):
-        return cls._all(max_entry, mu, nu, diagonal_nonprimes)
+    def all(cls, max_entry, mu, nu=(), diagonal_primes=True):
+        return cls._all(max_entry, mu, nu, diagonal_primes)
 
     @cached_value(VALUED_SET_CACHE)
-    def _all(cls, max_entry, mu, nu, diagonal_nonprimes):  # noqa
+    def _all(cls, max_entry, mu, nu, diagonal_primes):  # noqa
         ans = set()
-        tabs = Tableau.semistandard_shifted(max_entry, mu, nu, diagonal_nonprimes)
+        tabs = Tableau.semistandard_shifted(max_entry, mu, nu, diagonal_primes)
         for tab in tabs:
             grp = {(i, j): int(cls.is_valid_position(tab, True, i, j)) for (i, j) in tab.boxes}
             g = sorted(grp)
@@ -567,16 +567,16 @@ class ValuedSetTableau:
         return ans
 
     @classmethod
-    def all_interstandard(cls, mu, nu=(), diagonal_nonprimes=True):
-        return cls._interstandard(mu, nu, diagonal_nonprimes)
+    def all_interstandard(cls, mu, nu=()):
+        return cls._interstandard(mu, nu)
 
     @cached_value(INTERMEDIARY_CACHE)
-    def _interstandard(cls, mu, nu, diagonal_nonprimes):  # noqa
+    def _interstandard(cls, mu, nu):  # noqa
         ans = set()
 
         tabs = []
         adj = {-1: -1, -2: -2, 2: 1, 3: 2}
-        for t in Tableau.semistandard_shifted(3, mu, nu, diagonal_nonprimes):
+        for t in Tableau.semistandard_shifted(3, mu, nu, diagonal_primes=True):
             counter = t.counter()
             if 1 not in counter and -3 not in counter:
                 new_t = Tableau({(i, j): adj[t.get(i, j)] for (i, j) in t.boxes})

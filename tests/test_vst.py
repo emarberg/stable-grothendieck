@@ -146,7 +146,7 @@ def _test_small(k=9, dnp=True, verbose=False):
     for mu in Partition.all(k, strict=True):
         for nu in Partition.subpartitions(mu, strict=True):
             print('mu =', mu, 'nu =', nu)
-            test = sorted(ValuedSetTableau.all(n, mu, nu, diagonal_nonprimes=dnp))
+            test = sorted(ValuedSetTableau.all(n, mu, nu, diagonal_primes=dnp))
 
             if verbose:
                 _unseen = set(test)
@@ -179,8 +179,9 @@ def _test_small(k=9, dnp=True, verbose=False):
                     assert image.is_semistandard()
                     assert tuple(reversed(image.weight(n))) == vst.weight(n)
                     assert dnp or not image.diagonal_primes()
-
+                    assert vst.diagonal_primes() == image.diagonal_primes()
                     assert vst == post
+
                     if verbose:
                         key = image
                         seen[key] = seen.get(key, []) + [vst]
@@ -226,12 +227,12 @@ def test_small_q(k=8, verbose=False):
     _test_small(k, True, verbose)
 
 
-def _test_interstandard(k, dnp):
+def test_interstandard(k):
     for mu in Partition.all(k, strict=True):
         for nu in Partition.subpartitions(mu, strict=True):
             print('mu =', mu, 'nu =', nu)
-            source = sorted(ValuedSetTableau.all(2, mu, nu, diagonal_nonprimes=dnp))
-            target = sorted(ValuedSetTableau.all_interstandard(mu, nu, diagonal_nonprimes=dnp))
+            source = sorted(ValuedSetTableau.all(2, mu, nu, diagonal_primes=True))
+            target = sorted(ValuedSetTableau.all_interstandard(mu, nu))
 
             for vst in source:
                 try:
@@ -260,12 +261,3 @@ def _test_interstandard(k, dnp):
                     print(combine_str(vst, image, post))
                     traceback.print_exc()
                     input('\n?\n')
-
-
-def test_interstandard_p(k=8):
-    _test_interstandard(k, False)
-
-
-def test_interstandard_q(k=8):
-    _test_interstandard(k, True)
-
