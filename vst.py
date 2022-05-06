@@ -186,51 +186,6 @@ class ValuedSetTableau:
     def forward_transition(self, value):
         return self.cached_forward_transition(self, value)
 
-    # @classmethod
-    # def coincide(cls, t, u, i, j):
-    #     return t.tableau.get(i, j) == u.tableau.get(i, j) and t.grouping.get(i, j) == u.grouping.get(i, j)
-
-    # @classmethod
-    # def undo_alteration(cls, vst, value):
-    #     tab, grp = vst.tableau.boxes.copy(), vst.grouping.boxes.copy()
-    #     t = vst
-    #     x = vst.hinge(value)
-    #     altered = vst.is_altered(value)
-    #     if altered:
-    #         assert vst.tableau.get(x, x) == value and vst.tableau.get(x + 1, x + 1) == -value - 1
-    #         if not vst.grouping.get(x, x) and not vst.grouping.get(x + 1, x + 1):
-    #             del tab[x, x]
-    #             del tab[x + 1, x + 1]
-    #             del grp[x, x]
-    #             del grp[x + 1, x + 1]
-
-    #             w = ValuedSetTableau(tab, grp).forward_transition(value)
-    #             if w.tableau.get(x, x + 1) == value:
-    #                 tab[x, x] = -value
-    #                 tab[x + 1, x + 1] = -value - 1
-    #             else:
-    #                 tab[x, x] = value
-    #                 tab[x + 1, x + 1] = value + 1
-
-    #             grp[x, x] = 0
-    #             grp[x + 1, x + 1] = 0
-
-    #             # tab[x, x] = -value
-    #             # t = ValuedSetTableau(Tableau(tab), grp)
-    #             # assert not t.is_altered(value)
-    #             # u = t.forward_transition(value)
-    #             # if cls.coincide(t, u, x, x) and cls.coincide(t, u, x + 1, x + 1):
-    #             #     tab[x, x] = value
-    #             #     tab[x + 1, x + 1] = value + 1
-
-    #         elif vst.tableau.get(x, x + 1) < 0 < vst.grouping.get(x + 1, x + 1):
-    #             tab[x, x] = -value
-    #         else:
-    #             tab[x + 1, x + 1] = value + 1
-    #         t = ValuedSetTableau(tab, grp)
-
-    #     return t
-
     @cached_value(FORWARD_TRANSITION_CACHE)
     def cached_forward_transition(cls, vst, value):  # noqa
         t = vst
@@ -444,22 +399,22 @@ class ValuedSetTableau:
                 if w > 0 and vst.is_group_end(x, x):
                     if v == value:
                         assert case is None
-                        case = 'a1+'
+                        case = 'R1+'
                         tab[x, x] = -value - 1
                     if v == -value - 1:
                         assert case is None
-                        case = 'a1-'
+                        case = 'R1-'
                         tab[x, x] = value
                     if v == -value and Tableau(grp).get(x + 1, x + 1):
                         assert case is None
-                        case = 'a2+'
+                        case = 'R2'
                         grp[x + 1, x + 1] = 0
                         grp[x, x] = 1
                         tab[x, x] = value
                         tab[x + 1, x + 1] = -value - 1
                     elif v == -value:
                         assert case is None
-                        case = 'a3+'
+                        case = 'R4'
                         tab[x, x] = -value - 1
                         tab[x + 1, x + 1] = -value - 1
                     assert case is not None
@@ -467,16 +422,17 @@ class ValuedSetTableau:
                     assert v != -value
                     if v == -value - 1:
                         assert case is None
-                        case = 'a3-'
+                        case = 'R5'
                         tab[x, x] = -value
                         tab[x + 1, x + 1] = value + 1
                     if vst.grouping.get(x, x) and vst.grouping.get(x + 1, x + 2) is not None:
                         assert case is None
-                        case = 'a2-'
+                        case = 'R3'
                         grp[x, x] = 0
                         grp[x, x + 1] = 1
                         tab[x, x] = -value
                         tab[x + 1, x + 1] = value + 1
+                    case = case or 'R6'
 
         for p, q, g in one_col_groups:
             assert len(g) == p + q
@@ -500,22 +456,22 @@ class ValuedSetTableau:
                 if u < 0 and vst.is_group_end(x, x):
                     if v == -value - 1:
                         assert case is None
-                        case = 'b1+'
+                        case = 'C1+'
                         tab[x, x] = value
                     if v == value:
                         assert case is None
-                        case = 'b1-'
+                        case = 'C1-'
                         tab[x, x] = -value - 1
                     if v == value + 1 and Tableau(grp).get(x - 1, x - 1):
                         assert case is None
-                        case = 'b2+'
+                        case = 'C2'
                         grp[x - 1, x - 1] = 0
                         grp[x, x] = 1
                         tab[x, x] = -value - 1
                         tab[x - 1, x - 1] = value
                     elif v == value + 1:
                         assert case is None
-                        case = 'b3+'
+                        case = 'C4'
                         tab[x, x] = value
                         tab[x - 1, x - 1] = value
                     assert case is not None
@@ -523,16 +479,17 @@ class ValuedSetTableau:
                     assert v != value + 1
                     if v == value:
                         assert case is None
-                        case = 'b3-'
+                        case = 'C5'
                         tab[x, x] = value + 1
                         tab[x - 1, x - 1] = -value
                     if vst.grouping.get(x, x) and vst.grouping.get(x - 2, x - 1) is not None:
                         assert case is None
-                        case = 'b2-'
+                        case = 'C3'
                         grp[x, x] = 0
                         grp[x - 1, x] = 1
                         tab[x, x] = value + 1
                         tab[x - 1, x - 1] = -value
+                    case = case or 'C6'
 
         ans = ValuedSetTableau(Tableau(tab), Tableau(grp))
         return ans, case
