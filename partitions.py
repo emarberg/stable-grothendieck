@@ -359,6 +359,38 @@ class Partition:
             yield cls.trim(nu)
 
     @classmethod
+    def shifted_ribbon(cls, alpha):
+        nu = []
+        lam = []
+        for i in range(len(alpha)):
+            nu.append(sum(alpha[i:]))
+            lam.append(sum(alpha[i + 1:]))
+        return nu, lam
+
+    @classmethod
+    def shifted_ribbons(cls, n):
+        def generate(nu, lam, ub=None):
+            if len(nu) == 0:
+                yield nu, lam
+            else:
+                lb = lam[0]
+                ub = nu[0] if ub is None else min(nu[0], ub)
+                for a in range(lb, ub + 1):
+                    for x, y in generate(nu[1:], lam[1:], a - 1):
+                        yield [nu[0]] + x, [a] + y
+
+        seen = set()
+        for alpha in cls.compositions(n):
+            nu, lam = cls.shifted_ribbon(alpha)
+            if (tuple(nu), tuple(lam)) not in seen:
+                for x, y in generate(nu, lam):
+                    x = cls.trim(x)
+                    y = cls.trim(y)
+                    if (x, y) not in seen:
+                        yield x, y
+                        seen.add((x, y))
+
+    @classmethod
     def decrement_one(cls, nu):
         i = 0
         while i + 1 < len(nu) and nu[i] - 1 <= nu[i + 1]:

@@ -76,6 +76,16 @@ class Tableau:
         )
         self._string_array = None
 
+    def size(self):
+        return len(self.boxes)
+
+    def abs_sum(self):
+        ans = 0
+        for i, j, v in self:
+            for x in v:
+                ans += abs(x)
+        return ans
+
     @classmethod
     def decode_string_input(cls, s):
         def decode(cell):
@@ -470,10 +480,16 @@ class Tableau:
                 ans[x] = ans.get(x, 0) + 1
         return ans
 
-    def weight(self, n):
-        ans = n * [0]
+    def weight(self, n=None):
+        if n is None:
+            ans = []
+        else:
+            ans = n * [0]
         for i, j, v in self:
             for x in v:
+                if n is None:
+                    while abs(x) > len(ans):
+                        ans.append(0)
                 ans[abs(x) - 1] += 1
         return tuple(ans)
 

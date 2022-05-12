@@ -636,7 +636,7 @@ class SymmetricPolynomial(Vector):
 
     @classmethod
     def _slow_transposed_dual_stable_grothendieck_p(cls, num_variables, mu, nu=()):
-        p = 0
+        p = 0 * Polynomial.x(0)
         for tab in Tableau.semistandard_shifted_marked(num_variables, mu, nu, diagonal_primes=False):
             m = 1
             for i in range(1, num_variables + 1):

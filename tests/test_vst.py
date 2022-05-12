@@ -1,7 +1,188 @@
 from tableaux import Tableau
 from vst import combine_str, ValuedSetTableau
 from partitions import Partition
+from utils import jp_expansion, jp, jq_expansion, jq
 import traceback
+
+
+def is_first_in_group(boxes, i):
+    x, y = boxes[i]
+    return i == 0 or (boxes[i - 1][0] != x and boxes[i - 1][1] != y)
+
+
+def is_second_in_group(boxes, i):
+    return not is_first_in_group(boxes, i) and is_first_in_group(boxes, i - 1)
+
+
+def is_last_in_group(boxes, i):
+    x, y = boxes[i]
+    return i + 1 == len(boxes) or (boxes[i + 1][0] != x and boxes[i + 1][1] != y)
+
+
+def is_only_in_group(boxes, i):
+    return is_first_in_group(boxes, i) and is_last_in_group(boxes, i)
+
+
+def is_p_corner_box(boxes, i):
+    x, y = boxes[i]
+    return ((x, y - 1) in boxes and (x + 1, y - 1) in boxes) or ((x + 1, y) in boxes and (x + 1, y - 1) in boxes) or (x + 1 == y and (x + 1, y) in boxes)
+
+
+def is_q_corner_box(boxes, i):
+    x, y = boxes[i]
+    return ((x, y - 1) in boxes and (x + 1, y - 1) in boxes) or ((x + 1, y) in boxes and (x + 1, y - 1) in boxes)
+
+
+def is_first_component(boxes, i):
+    u, v = boxes[i]
+    for j in range(i - 1, -1, -1):
+        a, b = boxes[j]
+        if a != u and b != v:
+            return False
+        u, v = a, b
+    return True
+
+
+def is_first_component_with_multiple_boxes(boxes, i):
+    if is_only_in_group(boxes, i):
+        return False
+    u, v = boxes[i]
+    for j in range(i - 1, -1, -1):
+        a, b = boxes[j]
+        if a != u and b != v:
+            return all(is_only_in_group(boxes, k) for k in range(j + 1))
+        u, v = a, b
+    return True
+
+
+def is_last_component(boxes, i):
+    u, v = boxes[i]
+    for j in range(i + 1, len(boxes)):
+        a, b = boxes[j]
+        if a != u and b != v:
+            return False
+        u, v = a, b
+    return True
+
+
+def comarked_q_ribbons(nu, lam):
+    def generate(boxes, i=0):
+        if i == len(boxes):
+            yield ()
+            return
+
+        first_component_with_multiple_boxes = is_first_component_with_multiple_boxes(boxes, i)
+        first_in_group = is_first_in_group(boxes, i)
+        second_in_group = is_second_in_group(boxes, i)
+        only_in_group = is_only_in_group(boxes, i)
+        corner_box = is_q_corner_box(boxes, i)
+
+        choices = [1, 2] if corner_box else [2]
+        if first_component_with_multiple_boxes:
+            pass
+        else:
+            if only_in_group:
+                choices = [1, -1, 2, -2]
+            elif first_in_group:
+                choices = [1, 2, -2]
+            elif second_in_group:
+                choices = [1, 2]
+
+        x, y = boxes[i]
+        for c in choices:
+            for rest in generate(boxes, i + 1):
+                yield (((x, y), c),) + rest
+
+    ans = {}
+    boxes = sorted(Partition.shifted_shape(nu, lam), key=lambda xy: (-xy[0], xy[1]))
+    for tup in generate(boxes):
+        tab = Tableau({box: val for box, val in tup})
+        weight = tab.abs_sum() - tab.size()
+        ans[weight] = ans.get(weight, []) + [tab]
+
+    decomp = {key: len(val) for key, val in ans.items()}
+    expected = {sum(key): val.substitute(0, 1) for key, val in jq_expansion(jq(1, nu, lam)).items()}
+    return ans, decomp, expected
+
+
+def test_comarked_q_ribbons(n=6):
+    for nu, lam in Partition.shifted_ribbons(n):
+        boxes = sorted(Partition.shifted_shape(nu, lam), key=lambda xy: (-xy[0], xy[1]))
+        if all(is_only_in_group(boxes, i) for i in range(len(boxes))):
+            continue
+        ans, decomp, expected = comarked_q_ribbons(nu, lam)
+        print('    nu =', nu, 'lambda =', lam)
+        if decomp != expected:
+            Partition.print_shifted(nu, lam)
+            print()
+            print('  decomp:', decomp)
+            print('expected:', expected)
+            print()
+            print(ans)
+            input('\n')
+        # assert decomp == expected
+
+
+def comarked_p_ribbons(nu, lam):
+    def generate(boxes, i=0):
+        if i == len(boxes):
+            yield ()
+            return
+
+        first_component = is_first_component(boxes, i)
+        first_component_on_diagonal = boxes[0][0] == boxes[0][1]
+
+        first_in_group = is_first_in_group(boxes, i)
+        second_in_group = is_second_in_group(boxes, i)
+        only_in_group = is_only_in_group(boxes, i)
+        corner_box = is_p_corner_box(boxes, i)
+
+        choices = [1, 2] if corner_box else [2]
+        if first_component and first_component_on_diagonal:
+            pass
+        elif first_component and not first_component_on_diagonal:
+            if only_in_group:
+                choices = [2, -2]
+            elif first_in_group:
+                choices = [1, 2, -2]
+        else:
+            if only_in_group:
+                choices = [1, -1, 2, -2]
+            elif first_in_group:
+                choices = [1, 2, -2]
+            elif second_in_group:
+                choices = [1, 2]
+
+        x, y = boxes[i]
+        for c in choices:
+            for rest in generate(boxes, i + 1):
+                yield (((x, y), c),) + rest
+
+    ans = {}
+    boxes = sorted(Partition.shifted_shape(nu, lam), key=lambda xy: (-xy[0], xy[1]))
+    for tup in generate(boxes):
+        tab = Tableau({box: val for box, val in tup})
+        weight = tab.abs_sum() - tab.size()
+        ans[weight] = ans.get(weight, []) + [tab]
+
+    decomp = {key: len(val) for key, val in ans.items()}
+    expected = {sum(key): val.substitute(0, 1) for key, val in jp_expansion(jp(1, nu, lam)).items()}
+    return ans, decomp, expected
+
+
+def test_comarked_p_ribbons(n=6):
+    for nu, lam in Partition.shifted_ribbons(n):
+        ans, decomp, expected = comarked_p_ribbons(nu, lam)
+        print('    nu =', nu, 'lambda =', lam)
+        if decomp != expected:
+            Partition.print_shifted(nu, lam)
+            print()
+            print('  decomp:', decomp)
+            print('expected:', expected)
+            print()
+            print(ans)
+            input('\n')
+        # assert decomp == expected
 
 
 # def test_simple():
