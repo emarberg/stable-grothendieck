@@ -105,7 +105,7 @@ def comarked_q_ribbons(nu, lam):
     return ans, decomp, expected
 
 
-def test_comarked_q_ribbons(n=6):
+def test_comarked_q_ribbons(n=7):
     for nu, lam in Partition.shifted_ribbons(n):
         boxes = sorted(Partition.shifted_shape(nu, lam), key=lambda xy: (-xy[0], xy[1]))
         if all(is_only_in_group(boxes, i) for i in range(len(boxes))):
@@ -170,7 +170,7 @@ def comarked_p_ribbons(nu, lam):
     return ans, decomp, expected
 
 
-def test_comarked_p_ribbons(n=6):
+def test_comarked_p_ribbons(n=7):
     for nu, lam in Partition.shifted_ribbons(n):
         ans, decomp, expected = comarked_p_ribbons(nu, lam)
         print('    nu =', nu, 'lambda =', lam)
@@ -408,7 +408,7 @@ def test_small_q(k=8, verbose=False):
     _test_small(k, True, verbose)
 
 
-def test_interstandard(k):
+def test_interstandard(k=8):
     for mu in Partition.all(k, strict=True):
         for nu in Partition.subpartitions(mu, strict=True):
             print('mu =', mu, 'nu =', nu)
