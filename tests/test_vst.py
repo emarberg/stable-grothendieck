@@ -76,17 +76,15 @@ def comarked_q_ribbons(nu, lam):
         last_in_group = is_last_in_group(boxes, i)
         only_in_group = is_only_in_group(boxes, i)
         corner_box = is_q_corner_box(boxes, i)
+        last_box = i + 1 == len(boxes)
 
         choices = [1, 2] if corner_box else [2]
-        if first_component_with_multiple_boxes:
-            pass
-        else:
-            if only_in_group:
-                choices = [1, -1, 2, -2]
-            elif first_in_group:
-                choices = [1, 2, -2]
-            elif last_in_group:
-                choices = [1, 2]
+        if only_in_group:
+            choices = [1, -1, 2, -2] if not last_box else [2, -2]
+        elif first_in_group and not first_component_with_multiple_boxes:
+            choices = [1, 2, -2]
+        elif last_in_group and not last_box:
+            choices = [1, 2]
 
         x, y = boxes[i]
         for c in choices:
@@ -136,21 +134,25 @@ def comarked_p_ribbons(nu, lam):
         last_in_group = is_last_in_group(boxes, i)
         only_in_group = is_only_in_group(boxes, i)
         corner_box = is_p_corner_box(boxes, i)
+        last_box = i + 1 == len(boxes)
 
         choices = [1, 2] if corner_box else [2]
         if first_component and first_component_on_diagonal:
-            pass
+            if last_in_group and not last_box:
+                choices = [1, 2]
         elif first_component and not first_component_on_diagonal:
             if only_in_group:
-                choices = [2, -2]
+                choices = [1, -1, 2, -2] if not last_box else [2, -2]
             elif first_in_group:
                 choices = [1, 2, -2]
+            elif last_in_group and not last_box:
+                choices = [1, 2]
         else:
             if only_in_group:
-                choices = [1, -1, 2, -2]
+                choices = [1, -1, 2, -2] if not last_box else [2, -2]
             elif first_in_group:
                 choices = [1, 2, -2]
-            elif last_in_group:
+            elif last_in_group and not last_box:
                 choices = [1, 2]
 
         x, y = boxes[i]
