@@ -129,6 +129,7 @@ def comarked_p_ribbons(nu, lam):
 
         first_component = is_first_component(boxes, i)
         first_component_on_diagonal = boxes[0][0] == boxes[0][1]
+        first_component_and_on_diagonal = first_component and first_component_on_diagonal
 
         first_in_group = is_first_in_group(boxes, i)
         last_in_group = is_last_in_group(boxes, i)
@@ -137,23 +138,14 @@ def comarked_p_ribbons(nu, lam):
         last_box = i + 1 == len(boxes)
 
         choices = [1, 2] if corner_box else [2]
-        if first_component and first_component_on_diagonal:
-            if last_in_group and not last_box:
-                choices = [1, 2]
-        elif first_component and not first_component_on_diagonal:
-            if only_in_group:
-                choices = [1, -1, 2, -2] if not last_box else [2, -2]
-            elif first_in_group:
-                choices = [1, 2, -2]
-            elif last_in_group and not last_box:
-                choices = [1, 2]
-        else:
-            if only_in_group:
-                choices = [1, -1, 2, -2] if not last_box else [2, -2]
-            elif first_in_group:
-                choices = [1, 2, -2]
-            elif last_in_group and not last_box:
-                choices = [1, 2]
+        if only_in_group and first_component_and_on_diagonal:
+            choices = [1, 2] if not last_box else [2]
+        elif only_in_group:
+            choices = [1, -1, 2, -2] if not last_box else [2, -2]
+        elif first_in_group and not first_component_and_on_diagonal:
+            choices = [1, 2, -2]
+        elif last_in_group and not last_box:
+            choices = [1, 2]
 
         x, y = boxes[i]
         for c in choices:
