@@ -66,6 +66,9 @@ def is_last_component(boxes, i):
 
 
 def comarked_q_ribbons(nu, lam):
+    boxes = sorted(Partition.shifted_shape(nu, lam), key=lambda xy: (-xy[0], xy[1]))
+    no_multiple_boxes = all(is_only_in_group(boxes, i) for i in range(len(boxes)))
+
     def generate(boxes, i=0):
         if i == len(boxes):
             yield ()
@@ -80,7 +83,7 @@ def comarked_q_ribbons(nu, lam):
 
         choices = [1, 2] if corner_box else [2]
         if only_in_group:
-            choices = [1, -1, 2, -2] if not last_box else [2, -2]
+            choices = [1, -1, 2, -2] if not last_box else [2] if no_multiple_boxes else [2, -2]
         elif first_in_group and not first_component_with_multiple_boxes:
             choices = [1, 2, -2]
         elif last_in_group and not last_box:
@@ -89,10 +92,12 @@ def comarked_q_ribbons(nu, lam):
         x, y = boxes[i]
         for c in choices:
             for rest in generate(boxes, i + 1):
-                yield (((x, y), c),) + rest
+                tup = (((x, y), c),) + rest
+                if no_multiple_boxes and any(c == -1 for _, c in tup[:-1]) and not any(c in [2, -2] for _, c in tup[:-1]):
+                    continue
+                yield tup
 
     ans = {}
-    boxes = sorted(Partition.shifted_shape(nu, lam), key=lambda xy: (-xy[0], xy[1]))
     for tup in generate(boxes):
         tab = Tableau({box: val for box, val in tup})
         weight = tab.abs_sum() - tab.size()
@@ -105,9 +110,6 @@ def comarked_q_ribbons(nu, lam):
 
 def test_comarked_q_ribbons(n=7):
     for nu, lam in Partition.shifted_ribbons(n):
-        boxes = sorted(Partition.shifted_shape(nu, lam), key=lambda xy: (-xy[0], xy[1]))
-        if all(is_only_in_group(boxes, i) for i in range(len(boxes))):
-            continue
         ans, decomp, expected = comarked_q_ribbons(nu, lam)
         print('    nu =', nu, 'lambda =', lam)
         if decomp != expected:

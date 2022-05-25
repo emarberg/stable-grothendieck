@@ -88,8 +88,6 @@ def gp_pieri(mu, p):
 
 def test_gp_pieri(n=4, m=10, l=5):
     for mu in Partition.all(m, strict=True):
-        if sum(mu) <= 1:
-            continue
         f = gp(n, mu)
         for p in range(1, l + 1):
             g = gq(n, (p,))
@@ -124,7 +122,7 @@ def test_gp_pieri(n=4, m=10, l=5):
                 co = pieri[lam].substitute(0, 1)
                 co = co - 1 if lam in [rho1, rho2] else co
                 klg = Tableau.KLG_counts(nu, lam, q)
-                print(lam, co, klg)
+                # print(lam, co, klg)
                 assert co == klg
             print()
 
@@ -156,8 +154,6 @@ def gq_pieri(mu, p):
 
 def test_gq_pieri(n=4, m=10, l=5):
     for mu in Partition.all(m, strict=True):
-        if not mu:
-            continue
         f = gq(n, mu)
         for p in range(1, l + 1):
             g = gq(n, (p,))
@@ -187,9 +183,9 @@ def test_gq_pieri(n=4, m=10, l=5):
 
             for lam in pieri:
                 co = pieri[lam].substitute(0, 1)
-                co = co - 1 if lam in [rho1, rho2] else co
+                co = co - 1 if mu and lam in [rho1, rho2] else co
                 kog = Tableau.KOG_counts(nu, lam, q)
-                print(lam, co, kog)
+                # print(lam, co, kog)
                 assert co == kog
             print()
 
