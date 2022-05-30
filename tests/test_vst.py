@@ -6,7 +6,7 @@ from utils import beta, jp_expansion, jp, jq_expansion, jq
 import traceback
 
 
-def shifted_ribbon_params(kappa, nu):
+def shifted_ribbon_q_params(kappa, nu):
     boxes = Partition.shifted_shape(kappa, nu)
     boxes = sorted(boxes, key=lambda xy: (-xy[0], xy[1]))
 
@@ -25,10 +25,88 @@ def shifted_ribbon_params(kappa, nu):
     return a, b, c, d
 
 
+def test_one_var_jq(n=10):
+    for kappa in Partition.all(n, strict=True):
+        for nu in Partition.shifted_ribbon_complements(kappa):
+            print('kappa =', kappa, 'nu =', nu)
+            a, b, c, d = shifted_ribbon_q_params(kappa, nu)
+            t = Polynomial.x(1)
+            expected = (t - beta)**(d - 2) * 2**a * t**(a + b + c) * (2 * t - beta)**b
+            f = jq(1, kappa, nu).polynomial()
+            assert expected == f
+
+
+def shifted_ribbon_p_params(kappa, nu):
+    boxes = Partition.shifted_shape(kappa, nu)
+    boxes = sorted(boxes, key=lambda xy: (-xy[0], xy[1]))
+
+    a = 0  # single box components
+    b = 0  # multibox components
+    c = 0  # free corner boxes
+    e = 0
+    for i in range(len(boxes)):
+        first_component = is_first_component(boxes, i)
+        first_component_on_diagonal = boxes[0][0] == boxes[0][1]
+        first_component_and_on_diagonal = first_component and first_component_on_diagonal
+        if first_component_and_on_diagonal:
+            e = 1
+
+        if is_only_in_group(boxes, i) and not first_component_and_on_diagonal:
+            a += 1
+        elif is_first_in_group(boxes, i) and not first_component_and_on_diagonal:
+            b += 1
+
+        if is_p_corner_box(boxes, i):
+            c += 1
+    d = sum(kappa) - sum(nu) - a - 2 * b - c - e
+
+    return a, b, c, d, e
+
+
+def test_one_var_jp(n=10):
+    for kappa in Partition.all(n, strict=True):
+        for nu in Partition.shifted_ribbon_complements(kappa):
+            a, b, c, d, e = shifted_ribbon_p_params(kappa, nu)
+            print('kappa =', kappa, 'nu =', nu)
+            # print()
+            # print('a =', a, 'b =', b, 'c =', c, 'd =', d, 'e =', e)
+            t = Polynomial.x(1)
+            expected = (t - beta)**d * 2**a * t**(a + b + c + e) * (2 * t - beta)**b
+            f = jp(1, kappa, nu).polynomial()
+            assert expected == f
+
+
+def test_hat_c(n=10):
+    for nu in Partition.all(n, strict=True):
+        for lam in Partition.shifted_ribbon_complements(nu):
+            ans = Tableau.shifted_setvalued_copieri(nu, lam, diagonal_primes=True)
+
+            kappa = Partition.trim((Partition.get(nu, 1) + 2,) + lam)
+            a, b, c, d, e = shifted_ribbon_p_params(kappa, nu)
+
+            print('kappa =', kappa, 'nu =', nu, 'lambda =', lam)
+            try:
+                u = Polynomial.monomial(1)
+                f = (2 + u)**b * 2**a * (u + 1)**(a + b + c - 1 + e) * u**max(0, sum(nu) - sum(lam))
+                g = 0
+                for r in ans:
+                    g += len(ans[r]) * u**r
+                assert f == g
+            except:
+                print()
+                print('a =', a, 'b =', b, 'c =', c, 'd =', d, 'e =', e)
+                Partition.print_shifted(kappa, nu)
+                print()
+                print(f, '==', g)
+                print()
+                # print(ans)
+                input('\n?\n')
+
+
 def test_hat_y(n=10):
     for kappa in Partition.all(n, strict=True):
         for nu in Partition.shifted_ribbon_complements(kappa):
-            a, b, c, d = shifted_ribbon_params(kappa, nu)
+            a, b, c, d = shifted_ribbon_q_params(kappa, nu)
             expansion = jq_expansion(jq(1, kappa, nu))
             print('kappa =', kappa, 'nu =', nu, ':', expansion)
             try:
@@ -66,7 +144,7 @@ def test_hat_b(n=10):
             ans = Tableau.shifted_setvalued_copieri(nu, lam, diagonal_primes=False)
 
             kappa = Partition.trim((Partition.get(nu, 1) + 2,) + lam)
-            a, b, c, d = shifted_ribbon_params(kappa, nu)
+            a, b, c, d = shifted_ribbon_q_params(kappa, nu)
 
             u = Polynomial.monomial(1)
             f = (2 * u + beta)**(b - 1) * 2**a * (u + beta)**(a + b + c - 1)
