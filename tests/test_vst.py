@@ -2,8 +2,62 @@ from tableaux import Tableau
 from vst import combine_str, ValuedSetTableau
 from partitions import Partition
 from polynomials import Polynomial
-from utils import jp_expansion, jp, jq_expansion, jq
+from utils import beta, jp_expansion, jp, jq_expansion, jq
 import traceback
+
+
+def shifted_ribbon_params(kappa, nu):
+    boxes = Partition.shifted_shape(kappa, nu)
+    boxes = sorted(boxes, key=lambda xy: (-xy[0], xy[1]))
+
+    a = 0  # single box components
+    b = 0  # multibox components
+    c = 0  # free corner boxes
+    for i in range(len(boxes)):
+        if is_only_in_group(boxes, i):
+            a += 1
+        elif is_first_in_group(boxes, i):
+            b += 1
+        if is_q_corner_box(boxes, i):
+            c += 1
+    d = sum(kappa) - sum(nu) - a - 2 * b - c + 2
+
+    return a, b, c, d
+
+
+def test_hat_y(n=10):
+    for kappa in Partition.all(n, strict=True):
+        for nu in Partition.shifted_ribbon_complements(kappa):
+            a, b, c, d = shifted_ribbon_params(kappa, nu)
+            expansion = jq_expansion(jq(1, kappa, nu))
+            print('kappa =', kappa, 'nu =', nu, ':', expansion)
+            try:
+                s = Partition.trim((sum(kappa) - sum(nu),))
+                assert expansion[s] == 2**max(a + b - 1, 0)
+
+                if sum(nu) == sum(kappa):
+                    continue
+
+                s = Partition.trim((sum(kappa) - sum(nu) - 1,))
+                if sum(nu) + 1 == sum(kappa):
+                    expected = Polynomial.zero()
+                else:
+                    expected = 2 * a + 3 * b + 2 *c - 3
+                    if a + b - 2 == -1:
+                        assert expected % 2 == 0
+                        expected //= 2
+                    elif a + b - 2 > 0:
+                        expected *= 2**(a + b - 2)
+                    expected *= beta
+                assert expansion[s] == expected
+            except:
+                print()
+                print('a =', a, 'b =', b, 'c =', c, 'd =', d)
+                print()
+                print(expansion, ':', expansion[s], '==', expected)
+                print()
+                traceback.print_exc()
+                input('?')
 
 
 def test_hat_b(n=10):
@@ -12,27 +66,13 @@ def test_hat_b(n=10):
             ans = Tableau.shifted_setvalued_copieri(nu, lam, diagonal_primes=False)
 
             kappa = Partition.trim((Partition.get(nu, 1) + 2,) + lam)
-            boxes = Partition.shifted_shape(kappa, nu)
-            boxes = sorted(boxes, key=lambda xy: (-xy[0], xy[1]))
-
-            a = 0  # multibox components
-            b = 0  # single box components
-            c = 0  # free corner boxes
-            d = sum(nu) - sum(lam)
-
-            for i in range(len(boxes)):
-                if is_only_in_group(boxes, i):
-                    b += 1
-                elif is_first_in_group(boxes, i):
-                    a += 1
-                if is_q_corner_box(boxes, i):
-                    c += 1
+            a, b, c, d = shifted_ribbon_params(kappa, nu)
 
             u = Polynomial.monomial(1)
-            f = (2 + u) ** (a - 1) * (2 * u + 2)**b * (u + 1)**(a + c - 1) * u ** d
+            f = (2 * u + beta)**(b - 1) * 2**a * (u + beta)**(a + b + c - 1)
             g = 0
             for r in ans:
-                g += u**r * len(ans[r])
+                g += beta**(r - sum(nu) + sum(lam)) * len(ans[r]) * u**(sum(kappa) - sum(lam) - d - r)
 
             print('kappa =', kappa, 'nu =', nu, 'lambda =', lam)
             try:
