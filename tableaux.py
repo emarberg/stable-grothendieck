@@ -1050,6 +1050,17 @@ class Tableau:
             return ans
 
     @classmethod
+    def shifted_setvalued_copieri(cls, nu, lam, diagonal_primes):
+        # computes hat c^{\nu}_{\lambda,(r)} (diagonal_primes==True)
+        # or       hat b^{\nu}_{\lambda,(r)} (diagonal_primes==False)
+        ans = {}
+        for mu in Partition.remove_shifted_inner_corners(lam):
+            for t in cls.semistandard_shifted_setvalued(1, nu, mu, diagonal_primes):
+                r = t.weight(n=1)[0]
+                ans[r] = ans.get(r, []) + [t]
+        return ans
+
+    @classmethod
     def KOG(cls, content_max, mu):  # noqa
         for shape in Partition.rims(mu, content_max):
             for tab in cls._KOG_helper(content_max, (), shape):

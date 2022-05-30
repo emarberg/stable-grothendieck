@@ -343,20 +343,28 @@ class Partition:
                     yield mu
 
     @classmethod
-    def subpartitions(cls, mu, strict=False):
+    def subpartitions(cls, mu, nu=(), strict=False):
+        lowerbound = Partition.trim(nu)
 
-        def _subpartitions(mu, strict):
+        def _subpartitions(mu, strict, i):
             if mu:
-                for nu in _subpartitions(mu[1:], strict):
+                for nu in _subpartitions(mu[1:], strict, i + 1):
                     lb = (nu[0] + (1 if strict else 0)) if (nu and nu[0] > 0) else 0
+                    lb = max(lb, Partition.get(lowerbound, i))
                     ub = mu[0]
                     for a in range(lb, ub + 1):
                         yield (a,) + nu
             else:
                 yield ()
 
-        for nu in _subpartitions(mu, strict):
+        for nu in _subpartitions(mu, strict, 1):
             yield cls.trim(nu)
+
+    @classmethod
+    def shifted_ribbon_complements(cls, mu):
+        nu = Partition.trim(mu[1:])
+        for kappa in cls.subpartitions(mu, nu, strict=True):
+            yield kappa
 
     @classmethod
     def shifted_ribbon(cls, alpha):

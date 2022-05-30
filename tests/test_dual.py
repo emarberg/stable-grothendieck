@@ -1,7 +1,7 @@
 from symmetric import SymmetricPolynomial
 from partitions import Partition
 from tableaux import Tableau
-from utils import gq, gp, beta, jp, jq, jp_expansion, jq_expansion, shifted_ribbon
+from utils import gq, gp, beta, jp, jq, gp_expansion, gq_expansion, jp_expansion, jq_expansion, shifted_ribbon
 from vectors import Vector
 import itertools
 
@@ -14,6 +14,46 @@ def subsets(s):
 
 def nchoosek(n, k):
     return len(list(itertools.combinations(range(n), k)))
+
+
+def test_shifted_setvalued_copieri(n=10): # noqa
+    for nu in Partition.all(n, strict=True):
+        for lam in Partition.shifted_ribbon_complements(nu):
+            n = 1 + max(len(nu), Partition.get(nu, 1))
+
+            print()
+            # hat b^{\nu}_{\lambda,(r)}
+            ans = Tableau.shifted_setvalued_copieri(nu, lam, diagonal_primes=False)
+            for r in ans:
+                f = gq(n, lam)
+                onerow = Partition.trim((r,))
+                g = gq(n, onerow)
+                expansion = gq_expansion(f * g)
+                expected = expansion[nu]
+                expected = expected.substitute(0, 1) if type(expected) != int else expected
+                print('b: nu =', nu, 'lambda =', lam, 'r =', r, ':', expected, '==', len(ans[r]))
+                if expected != len(ans[r]):
+                    print()
+                    print(expansion)
+                    print(ans)
+                assert expected == len(ans[r])
+
+            print()
+            # hat c^{\nu}_{\lambda,(r)}
+            ans = Tableau.shifted_setvalued_copieri(nu, lam, diagonal_primes=True)
+            for r in ans:
+                f = gp(n, lam)
+                onerow = Partition.trim((r,))
+                g = gq(n, onerow)
+                expansion = gp_expansion(f * g)
+                expected = expansion[nu]
+                expected = expected.substitute(0, 1) if type(expected) != int else expected
+                print('c: nu =', nu, 'lambda =', lam, 'r =', r, ':', expected, '==', len(ans[r]))
+                if expected != len(ans[r]):
+                    print()
+                    print(expansion)
+                    print(ans)
+                assert expected == len(ans[r])
 
 
 def test_shifted_ribbon_jq(n=10):

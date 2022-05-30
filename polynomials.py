@@ -116,6 +116,10 @@ class Polynomial:
         return self.coeffs.__iter__()
 
     @classmethod
+    def zero(cls):
+        return cls.one() * 0
+
+    @classmethod
     def one(cls):
         return cls.monomial(1, 0)
 

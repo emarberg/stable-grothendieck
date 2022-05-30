@@ -1,8 +1,51 @@
 from tableaux import Tableau
 from vst import combine_str, ValuedSetTableau
 from partitions import Partition
+from polynomials import Polynomial
 from utils import jp_expansion, jp, jq_expansion, jq
 import traceback
+
+
+def test_hat_b(n=10):
+    for nu in Partition.all(n, strict=True):
+        for lam in Partition.shifted_ribbon_complements(nu):
+            ans = Tableau.shifted_setvalued_copieri(nu, lam, diagonal_primes=False)
+
+            kappa = Partition.trim((Partition.get(nu, 1) + 2,) + lam)
+            boxes = Partition.shifted_shape(kappa, nu)
+            boxes = sorted(boxes, key=lambda xy: (-xy[0], xy[1]))
+
+            a = 0  # multibox components
+            b = 0  # single box components
+            c = 0  # free corner boxes
+            d = sum(nu) - sum(lam)
+
+            for i in range(len(boxes)):
+                if is_only_in_group(boxes, i):
+                    b += 1
+                elif is_first_in_group(boxes, i):
+                    a += 1
+                if is_q_corner_box(boxes, i):
+                    c += 1
+
+            u = Polynomial.monomial(1)
+            f = (2 + u) ** (a - 1) * (2 * u + 2)**b * (u + 1)**(a + c - 1) * u ** d
+            g = 0
+            for r in ans:
+                g += u**r * len(ans[r])
+
+            print('kappa =', kappa, 'nu =', nu, 'lambda =', lam)
+            try:
+                assert f == g
+            except:
+                print()
+                print('a =', a, 'b =', b, 'c =', c, 'd =', d)
+                Partition.print_shifted(kappa, nu)
+                print()
+                print(f, '==', g)
+                print()
+                print(ans)
+                input('\n?\n')
 
 
 def is_first_in_group(boxes, i):
@@ -85,7 +128,7 @@ def comarked_q_ribbons(nu, lam):
         if only_in_group:
             choices = [1, -1, 2, -2] if not last_box else [2] if no_multiple_boxes else [2, -2]
         elif first_in_group and not first_component_with_multiple_boxes:
-            choices = [1, 2, -2]
+            choices = [-1, 2, -2]
         elif last_in_group and not last_box:
             choices = [1, 2]
 
@@ -106,6 +149,27 @@ def comarked_q_ribbons(nu, lam):
     decomp = {key: len(val) for key, val in ans.items()}
     expected = {sum(key): val.substitute(0, 1) for key, val in jq_expansion(jq(1, nu, lam)).items()}
     return ans, decomp, expected
+
+
+def q_ribbon_bijection(lam, r, tab):
+    lamshape = Partition.shifted_shape(lam)
+    kap = Partition.trim((Partition.get(lam, 1) + r,) + lam)
+    boxes = sorted(Partition.shifted_shape(kap, lam), key=lambda xy: (-xy[0], xy[1]))
+    boxes = {(i, j): 0 for (i, j) in boxes if (i, j) not in tab.boxes}
+    for (i, j) in tab.boxes:
+        if tab.get(i, j) == 1:
+            h = max([x for (x, y) in lamshape if y == j - 1])
+            if (h, j - 1) not in boxes:
+                boxes[h, j - 1] = 0
+            if (h, j) in tab.boxes and (h + 1, j - 1) in tab.boxes:
+                v = boxes[h, j - 1]
+                if (i - 1, j) in tab.boxes:
+                    boxes[h, j - 1] = 1 if v == 0 else (-1, 1)
+                if (i + 1, j) in tab.boxes:
+                    boxes[h, j - 1] = -1 if v == 0 else (-1, 1)
+    for (i, j) in tab.boxes:
+        if (i + 1, j) in tab.boxes or (i, j - 1) in tab.boxes:
+            continue
 
 
 def test_comarked_q_ribbons(n=7):
