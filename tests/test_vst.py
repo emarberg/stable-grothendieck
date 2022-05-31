@@ -18,7 +18,7 @@ def shifted_ribbon_q_params(kappa, nu):
             a += 1
         elif is_first_in_group(boxes, i):
             b += 1
-        if is_q_corner_box(boxes, i):
+        if is_trailing_q_corner_box(boxes, i):
             c += 1
     d = sum(kappa) - sum(nu) - a - 2 * b - c + 2
 
@@ -43,36 +43,36 @@ def shifted_ribbon_p_params(kappa, nu):
     a = 0  # single box components
     b = 0  # multibox components
     c = 0  # free corner boxes
-    e = 0
     for i in range(len(boxes)):
         first_component = is_first_component(boxes, i)
         first_component_on_diagonal = boxes[0][0] == boxes[0][1]
         first_component_and_on_diagonal = first_component and first_component_on_diagonal
-        if first_component_and_on_diagonal:
-            e = 1
 
         if is_only_in_group(boxes, i) and not first_component_and_on_diagonal:
             a += 1
         elif is_first_in_group(boxes, i) and not first_component_and_on_diagonal:
             b += 1
 
-        if is_p_corner_box(boxes, i):
+        if is_trailing_p_corner_box(boxes, i):
             c += 1
-    d = sum(kappa) - sum(nu) - a - 2 * b - c - e
+    d = sum(kappa) - sum(nu) - a - 2 * b - c + 1
 
-    return a, b, c, d, e
+    return a, b, c, d
 
 
 def test_one_var_jp(n=10):
     for kappa in Partition.all(n, strict=True):
         for nu in Partition.shifted_ribbon_complements(kappa):
-            a, b, c, d, e = shifted_ribbon_p_params(kappa, nu)
+            a, b, c, d = shifted_ribbon_p_params(kappa, nu)
             print('kappa =', kappa, 'nu =', nu)
-            # print()
-            # print('a =', a, 'b =', b, 'c =', c, 'd =', d, 'e =', e)
             t = Polynomial.x(1)
-            expected = (t - beta)**d * 2**a * t**(a + b + c + e) * (2 * t - beta)**b
+            expected = (t - beta)**(d - 1) * 2**a * t**(a + b + c) * (2 * t - beta)**b
             f = jp(1, kappa, nu).polynomial()
+
+            # print()
+            # print('a =', a, 'b =', b, 'c =', c, 'd =', d)
+            # Partition.print_shifted(kappa, nu)
+            # print(expected, '==', f)
             assert expected == f
 
 
@@ -82,25 +82,57 @@ def test_hat_c(n=10):
             ans = Tableau.shifted_setvalued_copieri(nu, lam, diagonal_primes=True)
 
             kappa = Partition.trim((Partition.get(nu, 1) + 2,) + lam)
-            a, b, c, d, e = shifted_ribbon_p_params(kappa, nu)
+            a, b, c, d = shifted_ribbon_p_params(kappa, nu)
 
             print('kappa =', kappa, 'nu =', nu, 'lambda =', lam)
             try:
                 u = Polynomial.monomial(1)
-                f = (2 + u)**b * 2**a * (u + 1)**(a + b + c - 1 + e) * u**max(0, sum(nu) - sum(lam))
+                f = (2 * u + beta)**b * 2**a * (u + beta)**(a + b + c - 1)
                 g = 0
                 for r in ans:
-                    g += len(ans[r]) * u**r
+                    s = Partition.get(kappa, 1) - r
+                    g += beta**(sum(kappa) - sum(nu) - s) * len(ans[r]) * u**(s - d)
                 assert f == g
             except:
                 print()
-                print('a =', a, 'b =', b, 'c =', c, 'd =', d, 'e =', e)
+                print('a =', a, 'b =', b, 'c =', c, 'd =', d)
                 Partition.print_shifted(kappa, nu)
                 print()
                 print(f, '==', g)
                 print()
                 # print(ans)
                 input('\n?\n')
+
+
+def test_hat_z(n=10):
+    for kappa in Partition.all(n, strict=True):
+        for nu in Partition.shifted_ribbon_complements(kappa):
+            a, b, c, d = shifted_ribbon_p_params(kappa, nu)
+            expansion = jp_expansion(jp(1, kappa, nu))
+            print('kappa =', kappa, 'nu =', nu, ':', expansion)
+            try:
+                if sum(nu) == sum(kappa):
+                    continue
+
+                s = Partition.trim((sum(kappa) - sum(nu),))
+                assert expansion[s] == 2**(a + b)
+                assert expansion[()] == 0
+
+                s = Partition.trim((sum(kappa) - sum(nu) - 1,))
+                if sum(nu) + 1 == sum(kappa):
+                    expected = Polynomial.zero()
+                else:
+                    expected = 2**(a + b) * (a + b + c - 1) + (2**(a + b - 1) * b if b != 0 else 0)
+                    expected *= beta
+                assert expansion[s] == expected
+            except:
+                print()
+                print('a =', a, 'b =', b, 'c =', c, 'd =', d)
+                print()
+                print(expansion, ':', expansion[s], '==', expected)
+                print()
+                traceback.print_exc()
+                input('?')
 
 
 def test_hat_y(n=10):
@@ -110,17 +142,18 @@ def test_hat_y(n=10):
             expansion = jq_expansion(jq(1, kappa, nu))
             print('kappa =', kappa, 'nu =', nu, ':', expansion)
             try:
-                s = Partition.trim((sum(kappa) - sum(nu),))
-                assert expansion[s] == 2**max(a + b - 1, 0)
-
                 if sum(nu) == sum(kappa):
                     continue
+
+                s = Partition.trim((sum(kappa) - sum(nu),))
+                assert expansion[s] == 2**(a + b - 1)
+                assert expansion[()] == 0
 
                 s = Partition.trim((sum(kappa) - sum(nu) - 1,))
                 if sum(nu) + 1 == sum(kappa):
                     expected = Polynomial.zero()
                 else:
-                    expected = 2 * a + 3 * b + 2 *c - 3
+                    expected = 2 * a + 3 * b + 2 * c - 3
                     if a + b - 2 == -1:
                         assert expected % 2 == 0
                         expected //= 2
@@ -150,8 +183,8 @@ def test_hat_b(n=10):
             f = (2 * u + beta)**(b - 1) * 2**a * (u + beta)**(a + b + c - 1)
             g = 0
             for r in ans:
-                g += beta**(r - sum(nu) + sum(lam)) * len(ans[r]) * u**(sum(kappa) - sum(lam) - d - r)
-
+                s = Partition.get(kappa, 1) - r
+                g += beta**(sum(kappa) - sum(nu) - s) * len(ans[r]) * u**(s - d)
             print('kappa =', kappa, 'nu =', nu, 'lambda =', lam)
             try:
                 assert f == g
@@ -184,9 +217,19 @@ def is_only_in_group(boxes, i):
     return is_first_in_group(boxes, i) and is_last_in_group(boxes, i)
 
 
+def is_trailing_q_corner_box(boxes, i):
+    x, y = boxes[i]
+    return ((x + 1, y - 1) in boxes and (x + 1, y) in boxes) or ((x + 1, y - 1) in boxes and (x, y - 1) in boxes)
+
+
+def is_trailing_p_corner_box(boxes, i):
+    x, y = boxes[i]
+    return is_trailing_q_corner_box(boxes, i) or (x + 1 == y and (x + 1, y) in boxes) or (x == y)
+
+
 def is_p_corner_box(boxes, i):
     x, y = boxes[i]
-    return ((x, y - 1) in boxes and (x - 1, y) in boxes) or ((x + 1, y) in boxes and (x, y + 1) in boxes) or (x == y and (x - 1, y) in boxes)
+    return is_q_corner_box(boxes, i) or (x == y and (x - 1, y) in boxes)
 
 
 def is_q_corner_box(boxes, i):
