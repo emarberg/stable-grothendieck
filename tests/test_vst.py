@@ -176,27 +176,34 @@ def test_hat_b(n=10):
         for lam in Partition.shifted_ribbon_complements(nu):
             ans = Tableau.shifted_setvalued_copieri(nu, lam, diagonal_primes=False)
 
-            kappa = Partition.trim((Partition.get(nu, 1) + 2,) + lam)
-            a, b, c, d = shifted_ribbon_q_params(kappa, nu)
+            for e in [1, 2, 3, 4]:
+                kappa = Partition.trim((Partition.get(nu, 1) + e,) + lam)
+                a, b, c, d = shifted_ribbon_q_params(kappa, nu)
 
-            u = Polynomial.monomial(1)
-            f = (2 * u + beta)**(b - 1) * 2**a * (u + beta)**(a + b + c - 1)
-            g = 0
-            for r in ans:
-                s = Partition.get(kappa, 1) - r
-                g += beta**(sum(kappa) - sum(nu) - s) * len(ans[r]) * u**(s - d)
-            print('kappa =', kappa, 'nu =', nu, 'lambda =', lam)
-            try:
-                assert f == g
-            except:
-                print()
-                print('a =', a, 'b =', b, 'c =', c, 'd =', d)
-                Partition.print_shifted(kappa, nu)
-                print()
-                print(f, '==', g)
-                print()
-                print(ans)
-                input('\n?\n')
+                print('kappa =', kappa, 'nu =', nu, 'lambda =', lam)
+                try:
+                    u = Polynomial.monomial(1)
+                    if e == 1 and Partition.get(lam, 1) == Partition.get(nu, 1) and sum(lam) > 0:
+                        f = (2 * u + beta)**(b - 1) * 2**a * (u + beta)**(a + b + c)
+                    elif e == 1:
+                        f = (2 * u + beta)**b * 2**(a - 1) * (u + beta)**(a + b + c - 1)
+                    else:
+                        f = (2 * u + beta)**(b - 1) * 2**a * (u + beta)**(a + b + c - 1)
+
+                    g = 0
+                    for r in ans:
+                        s = Partition.get(kappa, 1) - r
+                        g += beta**(sum(kappa) - sum(nu) - s) * len(ans[r]) * u**(s - d + int(e == 1))
+                    assert f == g
+                except:
+                    print()
+                    print('a =', a, 'b =', b, 'c =', c, 'd =', d, 'e =', e)
+                    Partition.print_shifted(kappa, nu)
+                    print()
+                    print(ans)
+                    print(f, '==', g)
+                    traceback.print_exc()
+                    input('\n?\n')
 
 
 def is_first_in_group(boxes, i):
