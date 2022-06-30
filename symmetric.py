@@ -427,6 +427,20 @@ class SymmetricPolynomial(Vector):
             return Vector()
 
     @classmethod
+    def transposed_dual_grothendieck_expansion(cls, f):
+        if f:
+            t = max(f.highest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            g = cls.transposed_dual_grothendieck(n, mu)
+            assert g[t] == 1
+            ans = cls.transposed_dual_grothendieck(f - c * g)
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
     def gp_expansion(cls, f):  # noqa
         if f:
             t = max(f.highest_degree_terms())
@@ -635,7 +649,30 @@ class SymmetricPolynomial(Vector):
         )
 
     @classmethod
-    def _slow_transposed_dual_stable_grothendieck_p(cls, num_variables, mu, nu=()):
+    def _slow_transposed_dual_stable_grothendieck(cls, num_variables, mu, nu=(), beta=BETA):
+        p = Polynomial.zero()
+        for tab in Tableau.semistandard(num_variables, mu, nu):
+            m = 1
+            for i in range(1, num_variables + 1):
+                r = len({x for x, y, v in tab if v[0] == i})
+                a = len({(x, y) for x, y, v in tab if v[0] == i})
+                x = Polynomial.x(i)
+                m *= x**r * (x + 1)**(a - r)
+            p += m
+        dictionary = {}
+        for e in p:
+            tup = num_variables * [0]
+            for i in e:
+                tup[i - 1] = e[i]
+            dictionary[tuple(tup)] = p[e]
+        return SymmetricPolynomial({
+            SymmetricMonomial(num_variables, alpha): coeff * (-beta**-1)**(sum(alpha))
+            for alpha, coeff in dictionary.items()
+            if Partition.is_partition(alpha)
+        }) * (-beta)**(sum(mu) - sum(nu))
+
+    @classmethod
+    def _slow_transposed_dual_stable_grothendieck_p(cls, num_variables, mu, nu=(), beta=BETA):
         p = Polynomial.zero()
         for tab in Tableau.semistandard_shifted_marked(num_variables, mu, nu, diagonal_primes=False):
             m = 1
@@ -653,13 +690,13 @@ class SymmetricPolynomial(Vector):
                 tup[i - 1] = e[i]
             dictionary[tuple(tup)] = p[e]
         return SymmetricPolynomial({
-            SymmetricMonomial(num_variables, alpha): coeff * (-BETA**-1)**(sum(alpha))
+            SymmetricMonomial(num_variables, alpha): coeff * (-beta**-1)**(sum(alpha))
             for alpha, coeff in dictionary.items()
             if Partition.is_partition(alpha)
-        }) * (-BETA)**(sum(mu) - sum(nu))
+        }) * (-beta)**(sum(mu) - sum(nu))
 
     @classmethod
-    def _slow_transposed_dual_stable_grothendieck_q(cls, num_variables, mu, nu=()):
+    def _slow_transposed_dual_stable_grothendieck_q(cls, num_variables, mu, nu=(), beta=BETA):
         p = Polynomial.zero()
         for tab in Tableau.semistandard_shifted_marked(num_variables, mu, nu):
             m = 1
@@ -677,10 +714,10 @@ class SymmetricPolynomial(Vector):
                 tup[i - 1] = e[i]
             dictionary[tuple(tup)] = p[e]
         return SymmetricPolynomial({
-            SymmetricMonomial(num_variables, alpha): coeff * (-BETA**-1)**(sum(alpha))
+            SymmetricMonomial(num_variables, alpha): coeff * (-beta**-1)**(sum(alpha))
             for alpha, coeff in dictionary.items()
             if Partition.is_partition(alpha)
-        }) * (-BETA)**(sum(mu) - sum(nu))
+        }) * (-beta)**(sum(mu) - sum(nu))
 
     @classmethod
     def _diag_vector(cls, rpp):

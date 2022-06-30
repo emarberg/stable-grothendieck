@@ -314,6 +314,10 @@ class Partition:
         return ans
 
     @classmethod
+    def peak_compositions(cls, n):
+        return [alpha for alpha in cls.compositions(n) if all(a >= 2 for a in alpha[:-1])]
+
+    @classmethod
     def all(cls, n, max_part=None, max_row=None, strict=False, even_parts=False):
         for i in range(n + 1):
             for mu in cls.generate(i, max_part=max_part, max_row=max_row, strict=strict, even_parts=even_parts):

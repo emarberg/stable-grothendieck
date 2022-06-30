@@ -94,6 +94,7 @@ G_doublebar = grothendieck_doublebar
 GP_doublebar = grothendieck_P_doublebar
 GQ_doublebar = grothendieck_Q_doublebar
 
+j = SymmetricPolynomial._slow_transposed_dual_stable_grothendieck
 g = dual_grothendieck
 gp = dual_grothendieck_P
 gq = dual_grothendieck_Q
@@ -105,6 +106,7 @@ schur_expansion = SymmetricPolynomial.schur_expansion
 
 G_expansion = SymmetricPolynomial.grothendieck_expansion
 g_expansion = SymmetricPolynomial.dual_grothendieck_expansion
+j_expansion = SymmetricPolynomial.transposed_dual_grothendieck_expansion
 
 gp_expansion = SymmetricPolynomial.gp_expansion
 gq_expansion = SymmetricPolynomial.gq_expansion
