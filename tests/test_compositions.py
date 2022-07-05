@@ -57,12 +57,10 @@ def shribbon_multiplier(alpha, gamma):
         b = list(alpha)
         b[-1] += gamma[0] 
         b += list(gamma[1:])
-        b = tuple(b)
 
         c = list(alpha)
         c[-1] += gamma[0] - 1
         c += list(gamma[1:])
-        c = tuple(c)
 
         g = list(gamma)
         g[0] -= 1
@@ -70,26 +68,88 @@ def shribbon_multiplier(alpha, gamma):
         d = list(alpha)
         d[-1] += 1
         d += g
-        d = tuple(d)
 
         e = list(alpha)
         e += g
-        e = tuple(e)
 
         if is_peak_composition(a):
-            yield a, 1
+            yield tuple(a), 1
         if is_peak_composition(b):
-            yield b, 1
+            yield tuple(b), 1
         if is_peak_composition(c):
-            yield c, beta
+            yield tuple(c), beta
         if is_peak_composition(d):
-            yield d, 1
+            yield tuple(d), 1
         if is_peak_composition(e):
-            yield e, beta
+            yield tuple(e), beta
+
+
+def bar_shribbon_multiplier(alpha, gamma):
+    if sum(alpha) == 0:
+        yield gamma, 1
+    elif sum(gamma) == 0:
+        yield alpha, 1
+    else:
+        a = alpha + gamma
+            
+        b = list(alpha)
+        b[-1] += gamma[0] 
+        b += list(gamma[1:])
+
+        c = list(alpha)
+        c[-1] += gamma[0] - 1
+        c += list(gamma[1:])
+
+        g = list(gamma)
+        g[0] -= 1
+
+        d = list(alpha)
+        d[-1] += 1
+        d += g
+
+        e = list(alpha)
+        e += g
+
+        f = list(alpha)
+        f[-1] += gamma[0] - 2
+        f += list(gamma[1:])
+
+        if is_peak_composition(a):
+            yield tuple(a), 1
+        if is_peak_composition(b):
+            yield tuple(b), 2
+        if is_peak_composition(c):
+            if alpha[-1] > 1 and gamma[0] > 2:
+                coeff = 3
+            elif alpha[-1] > 1 or gamma[0] > 2:
+                coeff = 2
+            else:
+                coeff = 1
+            yield tuple(c), coeff * beta
+        if is_peak_composition(d):
+            yield tuple(d), 1
+        if is_peak_composition(e):
+            yield tuple(e), beta
+        if alpha[-1] > 1 and gamma[0] > 2 and is_peak_composition(f):
+            yield tuple(f), beta**2
 
 
 def Ribbon(alpha, multiplier=ribbon_multiplier):
     return Vector({alpha: 1}, multiplier=multiplier)
+
+
+def barShRibbon(alpha):
+    ans = 0
+    n = len(alpha)
+    for v in range(2**n):
+        delta = list(alpha)
+        for i in range(n):
+            delta[i] -= v % 2
+            v = v // 2
+        if any(d < 2 for d in delta[:-1]):
+            continue
+        ans += ShRibbon(tuple(delta)) * 2**(n + sum(delta) - sum(alpha)) * beta**(sum(alpha) - sum(delta))
+    return ans
 
 
 def ShRibbon(alpha):
@@ -101,6 +161,19 @@ def ShRibbon(alpha):
     return ans
 
 
+
+def barShRibbon_expansion(f):
+    ans = 0
+    while f != 0:
+        alpha = max(f)
+        two = 2**len(alpha)
+        coeff = f[alpha]
+        assert coeff % two == 0
+        ans += Ribbon(alpha) * (coeff // two)
+        f -= barShRibbon(alpha) * (coeff // two)
+    return ans
+
+
 def ShRibbon_expansion(f):
     ans = 0
     while f != 0:
@@ -109,6 +182,8 @@ def ShRibbon_expansion(f):
         ans += Ribbon(alpha) * coeff
         f -= ShRibbon(alpha) * coeff
     return ans
+
+
 
 
 def test_shribbon_product(n=5):
@@ -130,3 +205,23 @@ def test_shribbon_product(n=5):
                         print('\n')
                     # assert expected == computed
 
+
+def test_bar_shribbon_product(n=5):
+    for p in range(1, n + 1):
+        for q in range(1, n + 1):
+            for alpha in Partition.peak_compositions(p):
+                for gamma in Partition.peak_compositions(q):
+                    if len(alpha) == 1 or len(gamma) == 1:
+                        continue
+                    expected = Ribbon(alpha, bar_shribbon_multiplier) * Ribbon(gamma, bar_shribbon_multiplier)
+                    computed = barShRibbon_expansion(barShRibbon(alpha) * barShRibbon(gamma))
+                    if expected != computed:
+                        print('alpha =', alpha, 'gamma =', gamma)
+                        print('expected =', expected)
+                        print('computed =', computed)
+                        input('\n')
+                    else:
+                        print('alpha =', alpha, 'gamma =', gamma)
+                        print('expected =', expected)
+                        print('.')
+                        print('\n')
