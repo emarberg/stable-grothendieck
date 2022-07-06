@@ -114,24 +114,21 @@ def bar_shribbon_multiplier(alpha, gamma):
         f[-1] += gamma[0] - 2
         f += list(gamma[1:])
 
+        p = int(alpha[-1] > 1)
+        q = int(gamma[0] > 2 or gamma == (2,))
+
         if is_peak_composition(a):
             yield tuple(a), 1
         if is_peak_composition(b):
             yield tuple(b), 2
         if is_peak_composition(c):
-            if alpha[-1] > 1 and gamma[0] > 2:
-                coeff = 3
-            elif alpha[-1] > 1 or gamma[0] > 2:
-                coeff = 2
-            else:
-                coeff = 1
-            yield tuple(c), coeff * beta
+            yield tuple(c), (1 + p + q) * beta
         if is_peak_composition(d):
             yield tuple(d), 1
         if is_peak_composition(e):
             yield tuple(e), beta
-        if alpha[-1] > 1 and gamma[0] > 2 and is_peak_composition(f):
-            yield tuple(f), beta**2
+        if is_peak_composition(f):
+            yield tuple(f), p * q * beta**2
 
 
 def Ribbon(alpha, multiplier=ribbon_multiplier):
@@ -211,8 +208,6 @@ def test_bar_shribbon_product(n=5):
         for q in range(1, n + 1):
             for alpha in Partition.peak_compositions(p):
                 for gamma in Partition.peak_compositions(q):
-                    if len(alpha) == 1 or len(gamma) == 1:
-                        continue
                     expected = Ribbon(alpha, bar_shribbon_multiplier) * Ribbon(gamma, bar_shribbon_multiplier)
                     computed = barShRibbon_expansion(barShRibbon(alpha) * barShRibbon(gamma))
                     if expected != computed:
