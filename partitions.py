@@ -377,7 +377,7 @@ class Partition:
         for i in range(len(alpha)):
             nu.append(sum(alpha[i:]))
             lam.append(sum(alpha[i + 1:]))
-        return nu, lam
+        return Partition.trim(nu), Partition.trim(lam)
 
     @classmethod
     def shifted_ribbons(cls, n):

@@ -8,6 +8,9 @@ class Vector:
         self.printer = printer
         self.multiplier = multiplier
 
+    def __hash__(self):
+        return hash(str(self))
+
     @classmethod
     def print_matrix(cls, matrix):
         print()

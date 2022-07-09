@@ -111,6 +111,8 @@ j_expansion = SymmetricPolynomial.transposed_dual_grothendieck_expansion
 gp_expansion = SymmetricPolynomial.gp_expansion
 gq_expansion = SymmetricPolynomial.gq_expansion
 
+gp_free_expansion = SymmetricPolynomial.gp_free_expansion
+
 jp_expansion = SymmetricPolynomial.jp_expansion
 jq_expansion = SymmetricPolynomial.jq_expansion
 

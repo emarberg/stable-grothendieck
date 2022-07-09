@@ -441,6 +441,21 @@ class SymmetricPolynomial(Vector):
             return Vector()
 
     @classmethod
+    def gp_free_expansion(cls, f):  # noqa
+        if f:
+            exp = cls.gp_expansion(f)
+            mu = max(exp)
+            n = max(f).n
+            c = exp[mu]
+            g = 1
+            for part in mu:
+                g *= cls.dual_stable_grothendieck_p(n, (part,))
+            ans = cls.gp_free_expansion(f - c * g)
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
     def gp_expansion(cls, f):  # noqa
         if f:
             t = max(f.highest_degree_terms())

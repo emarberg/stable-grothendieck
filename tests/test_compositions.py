@@ -1,6 +1,57 @@
 from partitions import Partition
 from polynomials import beta
 from vectors import Vector
+from utils import g, g_expansion, gp, gp_expansion
+
+
+g_skew_cache = {'computed': set()}
+gp_skew_cache = {'computed': set()}
+
+
+def generate_g_skew_cache(nvars, nboxes):
+    if (nvars, nboxes) in g_skew_cache['computed']:
+        return
+    for lam in Partition.all(nboxes):
+        for mu in Partition.subpartitions(lam):
+            f = g_expansion(g(nvars, lam, mu))
+            if f not in g_skew_cache:
+                g_skew_cache[f] = []
+            g_skew_cache[f].append((nvars, lam, mu))
+    g_skew_cache['computed'].add((nvars, nboxes))
+
+
+def find_g_skew(nvars, f, limit=8):
+    seen = set()
+    for nboxes in range(limit + 1):
+        print('nboxes =', nboxes)
+        generate_g_skew_cache(nvars, nboxes)
+        for _, lam, nu in g_skew_cache.get(f, []):
+            if (lam, nu) not in seen:
+                yield lam, nu
+                seen.add((lam, nu))
+
+
+def generate_gp_skew_cache(nvars, nboxes):
+    if (nvars, nboxes) in gp_skew_cache['computed']:
+        return
+    for lam in Partition.all(nboxes, strict=True):
+        for mu in Partition.subpartitions(lam, strict=True):
+            f = gp_expansion(gp(nvars, lam, mu))
+            if f not in gp_skew_cache:
+                gp_skew_cache[f] = []
+            gp_skew_cache[f].append((nvars, lam, mu))
+    gp_skew_cache['computed'].add((nvars, nboxes))
+
+
+def find_gp_skew(nvars, f, limit=8):
+    seen = set()
+    for nboxes in range(limit + 1):
+        print('nboxes =', nboxes)
+        generate_gp_skew_cache(nvars, nboxes)
+        for _, lam, nu in gp_skew_cache.get(f, []):
+            if (lam, nu) not in seen:
+                yield lam, nu
+                seen.add((lam, nu))
 
 
 def is_peak_composition(alpha):
@@ -21,6 +72,23 @@ def Lambda(alpha):
     des = I(alpha)
     des = [0] + [i for i in des if 0 < i - 1 and i - 1 not in des] + [sum(alpha)]
     return tuple(des[i] - des[i - 1] for i in range(1, len(des)))
+
+
+def ribbon_multiplier_homogeneous(alpha, gamma):
+    if sum(alpha) == 0:
+        yield gamma, 1
+    elif sum(gamma) == 0:
+        yield alpha, 1
+    else:
+        a = alpha + gamma
+            
+        b = list(alpha)
+        b[-1] += gamma[0] 
+        b += list(gamma[1:])
+        b = tuple(b)
+
+        yield a, 1
+        yield b, 1
 
 
 def ribbon_multiplier(alpha, gamma):
@@ -44,6 +112,33 @@ def ribbon_multiplier(alpha, gamma):
         yield a, 1
         yield b, 1
         yield c, beta
+
+
+def shribbon_multiplier_homogeneous(alpha, gamma):
+    if sum(alpha) == 0:
+        yield gamma, 1
+    elif sum(gamma) == 0:
+        yield alpha, 1
+    else:
+        a = alpha + gamma
+            
+        b = list(alpha)
+        b[-1] += gamma[0] 
+        b += list(gamma[1:])
+
+        g = list(gamma)
+        g[0] -= 1
+
+        d = list(alpha)
+        d[-1] += 1
+        d += g
+
+        if is_peak_composition(a):
+            yield tuple(a), 1
+        if is_peak_composition(b):
+            yield tuple(b), 1
+        if is_peak_composition(d):
+            yield tuple(d), 1
 
 
 def shribbon_multiplier(alpha, gamma):
@@ -158,6 +253,14 @@ def ShRibbon(alpha):
     return ans
 
 
+def ShRibbon_homogeneous(alpha):
+    ans = 0
+    n = sum(alpha)
+    for gamma in Partition.compositions(n):
+        if Lambda(gamma) == alpha:
+            ans += Ribbon(gamma, ribbon_multiplier_homogeneous)
+    return ans
+
 
 def barShRibbon_expansion(f):
     ans = 0
@@ -178,6 +281,87 @@ def ShRibbon_expansion(f):
         coeff = f[alpha]
         ans += Ribbon(alpha) * coeff
         f -= ShRibbon(alpha) * coeff
+    return ans
+
+
+
+def Ribbon_free_expansion(f):
+    ans = 0
+    n = 0
+    while f != 0:
+        alpha = max(f)
+        n = max(n, 1 + len(alpha))
+        term = 1
+        for a in alpha:
+            term *= Ribbon((a,))
+        coeff = f[alpha]
+        ans += Ribbon(alpha) * coeff
+        f -= term * coeff
+    return ans
+
+
+def map_g(n, vec):
+    bns = 0
+    for alpha, coeff in vec.items():
+        term = 1
+        for a in alpha:
+            term *= g(n, (a,))
+        bns += term * coeff
+    return g_expansion(bns)   
+
+
+def ShRibbon_free_expansion(f):
+    ans = 0
+    n = 0
+    while f != 0:
+        alpha = max(f)
+        coeff = f[alpha]
+        n = max(n, 1 + len(alpha))
+        term = 1
+        
+        gamma = []
+        for a in alpha:
+            if a % 2 == 0:
+                gamma += [1, a - 1]
+            else:
+                gamma += [a]
+        alpha = tuple(gamma)
+
+        for a in alpha:
+            term *= ShRibbon((a,))
+
+        ans += Ribbon(alpha) * coeff
+        f -= term * coeff
+    return ans
+
+
+def map_gp(n, vec):
+    bns = 0
+    for alpha, coeff in vec.items():
+        term = 1
+        for a in alpha:
+            term *= gp(n, (a,))
+        bns += term * coeff
+    return gp_expansion(bns)   
+
+
+def barShRibbon_free_expansion(f):
+    ans = 0
+    n = 0
+    while f != 0:
+        alpha = max(f)
+        n = max(n, 1 + len(alpha))
+        term = 1
+        for a in alpha:
+            term *= barShRibbon((a,))
+        
+        two = 2**len(alpha)
+        coeff = f[alpha]
+        assert coeff % two == 0
+        coeff = coeff // two
+        
+        ans += Ribbon(alpha) * coeff
+        f -= term * coeff
     return ans
 
 
@@ -220,3 +404,24 @@ def test_bar_shribbon_product(n=5):
                         print('expected =', expected)
                         print('.')
                         print('\n')
+
+
+def omega(n):
+    return ShRibbon((n,)) if n != 2 else ShRibbon((2,)) + beta * ShRibbon((1,))
+
+
+def test_omega(n):
+    def r(k):
+        return ShRibbon((k,))
+
+    for k in range(1, n + 1):
+        lhs = r(1) * r(k)
+        rhs = 0 if k % 2 == 0 else r(k + 1)
+        for i in range(k - 1):
+            rhs += (-1) ** i * r(i + 2) * r(k - 1 - i)
+        if lhs != rhs:
+            print('R_1 * R_' + str(k))
+            print()
+            print(lhs, '==', rhs)
+        assert lhs == rhs
+
