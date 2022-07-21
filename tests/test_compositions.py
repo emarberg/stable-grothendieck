@@ -8,6 +8,21 @@ g_skew_cache = {'computed': set()}
 gp_skew_cache = {'computed': set()}
 
 
+def transpose(alpha):
+    n = sum(alpha)
+    alpha = reversed(alpha)
+    des = []
+    for a in alpha:
+        des.append(a + (des[-1] if des else 0))
+    des = [0] + sorted(set(range(1, n)) - set(des))
+    ans = []
+    for i in range(1, len(des)):
+        ans.append(des[i] - des[i - 1])
+    if n > 0:
+        ans.append(n - des[-1])
+    return tuple(ans)
+
+
 def generate_g_skew_cache(nvars, nboxes):
     if (nvars, nboxes) in g_skew_cache['computed']:
         return
@@ -284,13 +299,49 @@ def ShRibbon_expansion(f):
     return ans
 
 
+SIMPLE_ANTIPODE_CACHE = {}
+
+
+def simple_antipode_in_ribbon_basis(n):
+    if n in SIMPLE_ANTIPODE_CACHE:
+        return SIMPLE_ANTIPODE_CACHE[n]
+    
+    ans = 0
+    g = Ribbon_free_expansion(Ribbon(n * (1,)))
+    for alpha, coeff in g.items():
+        if type(coeff) != int and coeff.substitute(0, 0) == 0:
+            continue
+        term = 1
+        for a in alpha:
+            term *= Ribbon((a,))
+        ans += term * coeff
+    ans = ans * (-1)**n
+
+    SIMPLE_ANTIPODE_CACHE[n] = ans
+    return ans
+
+
+def antipode_in_ribbon_basis(f):
+    g = Ribbon_free_expansion(f)
+    ans = 0
+    for alpha, coeff in g.items():
+        term = 1
+        for a in reversed(alpha):
+            term *= simple_antipode_in_ribbon_basis(a)
+        ans += term * coeff
+    return ans
+
+
+def test_antipode(n=5):
+    for p in range(1, n + 1):
+        for alpha in Partition.peak_compositions(p):
+            pass
+
 
 def Ribbon_free_expansion(f):
     ans = 0
-    n = 0
     while f != 0:
         alpha = max(f)
-        n = max(n, 1 + len(alpha))
         term = 1
         for a in alpha:
             term *= Ribbon((a,))
@@ -312,11 +363,9 @@ def map_g(n, vec):
 
 def ShRibbon_free_expansion(f):
     ans = 0
-    n = 0
     while f != 0:
         alpha = max(f)
         coeff = f[alpha]
-        n = max(n, 1 + len(alpha))
         term = 1
         
         gamma = []
@@ -347,10 +396,8 @@ def map_gp(n, vec):
 
 def barShRibbon_free_expansion(f):
     ans = 0
-    n = 0
     while f != 0:
         alpha = max(f)
-        n = max(n, 1 + len(alpha))
         term = 1
         for a in alpha:
             term *= barShRibbon((a,))
