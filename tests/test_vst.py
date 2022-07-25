@@ -539,7 +539,6 @@ def test_comarked_p_ribbons(n=7):
 
 
 def print_transition(vst, i):
-    altered = vst.is_altered(i)
     f = vst.forward_transition(i)
     print(combine_str(vst, f))
     m, case = f.middle_transition(i)
@@ -547,7 +546,6 @@ def print_transition(vst, i):
     image = vst.transition(i)
     post = image.transition(i)
     print(combine_str(vst, f, m, b, image, post))
-    print('is altered:', altered, '->', image.is_altered(i), '| middle case:', case)
 
 
 def _test_small(k=9, dnp=True, verbose=False):
