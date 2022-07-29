@@ -155,3 +155,24 @@ def test_pi_q(nn=6):
                 gamma = tuple(gamma)
                 rhs += pi_p(gamma) * coeff
             assert lhs == rhs
+
+
+def test_inverse_pi_q(nn=6):
+    for n in range(nn + 1):
+        print('* testing n=', n)
+        for alpha in Partition.compositions(n):
+            ell = len(alpha)
+            lhs = pi_p(alpha) * 2**(n + ell)
+            if lhs == 0:
+                continue
+
+            rhs = Vector()
+            for m in range(sum(alpha) + 1):
+                for gamma in Partition.compositions(m):
+                    if len(gamma) != ell:
+                        continue
+                    if not all(gamma[i] <= alpha[i] for i in range(ell)):
+                        continue
+                    delta = sum(alpha) - sum(gamma)
+                    rhs += pi_q(gamma) * 2**sum(gamma) * (-beta)**delta
+            assert lhs == rhs
