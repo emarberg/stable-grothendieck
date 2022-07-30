@@ -540,12 +540,13 @@ def test_comarked_p_ribbons(n=7):
 
 def print_transition(vst, i):
     f = vst.forward_transition(i)
-    print(combine_str(vst, f))
     m, case = f.middle_transition(i)
     b = m.backward_transition(i)
     image = vst.transition(i)
     post = image.transition(i)
     print(combine_str(vst, f, m, b, image, post))
+    print()
+    print('reverse weight case:', case)
 
 
 def _test_small(k=9, dnp=True, verbose=False):
@@ -590,6 +591,10 @@ def _test_small(k=9, dnp=True, verbose=False):
                     assert vst == post
 
                     if verbose:
+                        print('\nverbose on, printing transitions:')
+                        print_transition(vst, 1)
+                        print(5 * '\n')
+                        input('')
                         key = image
                         seen[key] = seen.get(key, []) + [vst]
                         assert len(seen[key]) == 1
