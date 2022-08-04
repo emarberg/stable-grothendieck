@@ -253,7 +253,7 @@ def barShRibbon(alpha):
         for i in range(n):
             delta[i] -= v % 2
             v = v // 2
-        if any(d < 2 for d in delta[:-1]):
+        if any(d < 2 for d in delta[:-1]) or (n > 0 and delta[-1] < 1):
             continue
         ans += ShRibbon(tuple(delta)) * 2**(n + sum(delta) - sum(alpha)) * beta**(sum(alpha) - sum(delta))
     return ans
@@ -262,6 +262,8 @@ def barShRibbon(alpha):
 def ShRibbon(alpha):
     ans = 0
     n = sum(alpha)
+    if any(d < 2 for d in alpha[:-1]) or (n > 0 and alpha[-1] < 1):
+        raise Exception()
     for gamma in Partition.compositions(n):
         if Lambda(gamma) == alpha:
             ans += Ribbon(gamma)
@@ -410,8 +412,6 @@ def barShRibbon_free_expansion(f):
         ans += Ribbon(alpha) * coeff
         f -= term * coeff
     return ans
-
-
 
 
 def test_shribbon_product(n=5):
