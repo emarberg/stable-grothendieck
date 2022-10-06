@@ -355,6 +355,24 @@ class SymmetricPolynomial(Vector):
         return BETA**(sum(nu) - sum(mu)) * cls._vectorize(num_variables, tableaux, BETA, degree_bound)
 
     @classmethod
+    def mp_dual_stable_grothendieck(cls, num_variables, mu, nu=()):  # noqa
+        ans = cls.dual_stable_grothendieck(num_variables, mu, nu)
+        dictionary = {k: v.substitute(0, -BETA) for (k, v) in ans.dictionary.items()}
+        return SymmetricPolynomial(dictionary, ans.printer, ans.multiplier)
+
+    @classmethod
+    def mp_dual_stable_grothendieck_p(cls, num_variables, mu, nu=()):  # noqa
+        ans = cls.dual_stable_grothendieck_p(num_variables, mu, nu)
+        dictionary = {k: v.substitute(0, -BETA) for (k, v) in ans.dictionary.items()}
+        return SymmetricPolynomial(dictionary, ans.printer, ans.multiplier)
+
+    @classmethod
+    def mp_dual_stable_grothendieck_q(cls, num_variables, mu, nu=()):  # noqa
+        ans = cls.dual_stable_grothendieck_q(num_variables, mu, nu)
+        dictionary = {k: v.substitute(0, -BETA) for (k, v) in ans.dictionary.items()}
+        return SymmetricPolynomial(dictionary, ans.printer, ans.multiplier)
+
+    @classmethod
     def dual_stable_grothendieck(cls, num_variables, mu, nu=()):  # noqa
         return cls._dual_stable_grothendieck(num_variables, mu, nu)
 
@@ -427,6 +445,20 @@ class SymmetricPolynomial(Vector):
             return Vector()
 
     @classmethod
+    def mp_dual_grothendieck_expansion(cls, f):
+        if f:
+            t = max(f.highest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            g = cls.mp_dual_stable_grothendieck(n, mu)
+            assert g[t] == 1
+            ans = cls.mp_dual_grothendieck_expansion(f - c * g)
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
     def transposed_dual_grothendieck_expansion(cls, f):
         if f:
             t = max(f.highest_degree_terms())
@@ -481,6 +513,36 @@ class SymmetricPolynomial(Vector):
             assert c % 2**len(mu) == 0
             c = c // 2**len(mu)
             ans = cls.gq_expansion(f - c * g)
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
+    def mp_gp_expansion(cls, f):  # noqa
+        if f:
+            t = max(f.highest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            g = cls.mp_dual_stable_grothendieck_p(n, mu)
+            assert g[t] == 1
+            ans = cls.mp_gp_expansion(f - c * g)
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
+    def mp_gq_expansion(cls, f):  # noqa
+        if f:
+            t = max(f.highest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            g = cls.mp_dual_stable_grothendieck_q(n, mu)
+            assert g[t] == 2**len(mu)
+            assert c % 2**len(mu) == 0
+            c = c // 2**len(mu)
+            ans = cls.mp_gq_expansion(f - c * g)
             return ans + Vector({mu: c})
         else:
             return Vector()

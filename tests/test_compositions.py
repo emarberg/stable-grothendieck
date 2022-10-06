@@ -8,6 +8,21 @@ g_skew_cache = {'computed': set()}
 gp_skew_cache = {'computed': set()}
 
 
+def print_antipode_test(alpha):
+    v=barShRibbon_expansion(antipode_in_ribbon_basis(barShRibbon(alpha)))
+    for a in v:
+        print(v[a])
+        Partition.print_shifted(*Partition.shifted_ribbon(a))
+        print()
+    print()
+    print()
+    gamma = list(reversed(alpha))
+    gamma[-1] -= 1
+    gamma[0] += 1
+    gamma = tuple(gamma)
+    Partition.print_shifted(*Partition.shifted_ribbon(gamma))
+
+
 def transpose(alpha):
     n = sum(alpha)
     alpha = reversed(alpha)
