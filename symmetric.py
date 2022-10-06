@@ -355,22 +355,33 @@ class SymmetricPolynomial(Vector):
         return BETA**(sum(nu) - sum(mu)) * cls._vectorize(num_variables, tableaux, BETA, degree_bound)
 
     @classmethod
-    def mp_dual_stable_grothendieck(cls, num_variables, mu, nu=()):  # noqa
-        ans = cls.dual_stable_grothendieck(num_variables, mu, nu)
+    def negate_beta(cls, ans):
         dictionary = {k: v.substitute(0, -BETA) for (k, v) in ans.dictionary.items()}
         return SymmetricPolynomial(dictionary, ans.printer, ans.multiplier)
+
+    @classmethod
+    def mp_dual_stable_grothendieck(cls, num_variables, mu, nu=()):  # noqa
+        return cls.negate_beta(cls.dual_stable_grothendieck(num_variables, mu, nu))
 
     @classmethod
     def mp_dual_stable_grothendieck_p(cls, num_variables, mu, nu=()):  # noqa
-        ans = cls.dual_stable_grothendieck_p(num_variables, mu, nu)
-        dictionary = {k: v.substitute(0, -BETA) for (k, v) in ans.dictionary.items()}
-        return SymmetricPolynomial(dictionary, ans.printer, ans.multiplier)
+        return cls.negate_beta(cls.dual_stable_grothendieck_p(num_variables, mu, nu))
 
     @classmethod
     def mp_dual_stable_grothendieck_q(cls, num_variables, mu, nu=()):  # noqa
-        ans = cls.dual_stable_grothendieck_q(num_variables, mu, nu)
-        dictionary = {k: v.substitute(0, -BETA) for (k, v) in ans.dictionary.items()}
-        return SymmetricPolynomial(dictionary, ans.printer, ans.multiplier)
+        return cls.negate_beta(cls.dual_stable_grothendieck_q(num_variables, mu, nu))
+
+    @classmethod
+    def mn_stable_grothendieck(cls, num_variables, mu, nu=()):  # noqa
+        return cls.negate_beta(cls.stable_grothendieck(num_variables, mu, nu))
+
+    @classmethod
+    def mn_stable_grothendieck_p(cls, num_variables, mu, nu=()):  # noqa
+        return cls.negate_beta(cls.stable_grothendieck_p(num_variables, mu, nu))
+
+    @classmethod
+    def mn_stable_grothendieck_q(cls, num_variables, mu, nu=()):  # noqa
+        return cls.negate_beta(cls.stable_grothendieck_q(num_variables, mu, nu))
 
     @classmethod
     def dual_stable_grothendieck(cls, num_variables, mu, nu=()):  # noqa
@@ -426,6 +437,18 @@ class SymmetricPolynomial(Vector):
             c = f[t]
             mu = t.index()
             ans = cls.grothendieck_expansion(f - c * cls.stable_grothendieck(n, mu))
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
+    def mn_grothendieck_expansion(cls, f):
+        if f:
+            t = max(f.lowest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            ans = cls.mn_grothendieck_expansion(f - c * cls.mn_stable_grothendieck(n, mu))
             return ans + Vector({mu: c})
         else:
             return Vector()
@@ -590,6 +613,19 @@ class SymmetricPolynomial(Vector):
         else:
             return Vector()
 
+
+    @classmethod
+    def mn_GP_expansion(cls, f):  # noqa
+        if f:
+            t = max(f.lowest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            ans = cls.mn_GP_expansion(f - c * cls.mn_stable_grothendieck_p(n, mu))
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
     @classmethod
     def P_expansion(cls, f):  # noqa
         if f:
@@ -614,6 +650,22 @@ class SymmetricPolynomial(Vector):
             assert c % 2**len(mu) == 0
             c = c // 2**len(mu)
             ans = cls.GQ_expansion(f - c * g)
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
+    def mn_GQ_expansion(cls, f):  # noqa
+        if f:
+            t = max(f.lowest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            g = cls.mn_stable_grothendieck_q(n, mu)
+            assert g[t] == 2**len(mu)
+            assert c % 2**len(mu) == 0
+            c = c // 2**len(mu)
+            ans = cls.mn_GQ_expansion(f - c * g)
             return ans + Vector({mu: c})
         else:
             return Vector()
