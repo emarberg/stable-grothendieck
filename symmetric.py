@@ -5,6 +5,7 @@ from polynomials import beta as BETA # noqa
 from cached import cached_value
 from collections import defaultdict
 import itertools
+import traceback
 
 
 SCHUR_CACHE = {}
@@ -431,26 +432,53 @@ class SymmetricPolynomial(Vector):
         return (-BETA)**(sum(mu) - sum(nu)) * cls._vectorize(num_variables, tableaux, -BETA**-1)
 
     @classmethod
-    def _expansion(cls, f, function, get_term_and_coefficient):
+    def _expansion(cls, f, function, get_term):
         if f:
-            t, c = get_term_and_coefficient(f)
+            t = get_term(f)
             n = t.n
             mu = t.index()
-            g = f - c * function(n, mu)
-            ans = cls._expansion(g, function, get_term_and_coefficient)
-            ans += Vector({mu: c})
-            assert sum(map(lambda xy: function(n, xy[0]) * xy[1], ans.items())) == f
+            g = function(n, mu)   
+            
+            try:
+                cpol = f[t]
+                c = cpol[max(cpol)]
+                cdeg = cpol.total_degree()
+        
+                assert g[t].is_integer()
+                d = g[t].constant_term()
+                
+                assert c % d == 0
+                g *=  c // d * BETA**cdeg
+                
+                ans = cls._expansion(f - g, function, get_term)
+                ans += Vector({mu: c}) 
+                expected = sum(map(lambda xy: function(n, xy[0]) * xy[1], ans.items()))
+                expected == f
+            except:
+                print(traceback.format_exc())
+                print(function.__name__)
+                print(f)
+                print(g)
+                print(n, t, mu, c, d)
+                input('\n\n')
+                raise Exception
             return ans
         else:
             return Vector()
 
     @classmethod
+    def _get_term_lowest_degree(cls, f):
+        return max(f.lowest_degree_terms())
+
+    @classmethod
+    def _get_term_from_highest_degree(cls, f):
+        return max(f.highest_degree_terms())
+        c = f[t]
+        return t, c
+
+    @classmethod
     def schur_expansion(cls, f):
-        def get_term_and_coefficient(f):
-            t = max(f)
-            c = f[t]
-            return t, c
-        return cls._expansion(f, cls.schur, get_term_and_coefficient)
+        return cls._expansion(f, cls.schur, cls._get_term_from_lowest_degree)
 
     @classmethod
     def omega_schur_expansion(cls, f):
@@ -461,65 +489,23 @@ class SymmetricPolynomial(Vector):
 
     @classmethod
     def grothendieck_expansion(cls, f):
-        def get_term_and_coefficient(f):
-            t = max(f.lowest_degree_terms())
-            c = f[t]
-            return t, c
-        return cls._expansion(f, cls.stable_grothendieck, get_term_and_coefficient)
+        return cls._expansion(f, cls.stable_grothendieck, cls._get_term_from_lowest_degree)
 
     @classmethod
     def mn_grothendieck_expansion(cls, f):
-        if f:
-            t = max(f.lowest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            ans = cls.mn_grothendieck_expansion(f - c * cls.mn_stable_grothendieck(n, mu))
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.mn_stable_grothendieck, cls._get_term_from_lowest_degree)
 
     @classmethod
     def dual_grothendieck_expansion(cls, f):
-        if f:
-            t = max(f.highest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.dual_stable_grothendieck(n, mu)
-            assert g[t] == 1
-            ans = cls.dual_grothendieck_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.dual_stable_grothendieck, cls._get_term_from_highest_degree)
 
     @classmethod
     def mp_dual_grothendieck_expansion(cls, f):
-        if f:
-            t = max(f.highest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.mp_dual_stable_grothendieck(n, mu)
-            assert g[t] == 1
-            ans = cls.mp_dual_grothendieck_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.mp_dual_stable_grothendieck, cls._get_term_from_highest_degree)
 
     @classmethod
     def j_expansion(cls, f):
-        if f:
-            t = max(f.highest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.slow_transposed_dual_stable_grothendieck(n, mu)
-            assert g[t] == 1
-            ans = cls.j_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.slow_transposed_dual_stable_grothendieck, cls._get_term_from_highest_degree)
 
     @classmethod
     def gp_free_expansion(cls, f):  # noqa
@@ -538,243 +524,67 @@ class SymmetricPolynomial(Vector):
 
     @classmethod
     def gp_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.highest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.dual_stable_grothendieck_p(n, mu)
-            assert g[t] == 1
-            ans = cls.gp_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.dual_stable_grothendieck_p, cls._get_term_from_highest_degree)
 
     @classmethod
     def gq_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.highest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.dual_stable_grothendieck_q(n, mu)
-            assert g[t] == 2**len(mu)
-            assert c % 2**len(mu) == 0
-            c = c // 2**len(mu)
-            ans = cls.gq_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.dual_stable_grothendieck_q, cls._get_term_from_highest_degree)
 
     @classmethod
     def gs_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.highest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.dual_stable_grothendieck_s(n, mu)
-            assert g[t] == 2**len(mu)
-            assert c % 2**len(mu) == 0
-            c = c // 2**len(mu)
-            ans = cls.gs_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.dual_stable_grothendieck_s, cls._get_term_from_highest_degree)
 
     @classmethod
     def mp_gp_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.highest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.mp_dual_stable_grothendieck_p(n, mu)
-            assert g[t] == 1
-            ans = cls.mp_gp_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.mp_dual_stable_grothendieck_p, cls._get_term_from_highest_degree)
 
     @classmethod
     def mp_gq_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.highest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.mp_dual_stable_grothendieck_q(n, mu)
-            assert g[t] == 2**len(mu)
-            assert c % 2**len(mu) == 0
-            c = c // 2**len(mu)
-            ans = cls.mp_gq_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
-
+        return cls._expansion(f, cls.mp_dual_stable_grothendieck_q, cls._get_term_from_highest_degree)
 
     @classmethod
     def jp_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.highest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.slow_transposed_dual_stable_grothendieck_p(n, mu)
-            assert g[t] == 1
-            ans = cls.jp_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.slow_transposed_dual_stable_grothendieck_p, cls._get_term_from_highest_degree)
 
     @classmethod
     def jq_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.highest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.slow_transposed_dual_stable_grothendieck_q(n, mu)
-            assert g[t] == 2**len(mu)
-            assert c % 2**len(mu) == 0
-            c = c // 2**len(mu)
-            ans = cls.jq_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.slow_transposed_dual_stable_grothendieck_q, cls._get_term_from_highest_degree)
 
     @classmethod
     def js_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.highest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.slow_transposed_dual_stable_grothendieck_s(n, mu)
-            assert g[t] == 2**len(mu)
-            assert c % 2**len(mu) == 0
-            c = c // 2**len(mu)
-            ans = cls.js_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.slow_transposed_dual_stable_grothendieck_s, cls._get_term_from_highest_degree)
 
     @classmethod
     def GP_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.lowest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            ans = cls.GP_expansion(f - c * cls.stable_grothendieck_p(n, mu))
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
-
+        return cls._expansion(f, cls.stable_grothendieck_p, cls._get_term_from_lowest_degree)
 
     @classmethod
     def mn_GP_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.lowest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            ans = cls.mn_GP_expansion(f - c * cls.mn_stable_grothendieck_p(n, mu))
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.mn_stable_grothendieck_p, cls._get_term_from_lowest_degree)
 
     @classmethod
     def P_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.lowest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            ans = cls.P_expansion(f - c * cls.schur_p(n, mu))
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.schur_p, cls._get_term_from_lowest_degree)
 
     @classmethod
     def GQ_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.lowest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.stable_grothendieck_q(n, mu)
-            assert g[t] == 2**len(mu)
-            assert c % 2**len(mu) == 0
-            c = c // 2**len(mu)
-            ans = cls.GQ_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.stable_grothendieck_q, cls._get_term_from_lowest_degree)
 
     @classmethod
     def GS_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.lowest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.stable_grothendieck_s(n, mu)
-            assert g[t] == 2**len(mu)
-            assert c % 2**len(mu) == 0
-            c = c // 2**len(mu)
-            ans = cls.GS_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.stable_grothendieck_s, cls._get_term_from_lowest_degree)
 
     @classmethod
     def mn_GQ_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.lowest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.mn_stable_grothendieck_q(n, mu)
-            assert g[t] == 2**len(mu)
-            assert c % 2**len(mu) == 0
-            c = c // 2**len(mu)
-            ans = cls.mn_GQ_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.mn_stable_grothendieck_q, cls._get_term_from_lowest_degree)
 
     @classmethod
     def Q_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.lowest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.schur_q(n, mu)
-            assert g[t] == 2**len(mu)
-            assert c % 2**len(mu) == 0
-            c = c // 2**len(mu)
-            ans = cls.Q_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.schur_q, cls._get_term_from_lowest_degree)
 
     @classmethod
     def S_expansion(cls, f):  # noqa
-        if f:
-            t = max(f.lowest_degree_terms())
-            n = t.n
-            c = f[t]
-            mu = t.index()
-            g = cls.schur_s(n, mu)
-            assert g[t] == 2**len(mu)
-            assert c % 2**len(mu) == 0
-            c = c // 2**len(mu)
-            ans = cls.S_expansion(f - c * g)
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+        return cls._expansion(f, cls.schur_s, cls._get_term_from_lowest_degree)
 
     @classmethod
     def _slow_vectorize(cls, n, tableaux, signs=None, check=True):

@@ -250,6 +250,9 @@ class Polynomial:
     def constant_term(self):
         return self[HashableDict({})]
 
+    def is_integer(self):
+        return self == self.constant_term()
+
     @classmethod
     def letters(cls, i):
         # if i == 0:

@@ -1,5 +1,6 @@
 from partitions import Partition
 from utils import *
+import traceback
 
 
 def partition_iterator(rows):
@@ -54,7 +55,7 @@ data = {
     'GP': (strict_partition_iterator, GP, GP_expansion),
     'GQ': (strict_partition_iterator, GQ, GQ_expansion),
     'GS': (strict_partition_iterator, GS, GS_expansion),
-#     'mp_g': (partition_iterator, mp_g, mp_g_expansion),
+#    'mp_g': (partition_iterator, mp_g, mp_g_expansion),
 #    'mp_gp': (strict_partition_iterator, mp_gp, mp_gp_expansion),
 #    'mp_gq': (strict_partition_iterator, mp_gq, mp_gq_expansion),
     'mn_G': (partition_iterator, mn_G, mn_G_expansion),
@@ -81,7 +82,7 @@ def decompose(n, iterator, function, decomp):
     try:
         expansion = decomp(f)
         return expansion.is_nonnegative()
-    except:
+    except Exception:
         return False
 
 
