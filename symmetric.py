@@ -441,33 +441,49 @@ class SymmetricPolynomial(Vector):
             
             try:
                 cpol = f[t]
-                c = cpol[max(cpol)]
-                cdeg = cpol.total_degree()
-        
-                assert g[t].is_integer()
-                d = g[t].constant_term()
-                
-                assert c % d == 0
-                g *=  c // d * BETA**cdeg
-                
-                ans = cls._expansion(f - g, function, get_term)
-                ans += Vector({mu: c}) 
+                if type(cpol) == int:
+                    c = cpol
+                    cdeg = 0
+                else:
+                    cdeg = cpol.total_degree()
+                    c = cpol.coefficient(0, cdeg)
+
+                if type(g[t]) == int:
+                    d = g[t]
+                else:
+                    assert g[t].is_integer()
+                    d = g[t].constant_term()
+            except:
+                print(traceback.format_exc())
+                print(function.__name__)
+                print('f[t] =', f[t], '==', c * BETA**cdeg, f)
+                print('g[t] =', g[t], '==', d, g)
+                input('\n\n')
+                raise Exception
+
+            assert c % d == 0
+            g *=  c // d * BETA**cdeg
+
+            ans = cls._expansion(f - g, function, get_term)
+            ans += Vector({mu: c})
+
+            try:
                 expected = sum(map(lambda xy: function(n, xy[0]) * xy[1], ans.items()))
                 expected == f
             except:
                 print(traceback.format_exc())
                 print(function.__name__)
-                print(f)
-                print(g)
-                print(n, t, mu, c, d)
+                print('f =', f)
+                print('expected =', expected)
                 input('\n\n')
                 raise Exception
+
             return ans
         else:
             return Vector()
 
     @classmethod
-    def _get_term_lowest_degree(cls, f):
+    def _get_term_from_lowest_degree(cls, f):
         return max(f.lowest_degree_terms())
 
     @classmethod
