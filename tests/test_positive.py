@@ -41,24 +41,37 @@ data = {
     's': (partition_iterator, s, schur_expansion),
     'P': (strict_partition_iterator, P, P_expansion),
     'Q': (strict_partition_iterator, Q, Q_expansion),
+    'S': (strict_partition_iterator, S, S_expansion),
+    'j': (partition_iterator, j, j_expansion),
     'g': (partition_iterator, g, g_expansion),
     'G': (partition_iterator, G, G_expansion),
+    'jp': (strict_partition_iterator, jp, jp_expansion),
+    'jq': (strict_partition_iterator, jq, jq_expansion),
+    'js': (strict_partition_iterator, js, js_expansion),
     'gp': (strict_partition_iterator, gp, gp_expansion),
     'gq': (strict_partition_iterator, gq, gq_expansion),
+    'gs': (strict_partition_iterator, gs, gs_expansion),
     'GP': (strict_partition_iterator, GP, GP_expansion),
     'GQ': (strict_partition_iterator, GQ, GQ_expansion),
-    'mp_g': (partition_iterator, mp_g, mp_g_expansion),
-    'mp_gp': (strict_partition_iterator, mp_gp, mp_gp_expansion),
-    'mp_gq': (strict_partition_iterator, mp_gq, mp_gq_expansion),
+    'GS': (strict_partition_iterator, GS, GS_expansion),
+#     'mp_g': (partition_iterator, mp_g, mp_g_expansion),
+#    'mp_gp': (strict_partition_iterator, mp_gp, mp_gp_expansion),
+#    'mp_gq': (strict_partition_iterator, mp_gq, mp_gq_expansion),
     'mn_G': (partition_iterator, mn_G, mn_G_expansion),
     'mn_GP': (strict_partition_iterator, mn_GP, mn_GP_expansion),
     'mn_GQ': (strict_partition_iterator, mn_GQ, mn_GQ_expansion),
     'skew_G': (skew_iterator, G, None),
     'skew_GP': (strict_skew_iterator, GP, None),
     'skew_GQ': (strict_skew_iterator, GQ, None),
+    'skew_GS': (strict_skew_iterator, GS, None),
     'ss_skew_G': (skew_iterator, G_doublebar, None),
     'ss_skew_GP': (strict_skew_iterator, GP_doublebar, None),
     'ss_skew_GQ': (strict_skew_iterator, GQ_doublebar, None),
+    'ss_skew_GS': (strict_skew_iterator, GS_doublebar, None),
+    'skew_g': (skew_iterator, g, None),
+    'skew_gp': (strict_skew_iterator, gp, None),
+    'skew_gq': (strict_skew_iterator, gq, None),
+    'skew_gs': (strict_skew_iterator, gs, None),
 }
 
 
@@ -74,9 +87,11 @@ def decompose(n, iterator, function, decomp):
 
 def update(results, trials_left):
     print()
+    pairs = []
     for (x, y) in results:
         if results[x, y] and not any(x != z != y and results[x, z] and results[z, y] for z in data):
             print('(', x, ')', '-->', '(', y, ')')
+            pairs.append((x, y))
     print()
     # for (x, y) in results:
     #     if not results[x, y]:
@@ -84,9 +99,15 @@ def update(results, trials_left):
     print()
     print('trials left:', trials_left)
     print()
+    print(repr(pairs))
+    print()
+    print(len(pairs))
+    print()
+
 
 
 def test_positivity(n, trials=1000):
+    expected = None #[('s', 'g'), ('s', 'mn_G'), ('P', 's'), ('Q', 'P'), ('j', 's'), ('G', 's'), ('jp', 's'), ('jp', 'gp'), ('jq', 's'), ('jq', 'gp'), ('jq', 'gq'), ('GP', 'G'), ('GQ', 'G'), ('mp_g', 's'), ('mp_gp', 's'), ('mp_gq', 's'), ('skew_G', 'G'), ('skew_GP', 'GP'), ('skew_GQ', 'GQ'), ('ss_skew_G', 'G'), ('ss_skew_GP', 'GP'), ('ss_skew_GQ', 'GQ'), ('skew_g', 'g'), ('skew_gp', 'gp'), ('skew_gq', 'gq')]
     iterators = {name: val[0](n) for name, val in data.items()}
     results = {(x, y): True for x in data for y in data if x != y}
     for i in range(trials):
@@ -94,10 +115,12 @@ def test_positivity(n, trials=1000):
             it = iterators[x]
             _, fn, _ = data[x]
             for y in data:
-                if x == y:
+                if expected is not None and (x, y) not in expected:
+                    results[x, y] = False
+                if x == y or not results[x, y]:
                     continue
                 _, _, dec = data[y]
-                results[x, y] = results[x, y] and decompose(n, it, fn, dec)
+                results[x, y] &= decompose(n, it, fn, dec)
         update(results, trials - i)
                     
 

@@ -146,6 +146,11 @@ class Partition:
         return Partition.sort(dictionary.values(), trim=True)
 
     @classmethod
+    def print_diagram(cls, mu, nu=None):
+        print()
+        print(cls.printable(mu, nu))
+
+    @classmethod
     def print_shifted(cls, mu, nu=None):
         print()
         print(cls.printable(mu, nu, shifted=True))

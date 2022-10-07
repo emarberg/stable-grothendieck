@@ -21,6 +21,10 @@ DUAL_STABLE_GROTHENDIECK_CACHE = {}
 DUAL_STABLE_GROTHENDIECK_P_CACHE = {}
 DUAL_STABLE_GROTHENDIECK_Q_CACHE = {}
 
+TRANSPOSED_DUAL_STABLE_GROTHENDIECK_CACHE = {}
+TRANSPOSED_DUAL_STABLE_GROTHENDIECK_P_CACHE = {}
+TRANSPOSED_DUAL_STABLE_GROTHENDIECK_Q_CACHE = {}
+
 MONOMIAL_PRODUCT_CACHE = {}
 
 
@@ -295,6 +299,14 @@ class SymmetricPolynomial(Vector):
         return cls._vectorize(num_variables, tableaux)
 
     @classmethod
+    def stable_grothendieck_s_doublebar(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa
+        ans = SymmetricPolynomial()
+        if Partition.contains(mu, nu):
+            for x in Partition.remove_inner_corners(nu):
+                ans += BETA**(sum(nu) - sum(x)) * cls._stable_grothendieck_s(num_variables, mu, x, degree_bound)
+        return ans
+
+    @classmethod
     def stable_grothendieck_s(cls, num_variables, mu, nu=(), degree_bound=None):  # noqa
         return cls._stable_grothendieck_s(num_variables, mu, nu, degree_bound)
 
@@ -405,22 +417,40 @@ class SymmetricPolynomial(Vector):
     def dual_stable_grothendieck_q(cls, num_variables, mu, nu=()):  # noqa
         return cls._dual_stable_grothendieck_q(num_variables, mu, nu)
 
+    @classmethod
+    def dual_stable_grothendieck_s(cls, num_variables, mu, nu=()):  # noqa
+        n = len(mu)
+        assert n == 0 or mu[n - 1] > 0
+        new_mu = tuple(mu[i] + n - i for i in range(n))
+        new_nu = tuple((nu[i] if i < len(nu) else 0) + n - i for i in range(n))
+        return cls._dual_stable_grothendieck_q(num_variables, new_mu, new_nu)
+
     @cached_value(DUAL_STABLE_GROTHENDIECK_Q_CACHE)
     def _dual_stable_grothendieck_q(cls, num_variables, mu, nu):  # noqa
         tableaux = Tableau.count_semistandard_marked_rpp(num_variables, mu, nu, diagonal_nonprimes=True)
         return (-BETA)**(sum(mu) - sum(nu)) * cls._vectorize(num_variables, tableaux, -BETA**-1)
 
     @classmethod
-    def schur_expansion(cls, f):
+    def _expansion(cls, f, function, get_term_and_coefficient):
         if f:
-            t = max(f)
+            t, c = get_term_and_coefficient(f)
             n = t.n
-            c = f[t]
             mu = t.index()
-            ans = cls.schur_expansion(f - c * cls.schur(n, mu))
-            return ans + Vector({mu: c})
+            g = f - c * function(n, mu)
+            ans = cls._expansion(g, function, get_term_and_coefficient)
+            ans += Vector({mu: c})
+            assert sum(map(lambda xy: function(n, xy[0]) * xy[1], ans.items())) == f
+            return ans
         else:
             return Vector()
+
+    @classmethod
+    def schur_expansion(cls, f):
+        def get_term_and_coefficient(f):
+            t = max(f)
+            c = f[t]
+            return t, c
+        return cls._expansion(f, cls.schur, get_term_and_coefficient)
 
     @classmethod
     def omega_schur_expansion(cls, f):
@@ -431,15 +461,11 @@ class SymmetricPolynomial(Vector):
 
     @classmethod
     def grothendieck_expansion(cls, f):
-        if f:
+        def get_term_and_coefficient(f):
             t = max(f.lowest_degree_terms())
-            n = t.n
             c = f[t]
-            mu = t.index()
-            ans = cls.grothendieck_expansion(f - c * cls.stable_grothendieck(n, mu))
-            return ans + Vector({mu: c})
-        else:
-            return Vector()
+            return t, c
+        return cls._expansion(f, cls.stable_grothendieck, get_term_and_coefficient)
 
     @classmethod
     def mn_grothendieck_expansion(cls, f):
@@ -482,15 +508,15 @@ class SymmetricPolynomial(Vector):
             return Vector()
 
     @classmethod
-    def transposed_dual_grothendieck_expansion(cls, f):
+    def j_expansion(cls, f):
         if f:
             t = max(f.highest_degree_terms())
             n = t.n
             c = f[t]
             mu = t.index()
-            g = cls.transposed_dual_grothendieck(n, mu)
+            g = cls.slow_transposed_dual_stable_grothendieck(n, mu)
             assert g[t] == 1
-            ans = cls.transposed_dual_grothendieck(f - c * g)
+            ans = cls.j_expansion(f - c * g)
             return ans + Vector({mu: c})
         else:
             return Vector()
@@ -541,6 +567,22 @@ class SymmetricPolynomial(Vector):
             return Vector()
 
     @classmethod
+    def gs_expansion(cls, f):  # noqa
+        if f:
+            t = max(f.highest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            g = cls.dual_stable_grothendieck_s(n, mu)
+            assert g[t] == 2**len(mu)
+            assert c % 2**len(mu) == 0
+            c = c // 2**len(mu)
+            ans = cls.gs_expansion(f - c * g)
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
     def mp_gp_expansion(cls, f):  # noqa
         if f:
             t = max(f.highest_degree_terms())
@@ -578,7 +620,7 @@ class SymmetricPolynomial(Vector):
             n = t.n
             c = f[t]
             mu = t.index()
-            g = cls._slow_transposed_dual_stable_grothendieck_p(n, mu)
+            g = cls.slow_transposed_dual_stable_grothendieck_p(n, mu)
             assert g[t] == 1
             ans = cls.jp_expansion(f - c * g)
             return ans + Vector({mu: c})
@@ -592,11 +634,27 @@ class SymmetricPolynomial(Vector):
             n = t.n
             c = f[t]
             mu = t.index()
-            g = cls._slow_transposed_dual_stable_grothendieck_q(n, mu)
+            g = cls.slow_transposed_dual_stable_grothendieck_q(n, mu)
             assert g[t] == 2**len(mu)
             assert c % 2**len(mu) == 0
             c = c // 2**len(mu)
             ans = cls.jq_expansion(f - c * g)
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
+    def js_expansion(cls, f):  # noqa
+        if f:
+            t = max(f.highest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            g = cls.slow_transposed_dual_stable_grothendieck_s(n, mu)
+            assert g[t] == 2**len(mu)
+            assert c % 2**len(mu) == 0
+            c = c // 2**len(mu)
+            ans = cls.js_expansion(f - c * g)
             return ans + Vector({mu: c})
         else:
             return Vector()
@@ -655,6 +713,22 @@ class SymmetricPolynomial(Vector):
             return Vector()
 
     @classmethod
+    def GS_expansion(cls, f):  # noqa
+        if f:
+            t = max(f.lowest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            g = cls.stable_grothendieck_s(n, mu)
+            assert g[t] == 2**len(mu)
+            assert c % 2**len(mu) == 0
+            c = c // 2**len(mu)
+            ans = cls.GS_expansion(f - c * g)
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
     def mn_GQ_expansion(cls, f):  # noqa
         if f:
             t = max(f.lowest_degree_terms())
@@ -682,6 +756,22 @@ class SymmetricPolynomial(Vector):
             assert c % 2**len(mu) == 0
             c = c // 2**len(mu)
             ans = cls.Q_expansion(f - c * g)
+            return ans + Vector({mu: c})
+        else:
+            return Vector()
+
+    @classmethod
+    def S_expansion(cls, f):  # noqa
+        if f:
+            t = max(f.lowest_degree_terms())
+            n = t.n
+            c = f[t]
+            mu = t.index()
+            g = cls.schur_s(n, mu)
+            assert g[t] == 2**len(mu)
+            assert c % 2**len(mu) == 0
+            c = c // 2**len(mu)
+            ans = cls.S_expansion(f - c * g)
             return ans + Vector({mu: c})
         else:
             return Vector()
@@ -778,7 +868,11 @@ class SymmetricPolynomial(Vector):
         )
 
     @classmethod
-    def _slow_transposed_dual_stable_grothendieck(cls, num_variables, mu, nu=(), beta=BETA):
+    def slow_transposed_dual_stable_grothendieck(cls, num_variables, mu, nu=(), beta=-BETA):
+        return cls._slow_transposed_dual_stable_grothendieck(num_variables, mu, nu, beta)
+
+    @cached_value(TRANSPOSED_DUAL_STABLE_GROTHENDIECK_CACHE)
+    def _slow_transposed_dual_stable_grothendieck(cls, num_variables, mu, nu, beta):
         p = Polynomial.zero()
         for tab in Tableau.semistandard(num_variables, mu, nu):
             m = 1
@@ -801,7 +895,11 @@ class SymmetricPolynomial(Vector):
         }) * (-beta)**(sum(mu) - sum(nu))
 
     @classmethod
-    def _slow_transposed_dual_stable_grothendieck_p(cls, num_variables, mu, nu=(), beta=BETA):
+    def slow_transposed_dual_stable_grothendieck_p(cls, num_variables, mu, nu=(), beta=-BETA):
+        return cls._slow_transposed_dual_stable_grothendieck_p(num_variables, mu, nu, beta)
+
+    @cached_value(TRANSPOSED_DUAL_STABLE_GROTHENDIECK_P_CACHE)
+    def _slow_transposed_dual_stable_grothendieck_p(cls, num_variables, mu, nu, beta):
         p = Polynomial.zero()
         for tab in Tableau.semistandard_shifted_marked(num_variables, mu, nu, diagonal_primes=False):
             m = 1
@@ -825,7 +923,19 @@ class SymmetricPolynomial(Vector):
         }) * (-beta)**(sum(mu) - sum(nu))
 
     @classmethod
-    def _slow_transposed_dual_stable_grothendieck_q(cls, num_variables, mu, nu=(), beta=BETA):
+    def slow_transposed_dual_stable_grothendieck_q(cls, num_variables, mu, nu=(), beta=-BETA):
+        return cls._slow_transposed_dual_stable_grothendieck_q(num_variables, mu, nu, beta)
+
+    @classmethod
+    def slow_transposed_dual_stable_grothendieck_s(cls, num_variables, mu, nu=(), beta=-BETA):  # noqa
+        n = len(mu)
+        assert n == 0 or mu[n - 1] > 0
+        new_mu = tuple(mu[i] + n - i for i in range(n))
+        new_nu = tuple((nu[i] if i < len(nu) else 0) + n - i for i in range(n))
+        return cls._slow_transposed_dual_stable_grothendieck_q(num_variables, new_mu, new_nu, beta)
+
+    @cached_value(TRANSPOSED_DUAL_STABLE_GROTHENDIECK_Q_CACHE)
+    def _slow_transposed_dual_stable_grothendieck_q(cls, num_variables, mu, nu, beta):
         p = Polynomial.zero()
         for tab in Tableau.semistandard_shifted_marked(num_variables, mu, nu):
             m = 1

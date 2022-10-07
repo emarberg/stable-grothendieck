@@ -3,22 +3,6 @@ from permutations import Permutation
 from polynomials import beta # noqa
 
 
-def schur(num_variables, mu, nu=()):
-    return SymmetricPolynomial.schur(num_variables, mu, nu)
-
-
-def schur_Q(num_variables, mu, nu=()): # noqa
-    return SymmetricPolynomial.schur_q(num_variables, mu, nu)
-
-
-def schur_P(num_variables, mu, nu=()): # noqa
-    return SymmetricPolynomial.schur_p(num_variables, mu, nu)
-
-
-def schur_S(num_variables, mu, nu=()): # noqa
-    return SymmetricPolynomial.schur_s(num_variables, mu, nu)
-
-
 def grothendieck(num_variables, mu, nu=(), degree_bound=None): # noqa
     if type(mu) == Permutation:
         assert nu == ()
@@ -46,54 +30,6 @@ def grothendieck_S(num_variables, mu, nu=(), degree_bound=None): # noqa
         return SymmetricPolynomial.stable_grothendieck_s(num_variables, mu, nu, degree_bound)
 
 
-def grothendieck_doublebar(num_variables, mu, nu=(), degree_bound=None): # noqa
-    return SymmetricPolynomial.stable_grothendieck_doublebar(num_variables, mu, nu, degree_bound=degree_bound)
-
-
-def grothendieck_Q_doublebar(num_variables, mu, nu=(), degree_bound=None): # noqa
-    return SymmetricPolynomial.stable_grothendieck_q_doublebar(num_variables, mu, nu, degree_bound=degree_bound)
-
-
-def grothendieck_P_doublebar(num_variables, mu, nu=(), degree_bound=None): # noqa
-    return SymmetricPolynomial.stable_grothendieck_p_doublebar(num_variables, mu, nu, degree_bound=degree_bound)
-
-
-def dual_grothendieck(num_variables, mu, nu=()): # noqa
-    return SymmetricPolynomial.dual_stable_grothendieck(num_variables, mu, nu)
-
-
-def dual_grothendieck_Q(num_variables, mu, nu=()): # noqa
-    return SymmetricPolynomial.dual_stable_grothendieck_q(num_variables, mu, nu)
-
-
-def dual_grothendieck_P(num_variables, mu, nu=()): # noqa
-    return SymmetricPolynomial.dual_stable_grothendieck_p(num_variables, mu, nu)
-
-
-def mp_dual_grothendieck(num_variables, mu, nu=()): # noqa
-    return SymmetricPolynomial.mp_dual_stable_grothendieck(num_variables, mu, nu)
-
-
-def mp_dual_grothendieck_Q(num_variables, mu, nu=()): # noqa
-    return SymmetricPolynomial.mp_dual_stable_grothendieck_q(num_variables, mu, nu)
-
-
-def mp_dual_grothendieck_P(num_variables, mu, nu=()): # noqa
-    return SymmetricPolynomial.mp_dual_stable_grothendieck_p(num_variables, mu, nu)
-
-
-def mn_grothendieck(num_variables, mu, nu=()): # noqa
-    return SymmetricPolynomial.mn_stable_grothendieck(num_variables, mu, nu)
-
-
-def mn_grothendieck_Q(num_variables, mu, nu=()): # noqa
-    return SymmetricPolynomial.mn_stable_grothendieck_q(num_variables, mu, nu)
-
-
-def mn_grothendieck_P(num_variables, mu, nu=()): # noqa
-    return SymmetricPolynomial.mn_stable_grothendieck_p(num_variables, mu, nu)
-
-
 def shifted_ribbon(alpha):
     nu = []
     mu = []
@@ -104,44 +40,48 @@ def shifted_ribbon(alpha):
     return tuple(mu), tuple(nu)
 
 
-s = schur
-P = schur_P
-Q = schur_Q
-S = schur_S
+s = SymmetricPolynomial.schur
+P = SymmetricPolynomial.schur_p
+Q = SymmetricPolynomial.schur_q
+S = SymmetricPolynomial.schur_s
 
 G = grothendieck
 GP = grothendieck_P
-GQ = grothendieck_Q
+GQ = SymmetricPolynomial.stable_grothendieck_q
 GS = grothendieck_S
 
-mn_G = mn_grothendieck
-mn_GP = mn_grothendieck_P
-mn_GQ = mn_grothendieck_Q
+mn_G = SymmetricPolynomial.mn_stable_grothendieck
+mn_GP = SymmetricPolynomial.mn_stable_grothendieck_p
+mn_GQ = SymmetricPolynomial.mn_stable_grothendieck_q
 
-G_doublebar = grothendieck_doublebar
-GP_doublebar = grothendieck_P_doublebar
-GQ_doublebar = grothendieck_Q_doublebar
+G_doublebar = SymmetricPolynomial.stable_grothendieck_doublebar
+GP_doublebar = SymmetricPolynomial.stable_grothendieck_p_doublebar
+GQ_doublebar = SymmetricPolynomial.stable_grothendieck_q_doublebar
+GS_doublebar = SymmetricPolynomial.stable_grothendieck_s_doublebar
 
-g = dual_grothendieck
-gp = dual_grothendieck_P
-gq = dual_grothendieck_Q
+g = SymmetricPolynomial.dual_stable_grothendieck
+gp = SymmetricPolynomial.dual_stable_grothendieck_p
+gq = SymmetricPolynomial.dual_stable_grothendieck_q
+gs = SymmetricPolynomial.dual_stable_grothendieck_s
 
-mp_g = mp_dual_grothendieck
-mp_gp = mp_dual_grothendieck_P
-mp_gq = mp_dual_grothendieck_Q
+mp_g = SymmetricPolynomial.mp_dual_stable_grothendieck
+mp_gp = SymmetricPolynomial.mp_dual_stable_grothendieck_p
+mp_gq = SymmetricPolynomial.mp_dual_stable_grothendieck_q
 
-j = SymmetricPolynomial._slow_transposed_dual_stable_grothendieck
-jp = SymmetricPolynomial._slow_transposed_dual_stable_grothendieck_p
-jq = SymmetricPolynomial._slow_transposed_dual_stable_grothendieck_q
+j = SymmetricPolynomial.slow_transposed_dual_stable_grothendieck
+jp = SymmetricPolynomial.slow_transposed_dual_stable_grothendieck_p
+jq = SymmetricPolynomial.slow_transposed_dual_stable_grothendieck_q
+js = SymmetricPolynomial.slow_transposed_dual_stable_grothendieck_s
 
 schur_expansion = SymmetricPolynomial.schur_expansion
 
 G_expansion = SymmetricPolynomial.grothendieck_expansion
 
 g_expansion = SymmetricPolynomial.dual_grothendieck_expansion
-j_expansion = SymmetricPolynomial.transposed_dual_grothendieck_expansion
+j_expansion = SymmetricPolynomial.j_expansion
 gp_expansion = SymmetricPolynomial.gp_expansion
 gq_expansion = SymmetricPolynomial.gq_expansion
+gs_expansion = SymmetricPolynomial.gs_expansion
 
 mp_g_expansion = SymmetricPolynomial.mp_dual_grothendieck_expansion
 mp_gp_expansion = SymmetricPolynomial.mp_gp_expansion
@@ -155,9 +95,12 @@ gp_free_expansion = SymmetricPolynomial.gp_free_expansion
 
 jp_expansion = SymmetricPolynomial.jp_expansion
 jq_expansion = SymmetricPolynomial.jq_expansion
+js_expansion = SymmetricPolynomial.js_expansion
 
 GP_expansion = SymmetricPolynomial.GP_expansion
 GQ_expansion = SymmetricPolynomial.GQ_expansion
+GS_expansion = SymmetricPolynomial.GS_expansion
 
 P_expansion = SymmetricPolynomial.P_expansion
 Q_expansion = SymmetricPolynomial.Q_expansion
+S_expansion = SymmetricPolynomial.S_expansion
