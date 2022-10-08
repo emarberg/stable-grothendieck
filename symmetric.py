@@ -467,16 +467,16 @@ class SymmetricPolynomial(Vector):
             ans = cls._expansion(f - g, function, get_term)
             ans += Vector({mu: c})
 
-            try:
-                expected = sum(map(lambda xy: function(n, xy[0]) * xy[1], ans.items()))
-                expected == f
-            except:
-                print(traceback.format_exc())
-                print(function.__name__)
-                print('f =', f)
-                print('expected =', expected)
-                input('\n\n')
-                raise Exception
+            # try:
+            #     expected = sum(map(lambda xy: function(n, xy[0]) * xy[1], ans.items()))
+            #     expected == f
+            # except:
+            #     print(traceback.format_exc())
+            #     print(function.__name__)
+            #     print('f =', f)
+            #     print('expected =', expected)
+            #     input('\n\n')
+            #     raise Exception
 
             return ans
         else:
