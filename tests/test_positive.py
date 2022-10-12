@@ -86,7 +86,7 @@ def decompose(n, iterator, function, decomp):
         return False
 
 
-def update(results, trials_left):
+def update(n, results, trials_left):
     print()
     pairs = []
     for (x, y) in results:
@@ -98,7 +98,7 @@ def update(results, trials_left):
     #     if not results[x, y]:
     #         print('(', x, ')', '-/->', '(', y, ')')
     print()
-    print('trials left:', trials_left)
+    print('n =', n, 'trials left:', trials_left)
     print()
     print(repr(pairs))
     print()
@@ -107,22 +107,23 @@ def update(results, trials_left):
 
 
 
-def test_positivity(n, trials=1000):
+def test_positivity(nn, trials=1000):
     expected = None #[('s', 'g'), ('s', 'mn_G'), ('P', 's'), ('Q', 'P'), ('j', 's'), ('G', 's'), ('jp', 's'), ('jp', 'gp'), ('jq', 's'), ('jq', 'gp'), ('jq', 'gq'), ('GP', 'G'), ('GQ', 'G'), ('mp_g', 's'), ('mp_gp', 's'), ('mp_gq', 's'), ('skew_G', 'G'), ('skew_GP', 'GP'), ('skew_GQ', 'GQ'), ('ss_skew_G', 'G'), ('ss_skew_GP', 'GP'), ('ss_skew_GQ', 'GQ'), ('skew_g', 'g'), ('skew_gp', 'gp'), ('skew_gq', 'gq')]
-    iterators = {name: val[0](n) for name, val in data.items()}
     results = {(x, y): True for x in data for y in data if x != y}
-    for i in range(trials):
-        for x in data:
-            it = iterators[x]
-            _, fn, _ = data[x]
-            for y in data:
-                if expected is not None and (x, y) not in expected:
-                    results[x, y] = False
-                if x == y or not results[x, y]:
-                    continue
-                _, _, dec = data[y]
-                results[x, y] &= decompose(n, it, fn, dec)
-        update(results, trials - i)
+    for n in range(1, nn + 1):
+        iterators = {name: val[0](n) for name, val in data.items()}
+        for i in range(trials):
+            for x in data:
+                it = iterators[x]
+                _, fn, _ = data[x]
+                for y in data:
+                    if expected is not None and (x, y) not in expected:
+                        results[x, y] = False
+                    if x == y or not results[x, y]:
+                        continue
+                    _, _, dec = data[y]
+                    results[x, y] &= decompose(n, it, fn, dec)
+            update(n, results, trials - i)
                     
 
 
