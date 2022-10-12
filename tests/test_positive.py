@@ -42,19 +42,15 @@ data = {
     's': (partition_iterator, s, schur_expansion),
     'P': (strict_partition_iterator, P, P_expansion),
     'Q': (strict_partition_iterator, Q, Q_expansion),
-    'S': (strict_partition_iterator, S, S_expansion),
     'j': (partition_iterator, j, j_expansion),
     'g': (partition_iterator, g, g_expansion),
     'G': (partition_iterator, G, G_expansion),
     'jp': (strict_partition_iterator, jp, jp_expansion),
     'jq': (strict_partition_iterator, jq, jq_expansion),
-    'js': (strict_partition_iterator, js, js_expansion),
     'gp': (strict_partition_iterator, gp, gp_expansion),
     'gq': (strict_partition_iterator, gq, gq_expansion),
-    'gs': (strict_partition_iterator, gs, gs_expansion),
     'GP': (strict_partition_iterator, GP, GP_expansion),
     'GQ': (strict_partition_iterator, GQ, GQ_expansion),
-    'GS': (strict_partition_iterator, GS, GS_expansion),
 #    'mp_g': (partition_iterator, mp_g, mp_g_expansion),
 #    'mp_gp': (strict_partition_iterator, mp_gp, mp_gp_expansion),
 #    'mp_gq': (strict_partition_iterator, mp_gq, mp_gq_expansion),
@@ -64,15 +60,20 @@ data = {
     'skew_G': (skew_iterator, G, None),
     'skew_GP': (strict_skew_iterator, GP, None),
     'skew_GQ': (strict_skew_iterator, GQ, None),
-    'skew_GS': (strict_skew_iterator, GS, None),
     'ss_skew_G': (skew_iterator, G_doublebar, None),
     'ss_skew_GP': (strict_skew_iterator, GP_doublebar, None),
     'ss_skew_GQ': (strict_skew_iterator, GQ_doublebar, None),
-    'ss_skew_GS': (strict_skew_iterator, GS_doublebar, None),
     'skew_g': (skew_iterator, g, None),
     'skew_gp': (strict_skew_iterator, gp, None),
     'skew_gq': (strict_skew_iterator, gq, None),
-    'skew_gs': (strict_skew_iterator, gs, None),
+#    'S': (strict_partition_iterator, S, S_expansion),
+#    'gs': (strict_partition_iterator, gs, gs_expansion),
+#    'js': (strict_partition_iterator, js, js_expansion),
+#    'GS': (strict_partition_iterator, GS, GS_expansion),
+#    'skew_GS': (strict_skew_iterator, GS, None),
+#    'ss_skew_GS': (strict_skew_iterator, GS_doublebar, None),
+#    'skew_gs': (strict_skew_iterator, gs, None),
+#    'GS GS': (strict_skew_iterator, lambda n, mu, nu: GS(n, mu) * GS(n, nu), None)
 }
 
 
@@ -104,7 +105,6 @@ def update(n, results, trials_left):
     print()
     print(len(pairs))
     print()
-
 
 
 def test_positivity(nn, trials=1000):
