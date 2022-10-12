@@ -108,7 +108,7 @@ def update(n, results, trials_left):
 
 
 def test_positivity(nn, trials=1000):
-    expected = None #[('s', 'g'), ('s', 'mn_G'), ('P', 's'), ('Q', 'P'), ('j', 's'), ('G', 's'), ('jp', 's'), ('jp', 'gp'), ('jq', 's'), ('jq', 'gp'), ('jq', 'gq'), ('GP', 'G'), ('GQ', 'G'), ('mp_g', 's'), ('mp_gp', 's'), ('mp_gq', 's'), ('skew_G', 'G'), ('skew_GP', 'GP'), ('skew_GQ', 'GQ'), ('ss_skew_G', 'G'), ('ss_skew_GP', 'GP'), ('ss_skew_GQ', 'GQ'), ('skew_g', 'g'), ('skew_gp', 'gp'), ('skew_gq', 'gq')]
+    expected = None #[('s', 'g'), ('s', 'mn_G'), ('P', 's'), ('Q', 'P'), ('j', 's'), ('G', 's'), ('jp', 's'), ('jp', 'gp'), ('jq', 's'), ('jq', 'gp'), ('jq', 'gq'), ('GP', 'G'), ('GQ', 'G'), ('skew_G', 'G'), ('skew_GP', 'GP'), ('skew_GQ', 'GQ'), ('ss_skew_G', 'G'), ('ss_skew_GP', 'GP'), ('ss_skew_GQ', 'GQ'), ('skew_g', 'g'), ('skew_gp', 'gp'), ('skew_gq', 'gq')]
     results = {(x, y): True for x in data for y in data if x != y}
     for n in range(1, nn + 1):
         iterators = {name: val[0](n) for name, val in data.items()}
