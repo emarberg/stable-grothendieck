@@ -462,21 +462,26 @@ class SymmetricPolynomial(Vector):
                 raise Exception
 
             assert c % d == 0
-            g *=  c // d * BETA**cdeg
+            c = c // d * BETA**cdeg
+            g *= c
 
             ans = cls._expansion(f - g, function, get_term)
             ans += Vector({mu: c})
 
-            # try:
-            #     expected = sum(map(lambda xy: function(n, xy[0]) * xy[1], ans.items()))
-            #     expected == f
-            # except:
-            #     print(traceback.format_exc())
-            #     print(function.__name__)
-            #     print('f =', f)
-            #     print('expected =', expected)
-            #     input('\n\n')
-            #     raise Exception
+            try:
+                expected = sum(map(lambda xy: function(n, xy[0]) * xy[1], ans.items()))
+                assert expected == f
+            except:
+                print(traceback.format_exc())
+                print(function.__name__)
+                print()
+                print('f =', f)
+                print()
+                print('expected =', expected)
+                print()
+                print('ans =', ans)
+                input('\n\n')
+                raise Exception
 
             return ans
         else:
