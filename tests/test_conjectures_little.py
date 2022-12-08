@@ -1398,7 +1398,7 @@ def test_inv_grassmannian():
     assert w == t(3, 7) * t(2, 6) * t(1, 4)
     assert w.involution_shape() == (4, 3, 1)
 
-    shapes = set(Partition.subpartitions([5, 3, 1], True))
+    shapes = set(Partition.subpartitions([5, 3, 1], strict=True))
     gr = list(Permutation.inv_grassmannians(6))
     assert len(gr) == len(shapes)
     assert {w.involution_shape() for w in gr} == shapes
@@ -1411,7 +1411,7 @@ def test_fpf_grassmannian():
     assert w == t(1, 5) * t(2, 7) * t(3, 8) * t(4, 6)
     assert w.fpf_involution_shape() == (4, 3, 1)
 
-    shapes = set(Partition.subpartitions([6, 4, 2], True))
+    shapes = set(Partition.subpartitions([6, 4, 2], strict=True))
     gr = list(Permutation.fpf_grassmannians(8))
     assert len(gr) == len(shapes)
     assert {w.fpf_involution_shape() for w in gr} == shapes
